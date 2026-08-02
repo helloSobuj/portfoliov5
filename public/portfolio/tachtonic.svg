@@ -1,0 +1,6 @@
+<svg width="1200" height="900" viewBox="0 0 1200 900" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="900" fill="#141311"/>
+  <rect width="1200" height="6" fill="#ff7a45"/>
+  <text x="80" y="420" font-family="'Space Grotesk', Inter, sans-serif" font-size="64" font-weight="700" fill="#f5f3ee">Tachtonic</text>
+  <text x="80" y="470" font-family="Inter, sans-serif" font-size="28" fill="#a8a49a">E-commerce Website</text>
+</svg>
