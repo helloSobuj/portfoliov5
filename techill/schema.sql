@@ -12,8 +12,13 @@ CREATE TABLE IF NOT EXISTS users (
   role          ENUM('customer','developer','admin') NOT NULL DEFAULT 'customer',
   active        TINYINT(1) NOT NULL DEFAULT 1,
   avatar        VARCHAR(60)  NULL,
+  email_verified_at DATETIME NULL,
+  email_notify  TINYINT(1) NOT NULL DEFAULT 1,
+  ref_code      VARCHAR(12)  NULL,
+  referred_by   INT UNSIGNED NULL,
   created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_users_email (email)
+  UNIQUE KEY uq_users_email (email),
+  UNIQUE KEY uq_users_ref (ref_code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS orders (
@@ -34,6 +39,7 @@ CREATE TABLE IF NOT EXISTS orders (
   info_json   TEXT         NOT NULL,
   developer_id INT UNSIGNED NULL,
   cancelled   TINYINT(1) NOT NULL DEFAULT 0,
+  referrer_id INT UNSIGNED NULL,
   stage       TINYINT UNSIGNED NOT NULL DEFAULT 0,
   progress    TINYINT UNSIGNED NOT NULL DEFAULT 5,
   site_url    VARCHAR(255) NULL,
@@ -168,4 +174,69 @@ CREATE TABLE IF NOT EXISTS payments (
   UNIQUE KEY uq_payments_invoice (invoice_number),
   KEY ix_payments_order (order_id),
   CONSTRAINT fk_payments_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- One-time email codes (sign-up, email verification, password reset, email change). Only a hash is kept.
+CREATE TABLE IF NOT EXISTS email_otps (
+  id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  email       VARCHAR(190) NOT NULL,
+  purpose     VARCHAR(10)  NOT NULL,
+  code_hash   CHAR(64)     NOT NULL,
+  ip          VARCHAR(45)  NOT NULL,
+  attempts    TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  expires_at  DATETIME NOT NULL,
+  consumed_at DATETIME NULL,
+  created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY ix_otp_email (email, purpose, id),
+  KEY ix_otp_ip (ip, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Every email the site sends, so the admin can see what went out and what failed. No message bodies.
+CREATE TABLE IF NOT EXISTS email_log (
+  id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  to_email   VARCHAR(190) NOT NULL,
+  subject    VARCHAR(255) NOT NULL,
+  kind       VARCHAR(20)  NOT NULL,
+  order_id   INT UNSIGNED NULL,
+  status     ENUM('queued','sent','failed') NOT NULL DEFAULT 'queued',
+  error      VARCHAR(255) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  sent_at    DATETIME NULL,
+  KEY ix_mail_time (created_at),
+  KEY ix_mail_kind (kind, order_id, to_email, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- One row per order placed with someone's referral code. The reward counts once status is 'earned'.
+CREATE TABLE IF NOT EXISTS referrals (
+  id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  order_id    INT UNSIGNED NOT NULL,
+  referrer_id INT UNSIGNED NOT NULL,
+  referee_id  INT UNSIGNED NOT NULL,
+  code        VARCHAR(12)  NOT NULL,
+  reward      INT UNSIGNED NOT NULL,
+  discount    INT UNSIGNED NOT NULL,
+  status      ENUM('pending','earned','cancelled','rejected') NOT NULL DEFAULT 'pending',
+  note        VARCHAR(255) NULL,
+  created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  earned_at   DATETIME NULL,
+  UNIQUE KEY uq_ref_order (order_id),
+  KEY ix_ref_referrer (referrer_id),
+  CONSTRAINT fk_ref_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Referral earnings paid out to bKash / Nagad / Rocket.
+CREATE TABLE IF NOT EXISTS payouts (
+  id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id      INT UNSIGNED NOT NULL,
+  amount       INT UNSIGNED NOT NULL,
+  method       VARCHAR(20)  NOT NULL,
+  account      VARCHAR(20)  NOT NULL,
+  status       ENUM('requested','paid','rejected') NOT NULL DEFAULT 'requested',
+  trx          VARCHAR(40)  NULL,
+  note         VARCHAR(255) NULL,
+  created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  processed_at DATETIME NULL,
+  processed_by INT UNSIGNED NULL,
+  KEY ix_payout_user (user_id),
+  CONSTRAINT fk_payout_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

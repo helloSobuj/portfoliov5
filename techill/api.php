@@ -16,7 +16,7 @@ if ($isPost && !in_array($action, ['track', 'paystation_callback'], true)) check
 const STAGES = 5;          // তথ্য জমা, পেমেন্ট যাচাই, সেটআপ চলছে, রিভিউ, ডেলিভারি
 const LOGIN_LIMIT = 10;    // failed logins per IP per 15 minutes
 const LOCAL_TZ = '+06:00';   // Bangladesh, for "today" and daily charts
-const TRACK_EVENTS = ['checkout_open', 'whatsapp_click', 'package_select'];
+const TRACK_EVENTS = ['checkout_open', 'whatsapp_click', 'package_select', 'support_open', 'support_messenger', 'support_whatsapp', 'support_tawk'];
 // Browser time zone → country, used only when the IP lookup gives nothing.
 const TZ_COUNTRY = ['Asia/Dhaka' => ['BD', 'Bangladesh'], 'Asia/Kolkata' => ['IN', 'India'], 'Asia/Calcutta' => ['IN', 'India'],
     'Asia/Dubai' => ['AE', 'United Arab Emirates'], 'Asia/Riyadh' => ['SA', 'Saudi Arabia'], 'Asia/Qatar' => ['QA', 'Qatar'],
@@ -29,7 +29,7 @@ try {
         case 'me':           out(['user' => current_user(), 'csrf' => $_SESSION['csrf']]);
         case 'register':     $isPost || fail('POST only', 405); do_register();
         case 'login':        $isPost || fail('POST only', 405); do_login();
-        case 'logout':       $isPost || fail('POST only', 405); session_destroy(); out([]);
+        case 'logout':       $isPost || fail('POST only', 405); do_logout();
         case 'order_create': $isPost || fail('POST only', 405); order_create();
         case 'orders':       orders_list();
         case 'order':        order_detail();
@@ -40,7 +40,8 @@ try {
         case 'info_update':  $isPost || fail('POST only', 405); info_update();
         case 'admin_update': $isPost || fail('POST only', 405); staff_update();
         case 'track':        $isPost || fail('POST only', 405); track();
-        case 'catalog':      out(['catalog' => catalog(), 'payments' => public_payments(), 'pixel' => public_pixel()]);
+        case 'catalog':      out(['catalog' => catalog(), 'payments' => public_payments(), 'pixel' => public_pixel(), 'support' => public_support(), 'referral' => public_referral(),
+                                 'auth' => ['email' => email_ready(), 'otp' => otp_required()]]);
         case 'catalog_save': $isPost || fail('POST only', 405); catalog_save();
         case 'admin_stats':  admin_stats();
         case 'assign':       $isPost || fail('POST only', 405); assign();
@@ -64,6 +65,24 @@ try {
         case 'marketing_save': $isPost || fail('POST only', 405); marketing_save();
         case 'capi_test':    $isPost || fail('POST only', 405); capi_test();
         case 'export_orders': export_orders();
+        case 'otp_send':     $isPost || fail('POST only', 405); otp_send();
+        case 'password_reset': $isPost || fail('POST only', 405); password_reset();
+        case 'email_verify': $isPost || fail('POST only', 405); email_verify();
+        case 'profile_update': $isPost || fail('POST only', 405); profile_update();
+        case 'email_change': $isPost || fail('POST only', 405); email_change();
+        case 'password_change': $isPost || fail('POST only', 405); password_change();
+        case 'email_settings': email_settings_get();
+        case 'email_save':   $isPost || fail('POST only', 405); email_save();
+        case 'email_test':   $isPost || fail('POST only', 405); email_test();
+        case 'support_settings': support_get();
+        case 'support_save': $isPost || fail('POST only', 405); support_save();
+        case 'ref_check':    ref_check();
+        case 'referral':     referral_me();
+        case 'payout_request': $isPost || fail('POST only', 405); payout_request();
+        case 'referral_admin': referral_admin();
+        case 'referral_save': $isPost || fail('POST only', 405); referral_save();
+        case 'referral_op':  $isPost || fail('POST only', 405); referral_op();
+        case 'payout_op':    $isPost || fail('POST only', 405); payout_op();
         default:             fail('Unknown action', 404);
     }
 } catch (PDOException $e) {
@@ -82,7 +101,7 @@ function throttle(): void {
 function note_attempt(): void { q('INSERT INTO login_attempts (ip) VALUES (?)', [client_ip()]); }
 
 // Creates a customer account, or logs into an existing one when the password matches.
-function create_or_login(string $name, string $email, string $phone, string $pass): int {
+function create_or_login(string $name, string $email, string $phone, string $pass, bool $verified = false): int {
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) fail('সঠিক ইমেইল দিন।');
     if (mb_strlen($pass) < 8) fail('পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।');
     $row = q('SELECT id, password_hash FROM users WHERE email = ?', [$email])->fetch();
@@ -93,17 +112,39 @@ function create_or_login(string $name, string $email, string $phone, string $pas
     if ($name === '') fail('নাম দিন।');
     if ($phone !== '' && !valid_phone($phone)) fail('সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন।');
     note_attempt();
-    q('INSERT INTO users (name, email, phone, password_hash) VALUES (?,?,?,?)', [$name, $email, $phone ?: null, password_hash($pass, PASSWORD_DEFAULT)]);
+    q('INSERT INTO users (name, email, phone, password_hash, email_verified_at) VALUES (?,?,?,?,' . ($verified ? 'UTC_TIMESTAMP()' : 'NULL') . ')', [$name, $email, $phone ?: null, password_hash($pass, PASSWORD_DEFAULT)]);
     return (int)db()->lastInsertId();
 }
 
+// With email OTP switched on, the first call (no otp) checks the form and emails a code;
+// the second call, with the code, creates the account already verified.
 function do_register(): void {
     throttle();
     $email = mb_strtolower(str_in('email', 190));
+    $name = str_in('name', 120); $phone = str_in('phone', 20); $pass = (string)($_POST['password'] ?? '');
     if (q('SELECT 1 FROM users WHERE email = ?', [$email])->fetch()) fail('এই ইমেইলে আগেই অ্যাকাউন্ট আছে, লগইন করুন।', 409);
-    $id = create_or_login(str_in('name', 120), $email, str_in('phone', 20), (string)($_POST['password'] ?? ''));
+    $verified = false;
+    if (otp_required()) {
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) fail('সঠিক ইমেইল দিন।');
+        if ($name === '') fail('নাম দিন।');
+        if ($phone !== '' && !valid_phone($phone)) fail('সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন।');
+        if (mb_strlen($pass) < 8) fail('পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।');
+        if (str_in('otp', 10) === '') { otp_issue($email, 'register'); out(['need_otp' => true, 'email' => $email]); }
+        otp_check($email, 'register', str_in('otp', 10));
+        $verified = true;
+    }
+    $id = create_or_login($name, $email, $phone, $pass, $verified);
     login_as($id);
     out(['user' => current_user(), 'csrf' => $_SESSION['csrf']]);
+}
+
+// Clears the account from the session but keeps a fresh session and CSRF token, so the same page
+// can log in again (or reset a password) without a reload.
+function do_logout(): void {
+    $_SESSION = [];
+    session_regenerate_id(true);
+    $_SESSION['csrf'] = bin2hex(random_bytes(16));
+    out(['csrf' => $_SESSION['csrf']]);
 }
 
 function do_login(): void {
@@ -168,7 +209,6 @@ function order_create(): void {
     if (!is_array($add)) fail('অ্যাড-অনের তথ্য সঠিক নয়।');
     $priced = price_order(str_in('stack_key', 20), (int)($_POST['pack'] ?? -1), (int)($_POST['tpl'] ?? -1), $add);
     ['stack' => $stack, 'pack' => $pack, 'template' => $template, 'lines' => $clean, 'total' => $total, 'hours' => $hours, 'products' => $products] = $priced;
-    if (isset($_POST['total']) && (int)$_POST['total'] !== $total) fail('দাম আপডেট হয়েছে, পেজ রিফ্রেশ করে আবার দেখে নিন।', 422);
 
     $method = str_in('pay_method', 20);
     $online = $method === 'PayStation';
@@ -189,10 +229,28 @@ function order_create(): void {
     if ($info['business_intro'] === '') fail('ব্যবসার পরিচিতি লিখুন।');
     if (empty($_FILES['product_csv']['name'])) fail('প্রোডাক্ট CSV ফাইল দিন।');
 
+    // Referral discount: checked before the account is created, against the email the order is for.
     $u = current_user();
+    $email = $u ? $u['email'] : mb_strtolower(str_in('email', 190));
+    $existing = $u ? $u['id'] : (int)(q('SELECT id FROM users WHERE email = ?', [$email])->fetchColumn() ?: 0);
+    $refCode = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', str_in('ref_code', 20)));
+    $referrer = null; $discount = 0;
+    if ($refCode !== '') {
+        [$referrer, $discount] = referral_for_order($refCode, $email, $existing ?: null, [$info['phone'], $info['whatsapp'], str_in('phone', 20)], $total);
+        $clean[] = ['label' => "রেফারেল ছাড় ($refCode)", 'amt' => -$discount, 'ref' => true];
+        $total -= $discount;
+    }
+    if (isset($_POST['total']) && (int)$_POST['total'] !== $total) fail('দাম আপডেট হয়েছে, পেজ রিফ্রেশ করে আবার দেখে নিন।', 422);
+
     if (!$u) {
         throttle();
-        $id = create_or_login(str_in('admin_name', 120), mb_strtolower(str_in('email', 190)), str_in('phone', 20), (string)($_POST['password'] ?? ''));
+        $verified = false;
+        if (!$existing && otp_required()) {   // a brand-new account must prove the email first
+            if (str_in('otp', 10) === '') out(['error' => 'ইমেইলে পাঠানো ৬ ডিজিটের কোড দিন।', 'need_otp' => true], 422);
+            otp_check($email, 'register', str_in('otp', 10));
+            $verified = true;
+        }
+        $id = create_or_login(str_in('admin_name', 120), $email, str_in('phone', 20), (string)($_POST['password'] ?? ''), $verified);
         login_as($id);
         $u = current_user();
     }
@@ -200,11 +258,15 @@ function order_create(): void {
     db()->beginTransaction();
     do { $code = 'TC-' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 6)); }
     while (q('SELECT 1 FROM orders WHERE code = ?', [$code])->fetch());
-    q('INSERT INTO orders (code, user_id, stack, pack, template, lines_json, total, hours, products, pay_method, pay_sender, pay_trx, info_json, deadline_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?, UTC_TIMESTAMP() + INTERVAL ? HOUR)',
+    q('INSERT INTO orders (code, user_id, stack, pack, template, lines_json, total, hours, products, pay_method, pay_sender, pay_trx, info_json, referrer_id, deadline_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?, UTC_TIMESTAMP() + INTERVAL ? HOUR)',
       [$code, $u['id'], $stack, $pack, $template, json_encode($clean, JSON_UNESCAPED_UNICODE), $total, $hours, $products,
-       $method, $sender, $trx, json_encode($info, JSON_UNESCAPED_UNICODE), $hours]);
+       $method, $sender, $trx, json_encode($info, JSON_UNESCAPED_UNICODE), $referrer ? $referrer['id'] : null, $hours]);
     $oid = (int)db()->lastInsertId();
+    if ($referrer) {
+        q('INSERT INTO referrals (order_id, referrer_id, referee_id, code, reward, discount) VALUES (?,?,?,?,?,?)', [$oid, $referrer['id'], $u['id'], $refCode, (int)referral_settings()['reward'], $discount]);
+        q('UPDATE users SET referred_by = COALESCE(referred_by, ?) WHERE id = ?', [$referrer['id'], $u['id']]);
+    }
     save_upload('logo', $oid, $u['id'], 'logo');
     save_upload('product_csv', $oid, $u['id'], 'csv');
     q('INSERT INTO order_events (order_id, stage, progress, note, created_by) VALUES (?,0,5,?,?)', [$oid, 'অর্ডার ও তথ্য জমা হয়েছে।', $u['id']]);
@@ -216,6 +278,7 @@ function order_create(): void {
     if (preg_match('/^[a-f0-9]{32}$/', $vid)) q("INSERT INTO track_events (vid, name) VALUES (?, 'order')", [$vid]);
 
     $row = q('SELECT * FROM orders WHERE id = ?', [$oid])->fetch();
+    notify_new_order($row, $u, $info);
     $res = ['order' => order_out($row), 'user' => $u, 'csrf' => $_SESSION['csrf']];
     if (!$online) fb_capi('Purchase', $row, fb_context());
     if ($online) {
@@ -246,7 +309,11 @@ function order_detail(): void {
     $files = array_map(fn($f) => ['id' => (int)$f['id'], 'kind' => $f['kind'], 'name' => $f['original_name'], 'size' => (int)$f['size'], 'by_admin' => in_array($f['role'], ['developer', 'admin'], true), 'created' => strtotime($f['created_at'] . ' UTC')],
         q('SELECT f.*, u.role FROM files f LEFT JOIN users u ON u.id = f.user_id WHERE f.order_id = ? ORDER BY f.id DESC', [$id])->fetchAll());
     $res = ['order' => order_out($o, $u), 'events' => $events, 'messages' => message_rows($id), 'files' => $files];
-    if (is_admin($u)) $res['payments'] = payment_rows($id);
+    if (is_admin($u)) {
+        $res['payments'] = payment_rows($id);
+        $r = q('SELECT r.*, u.name referrer_name, u.email referrer_email FROM referrals r JOIN users u ON u.id = r.referrer_id WHERE r.order_id = ?', [$id])->fetch();
+        $res['referral'] = $r ? ['id' => (int)$r['id'], 'code' => $r['code'], 'status' => $r['status'], 'reward' => (int)$r['reward'], 'discount' => (int)$r['discount'], 'referrer' => ['name' => $r['referrer_name'], 'email' => $r['referrer_email']]] : null;
+    }
     out($res);
 }
 
@@ -265,6 +332,7 @@ function message_send(): void {
     $body = str_in('body', 4000);
     if ($body === '') fail('মেসেজ লিখুন।');
     q('INSERT INTO messages (order_id, user_id, from_admin, body) VALUES (?,?,?,?)', [$o['id'], $u['id'], is_staff($u) ? 1 : 0, $body]);
+    notify_message($o, $u, $body);
     out(['messages' => message_rows((int)$o['id'], (int)($_POST['after'] ?? 0))]);
 }
 
@@ -276,6 +344,7 @@ function file_upload(): void {
     $note = str_in('note', 1000);
     q('INSERT INTO messages (order_id, user_id, from_admin, body, file_id) VALUES (?,?,?,?,?)',
       [$o['id'], $u['id'], is_staff($u) ? 1 : 0, $note !== '' ? $note : 'ফাইল পাঠানো হয়েছে।', $fid]);
+    notify_message($o, $u, ($note !== '' ? $note . "\n" : '') . '📎 ফাইল: ' . mb_substr(basename((string)($_FILES['file']['name'] ?? '')), 0, 120));
     out(['file_id' => $fid]);
 }
 
@@ -333,6 +402,8 @@ function staff_update(): void {
     if ($notes || $stage !== (int)$o['stage'] || $progress !== (int)$o['progress']) {
         q('INSERT INTO order_events (order_id, stage, progress, note, created_by) VALUES (?,?,?,?,?)', [$o['id'], $stage, $progress, implode("\n", $notes) ?: null, $u['id']]);
     }
+    referral_sync((int)$o['id']);
+    notify_order_update((int)$o['id'], $notes, $stage !== (int)$o['stage']);
     out(['order' => order_out(order_row((int)$o['id']), $u)]);
 }
 
@@ -418,7 +489,7 @@ function admin_stats(): void {
     $addons = [];
     foreach (q("SELECT lines_json FROM orders WHERE cancelled = 0 AND created_at >= $since")->fetchAll() as $r) {
         foreach (array_slice(json_decode($r['lines_json'], true) ?: [], 1) as $l) {
-            if (!empty($l['adj'])) continue;   // admin price adjustments are not add-ons
+            if (!empty($l['adj']) || !empty($l['ref'])) continue;   // price adjustments and referral discounts are not add-ons
             $k = preg_replace('/ × .*$/u', '', $l['label']);
             $addons[$k] = ($addons[$k] ?? 0) + 1;
         }
@@ -466,6 +537,8 @@ function admin_stats(): void {
         'addons' => array_map(fn($k, $n) => ['k' => $k, 'n' => $n], array_keys(array_slice($addons, 0, 10, true)), array_slice($addons, 0, 10, true)),
         'team' => team_rows(),
         'counts' => people_counts(),
+        'referral' => array_map('intval', q("SELECT COUNT(*) requests, COALESCE(SUM(amount), 0) amount FROM payouts WHERE status = 'requested'")->fetch()),
+        'email' => ['ready' => email_ready(), 'failed' => (int)q("SELECT COUNT(*) FROM email_log WHERE status = 'failed' AND created_at > UTC_TIMESTAMP() - INTERVAL 1 DAY")->fetchColumn()],
         'activity' => array_slice($activity, 0, 20),
     ]);
 }
@@ -482,6 +555,7 @@ function assign(): void {
         q('UPDATE orders SET developer_id = ? WHERE id = ?', [$dev ? $dev['id'] : null, $o['id']]);
         q('INSERT INTO order_events (order_id, stage, progress, note, created_by) VALUES (?,?,?,?,?)',
           [$o['id'], $o['stage'], $o['progress'], $dev ? "ডেভেলপার {$dev['name']} এই প্রোজেক্টে কাজ করছেন।" : 'ডেভেলপার পরিবর্তন হচ্ছে।', $u['id']]);
+        if ($dev && (int)$dev['id'] !== $u['id']) notify_assign($o, $dev);
     }
     out(['order' => order_out(order_row((int)$o['id']), $u)]);
 }
@@ -514,6 +588,8 @@ function order_adjust(): void {
     }
     if (!$notes) fail('কিছু বদলানো হয়নি।');
     q('INSERT INTO order_events (order_id, stage, progress, note, created_by) VALUES (?,?,?,?,?)', [$o['id'], $o['stage'], $o['progress'], implode("\n", $notes), $u['id']]);
+    referral_sync((int)$o['id']);
+    notify_order_update((int)$o['id'], $notes, false);
     out(['order' => order_out(order_row((int)$o['id']), $u)]);
 }
 
@@ -1015,4 +1091,374 @@ function capi_test(): void {
         'event_source_url' => site_url('index.html'), 'user_data' => ['client_ip_address' => client_ip(), 'client_user_agent' => mb_substr((string)($_SERVER['HTTP_USER_AGENT'] ?? 'Techill'), 0, 400)]]]];
     if ($m['test_code'] !== '') $body['test_event_code'] = $m['test_code'];
     out(fb_post($m, $body));
+}
+
+/* ---------- email notifications ---------- */
+
+function notify_new_order(array $o, array $u, array $info): void {
+    if (!notify_on('new_order')) return;
+    $online = $o['pay_method'] === 'PayStation';
+    $lines = json_decode($o['lines_json'], true) ?: [];
+    $rows = ['অর্ডার' => $o['code'], 'প্যাকেজ' => $o['pack'] . ' · ' . $o['stack'], 'টেমপ্লেট' => $o['template']];
+    foreach (array_slice($lines, 1) as $l) $rows[$l['label']] = ($l['amt'] < 0 ? '−' : '') . taka(abs((int)$l['amt']));
+    $rows['মোট'] = taka((int)$o['total']);
+    $rows['পেমেন্ট'] = $online ? 'অনলাইন (PayStation)' : $o['pay_method'] . ' · TrxID ' . $o['pay_trx'];
+    $next = $online ? 'অনলাইন পেমেন্ট সম্পন্ন হলেই কাজ শুরু হবে, আর তখন থেকে ডেলিভারির কাউন্টডাউন চলবে।' : 'আমাদের টিম পেমেন্ট মিলিয়ে দেখে কাজ শুরু করবে। ড্যাশবোর্ডে প্রতিটা ধাপ দেখতে পাবেন।';
+    notify_user((int)$u['id'], "অর্ডার {$o['code']} পেয়েছি, ধন্যবাদ!", mail_layout('আপনার অর্ডার পেয়েছি',
+        '<p>আসসালামু আলাইকুম ' . h($info['admin_name'] ?: $u['name']) . ', Techill-এ অর্ডার করার জন্য ধন্যবাদ।</p>' . mail_kv($rows) . '<p>' . h($next) . '</p>',
+        'ড্যাশবোর্ডে প্রোজেক্ট দেখুন', site_url('dashboard.html#o=' . $o['id'])), 'new_order', (int)$o['id'], true);
+    $adm = ['কাস্টমার' => $info['admin_name'] ?: $u['name'], 'ইমেইল' => $u['email'], 'ফোন' => $info['phone'], 'প্যাকেজ' => $o['pack'] . ' · ' . $o['stack'], 'মোট' => taka((int)$o['total']), 'পেমেন্ট' => $rows['পেমেন্ট']];
+    $html = mail_layout("নতুন অর্ডার {$o['code']}", '<p>সাইটে নতুন একটা অর্ডার এসেছে।</p>' . mail_kv($adm) . ($online ? '' : '<p>বিকাশ/নগদে টাকা এসেছে কিনা মিলিয়ে অ্যাডমিন প্যানেল থেকে পেমেন্ট যাচাই করুন।</p>'), 'অ্যাডমিন প্যানেলে দেখুন', site_url('admin.html#orders'));
+    foreach (admin_emails() as $to) mail_queue($to, "নতুন অর্ডার {$o['code']} · " . taka((int)$o['total']), $html, 'new_order', (int)$o['id']);
+}
+
+// A chat message reaches the other side by email, at most once per 10 minutes per order and person.
+function notify_message(array $o, array $sender, string $body): void {
+    if (!notify_on('message')) return;
+    $preview = mb_strlen($body) > 400 ? mb_substr($body, 0, 400) . '…' : $body;
+    $html = fn(string $link) => mail_layout("অর্ডার {$o['code']}-এ নতুন মেসেজ", '<p><b>' . h($sender['name']) . '</b> লিখেছেন:</p><p style="background:#f7f9fc;border-radius:10px;padding:12px 16px;white-space:pre-wrap">' . h($preview) . '</p>', 'উত্তর দিন', $link);
+    $subject = "{$o['code']}: {$sender['name']}-এর নতুন মেসেজ";
+    if (is_staff($sender)) {
+        $c = q('SELECT id, email, email_notify FROM users WHERE id = ? AND active = 1', [$o['user_id']])->fetch();
+        if ($c && $c['email_notify'] && !mail_recent('message', (int)$o['id'], $c['email'], 10)) mail_queue($c['email'], $subject, $html(site_url('dashboard.html#o=' . $o['id'])), 'message', (int)$o['id']);
+        return;
+    }
+    $to = [];
+    if ($o['developer_id']) { $d = q('SELECT email, email_notify FROM users WHERE id = ? AND active = 1', [$o['developer_id']])->fetch(); if ($d && $d['email_notify']) $to[] = $d['email']; }
+    if (!$to) $to = admin_emails();
+    foreach ($to as $e) if (!mail_recent('message', (int)$o['id'], $e, 10)) mail_queue($e, $subject, $html(site_url('dashboard.html#o=' . $o['id'])), 'message', (int)$o['id']);
+}
+
+function notify_assign(array $o, array $dev): void {
+    if (!notify_on('assign')) return;
+    $info = json_decode($o['info_json'], true) ?: [];
+    notify_user((int)$dev['id'], "নতুন প্রোজেক্ট: {$o['code']}", mail_layout("আপনাকে {$o['code']} প্রোজেক্ট দেওয়া হয়েছে", mail_kv([
+        'প্যাকেজ' => $o['pack'] . ' · ' . $o['stack'], 'টেমপ্লেট' => $o['template'], 'কাস্টমার' => $info['admin_name'] ?? '',
+        'ডেডলাইন' => date('j M, g:i A', strtotime($o['deadline_at'] . ' UTC') + 6 * 3600) . ' (বাংলাদেশ সময়)']), 'প্রোজেক্ট খুলুন', site_url('dashboard.html#o=' . $o['id'])), 'assign', (int)$o['id']);
+}
+
+/* ---------- account: email codes, profile, password ---------- */
+
+function otp_send(): void {
+    $purpose = str_in('purpose', 10);
+    if (!in_array($purpose, OTP_PURPOSES, true)) fail('Unknown purpose');
+    if (!email_ready()) fail('ইমেইল সার্ভিস এখন বন্ধ আছে।', 409);
+    $u = current_user();
+    if (in_array($purpose, ['verify', 'change'], true) && !$u) fail('আগে লগইন করুন।', 401);
+    if ($purpose === 'verify') {
+        if ($u['email_verified']) fail('আপনার ইমেইল আগেই যাচাই হয়েছে।', 409);
+        $email = $u['email'];
+    } else {
+        $email = mb_strtolower(str_in('email', 190));
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) fail('সঠিক ইমেইল দিন।');
+        $acct = q('SELECT id, active FROM users WHERE email = ?', [$email])->fetch();
+        if ($purpose === 'register' && $acct) fail('এই ইমেইলে আগেই অ্যাকাউন্ট আছে। সেই পাসওয়ার্ড দিন বা লগইন করুন।', 409);
+        if ($purpose === 'change' && $acct) fail('এই ইমেইলে অন্য একটা অ্যাকাউন্ট আছে।', 409);
+        if ($purpose === 'reset' && (!$acct || !$acct['active'])) out(['sent' => true, 'email' => $email]);   // same answer either way
+    }
+    otp_issue($email, $purpose);
+    out(['sent' => true, 'email' => $email]);
+}
+
+function password_reset(): void {
+    throttle();
+    $email = mb_strtolower(str_in('email', 190));
+    $pass = (string)($_POST['password'] ?? '');
+    if (mb_strlen($pass) < 8) fail('নতুন পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের দিন।');
+    $row = q('SELECT id FROM users WHERE email = ? AND active = 1', [$email])->fetch();
+    if (!$row) { note_attempt(); fail('কোড মেলেনি, আবার দেখে লিখুন।', 422); }
+    otp_check($email, 'reset', str_in('otp', 10));
+    q('UPDATE users SET password_hash = ?, email_verified_at = COALESCE(email_verified_at, UTC_TIMESTAMP()) WHERE id = ?', [password_hash($pass, PASSWORD_DEFAULT), $row['id']]);
+    q('DELETE FROM login_attempts WHERE ip = ?', [client_ip()]);
+    login_as((int)$row['id']);
+    out(['user' => current_user(true), 'csrf' => $_SESSION['csrf']]);
+}
+
+function email_verify(): void {
+    $u = require_user();
+    otp_check($u['email'], 'verify', str_in('otp', 10));
+    q('UPDATE users SET email_verified_at = UTC_TIMESTAMP() WHERE id = ?', [$u['id']]);
+    out(['user' => current_user(true)]);
+}
+
+function profile_update(): void {
+    $u = require_user();
+    $name = str_in('name', 120); $phone = str_in('phone', 20);
+    if ($name === '') fail('নাম দিন।');
+    if ($phone !== '' && !valid_phone($phone)) fail('সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন।');
+    q('UPDATE users SET name = ?, phone = ?, email_notify = ? WHERE id = ?', [$name, $phone ?: null, empty($_POST['email_notify']) ? 0 : 1, $u['id']]);
+    out(['user' => current_user(true)]);
+}
+
+function email_change(): void {
+    $u = require_user();
+    $email = mb_strtolower(str_in('email', 190));
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) fail('সঠিক ইমেইল দিন।');
+    if ($email === $u['email']) fail('এটাই আপনার বর্তমান ইমেইল।');
+    if (q('SELECT 1 FROM users WHERE email = ?', [$email])->fetch()) fail('এই ইমেইলে অন্য একটা অ্যাকাউন্ট আছে।', 409);
+    if (email_ready()) otp_check($email, 'change', str_in('otp', 10));
+    elseif (!is_admin($u)) fail('ইমেইল বদলাতে যাচাই কোড লাগে, কিন্তু ইমেইল সার্ভিস এখন বন্ধ। অ্যাডমিনকে বলুন।', 409);
+    q('UPDATE users SET email = ?, email_verified_at = ' . (email_ready() ? 'UTC_TIMESTAMP()' : 'NULL') . ' WHERE id = ?', [$email, $u['id']]);
+    out(['user' => current_user(true)]);
+}
+
+function password_change(): void {
+    $u = require_user();
+    $row = q('SELECT password_hash FROM users WHERE id = ?', [$u['id']])->fetch();
+    if (!password_verify((string)($_POST['current'] ?? ''), $row['password_hash'])) { note_attempt(); throttle(); fail('বর্তমান পাসওয়ার্ড মেলেনি।', 422); }
+    $pass = (string)($_POST['password'] ?? '');
+    if (mb_strlen($pass) < 8) fail('নতুন পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের দিন।');
+    q('UPDATE users SET password_hash = ? WHERE id = ?', [password_hash($pass, PASSWORD_DEFAULT), $u['id']]);
+    login_as($u['id']);
+    out(['csrf' => $_SESSION['csrf']]);
+}
+
+/* ---------- admin: email setup ---------- */
+
+function email_settings_out(): array {
+    $e = email_settings();
+    $log = array_map(fn($r) => ['to' => $r['to_email'], 'subject' => $r['subject'], 'kind' => $r['kind'], 'status' => $r['status'], 'error' => $r['error'], 'created' => strtotime($r['created_at'] . ' UTC')],
+        q('SELECT * FROM email_log ORDER BY id DESC LIMIT 40')->fetchAll());
+    $st = q("SELECT COALESCE(SUM(status = 'sent'), 0) sent, COALESCE(SUM(status = 'failed'), 0) failed, COUNT(*) n FROM email_log WHERE created_at > UTC_TIMESTAMP() - INTERVAL 30 DAY")->fetch();
+    unset($e['password']);
+    return $e + ['password_set' => email_settings()['password'] !== '', 'ready' => email_ready(), 'log' => $log, 'stats' => array_map('intval', $st),
+        'host_hint' => preg_replace('/^www\./', '', preg_replace('/[^a-z0-9.\-]/i', '', (string)($_SERVER['HTTP_HOST'] ?? ''))),
+        'admin_fallback' => array_column(q("SELECT email FROM users WHERE role = 'admin' AND active = 1")->fetchAll(), 'email'),
+        'openssl' => extension_loaded('openssl'), 'mail_fn' => function_exists('mail')];
+}
+function email_settings_get(): void { require_admin(); out(['settings' => email_settings_out()]); }
+
+function email_save(): void {
+    require_admin();
+    $e = email_settings();
+    $e['enabled'] = !empty($_POST['enabled']);
+    $e['transport'] = str_in('transport', 10) === 'mail' ? 'mail' : 'smtp';
+    $e['host'] = strtolower(str_in('host', 190));
+    if ($e['host'] !== '' && !preg_match('/^[a-z0-9]([a-z0-9.\-]*[a-z0-9])?$/', $e['host'])) fail('SMTP হোস্ট সঠিক নয় (যেমন mail.yourdomain.com)।');
+    $e['port'] = (int)($_POST['port'] ?? 465);
+    if ($e['port'] < 1 || $e['port'] > 65535) fail('পোর্ট সঠিক নয় (সাধারণত 465 বা 587)।');
+    $e['secure'] = in_array($_POST['secure'] ?? '', ['ssl', 'tls', 'none'], true) ? $_POST['secure'] : 'ssl';
+    $e['username'] = str_in('username', 190);
+    if (isset($_POST['password']) && (string)$_POST['password'] !== '') $e['password'] = mb_substr((string)$_POST['password'], 0, 300);
+    if (!empty($_POST['clear_password'])) $e['password'] = '';
+    $e['from_email'] = mb_strtolower(str_in('from_email', 190));
+    $e['from_name'] = preg_replace('/[\r\n"<>]/', '', str_in('from_name', 80)) ?: 'Techill';
+    $e['reply_to'] = mb_strtolower(str_in('reply_to', 190));
+    if ($e['from_email'] !== '' && !filter_var($e['from_email'], FILTER_VALIDATE_EMAIL)) fail('প্রেরকের ইমেইল (From) সঠিক নয়।');
+    if ($e['reply_to'] !== '' && !filter_var($e['reply_to'], FILTER_VALIDATE_EMAIL)) fail('Reply-To ইমেইল সঠিক নয়।');
+    $list = array_filter(array_map('trim', preg_split('/[,;\s]+/', str_in('admin_emails', 1000))));
+    foreach ($list as $x) if (!filter_var($x, FILTER_VALIDATE_EMAIL)) fail("এই ইমেইলটা সঠিক নয়: $x");
+    $e['admin_emails'] = implode(', ', array_unique(array_map('mb_strtolower', $list)));
+    $e['otp_required'] = !empty($_POST['otp_required']);
+    foreach (array_keys(EMAIL_DEFAULTS['notify']) as $k) $e['notify'][$k] = !empty($_POST["n_$k"]);
+    if ($e['enabled']) {
+        if ($e['from_email'] === '') fail('ইমেইল চালু করতে প্রেরকের ইমেইল (From) দিন।');
+        if ($e['transport'] === 'smtp' && $e['host'] === '') fail('SMTP হোস্ট দিন, অথবা "PHP mail()" বাছুন।');
+        if ($e['transport'] === 'smtp' && $e['username'] !== '' && $e['password'] === '') fail('SMTP পাসওয়ার্ড দিন।');
+    }
+    settings_store('email', $e);
+    email_settings(true);
+    out(['settings' => email_settings_out()]);
+}
+
+// Sends a test message with the saved settings, right now, and reports the server's answer.
+function email_test(): void {
+    $u = require_admin();
+    $to = mb_strtolower(str_in('to', 190)) ?: $u['email'];
+    if (!filter_var($to, FILTER_VALIDATE_EMAIL)) fail('যে ঠিকানায় পাঠাবেন সেটা সঠিক নয়।');
+    $e = email_settings();
+    if (!filter_var($e['from_email'], FILTER_VALIDATE_EMAIL) || ($e['transport'] === 'smtp' && $e['host'] === '')) fail('আগে SMTP তথ্য আর প্রেরকের ইমেইল দিয়ে সেভ করুন।');
+    $t0 = microtime(true);
+    [$ok, $err] = mail_send_now($to, 'Techill টেস্ট ইমেইল', mail_layout('ইমেইল সেটআপ কাজ করছে', '<p>এই ইমেইল পেয়ে থাকলে Techill থেকে OTP আর নোটিফিকেশন ঠিকমতো যাবে।</p>' . mail_kv(['সার্ভার' => $e['transport'] === 'mail' ? 'PHP mail()' : $e['host'] . ':' . $e['port'] . ' (' . strtoupper($e['secure']) . ')', 'প্রেরক' => $e['from_email']])), $e);
+    q("INSERT INTO email_log (to_email, subject, kind, status, error, sent_at) VALUES (?, 'Techill টেস্ট ইমেইল', 'test', ?, ?, IF(?, UTC_TIMESTAMP(), NULL))", [$to, $ok ? 'sent' : 'failed', $ok ? null : $err, $ok ? 1 : 0]);
+    out(['sent' => $ok, 'message' => $ok ? "$to-এ টেস্ট ইমেইল পাঠানো হয়েছে (" . bn_digits(number_format(microtime(true) - $t0, 1)) . ' সেকেন্ড)। Inbox আর Spam দুটোই দেখুন।' : $err, 'settings' => email_settings_out()]);
+}
+
+/* ---------- floating support button ---------- */
+
+function public_support(): ?array {
+    $s = support_settings();
+    if (!$s['enabled']) return null;
+    $wa = $s['whatsapp'] ?: preg_replace('/\D/', '', (string)(catalog()['whatsapp'] ?? ''));
+    $out = ['greeting' => $s['greeting'], 'on_dashboard' => (bool)$s['on_dashboard'],
+        'messenger' => $s['messenger'] !== '' ? 'https://m.me/' . rawurlencode($s['messenger']) : null,
+        'whatsapp' => $wa !== '' ? $wa : null, 'wa_text' => $s['wa_text'],
+        'tawk' => $s['tawk_property'] !== '' ? ['property' => $s['tawk_property'], 'widget' => $s['tawk_widget'] ?: 'default'] : null];
+    return $out['messenger'] || $out['whatsapp'] || $out['tawk'] ? $out : null;
+}
+
+function support_out(): array {
+    $clicks = [];
+    foreach (q("SELECT name, COUNT(DISTINCT vid) n FROM track_events WHERE name IN ('support_open','support_messenger','support_whatsapp','support_tawk') AND created_at > UTC_TIMESTAMP() - INTERVAL 30 DAY GROUP BY name")->fetchAll() as $r) $clicks[$r['name']] = (int)$r['n'];
+    return support_settings() + ['catalog_whatsapp' => preg_replace('/\D/', '', (string)(catalog()['whatsapp'] ?? '')), 'clicks' => (object)$clicks, 'public' => public_support()];
+}
+function support_get(): void { require_admin(); out(['settings' => support_out()]); }
+
+function support_save(): void {
+    require_admin();
+    $s = support_settings();
+    $s['enabled'] = !empty($_POST['enabled']);
+    $s['on_dashboard'] = !empty($_POST['on_dashboard']);
+    $s['greeting'] = str_in('greeting', 80);
+    // Messenger: a page username or ID, from "techillbd", "m.me/techillbd" or a facebook.com page link.
+    $m = trim(str_in('messenger', 255));
+    if ($m !== '') {
+        if (preg_match('#profile\.php\?id=(\d{5,20})#', $m, $x)) $m = $x[1];
+        elseif (preg_match('#(?:m\.me|messenger\.com/t|facebook\.com|fb\.com)/([A-Za-z0-9.\-_]{3,80})#i', $m, $x)) $m = $x[1];
+        $m = trim($m, '/@ ');
+        if (!preg_match('/^[A-Za-z0-9.\-_]{3,80}$/', $m) || in_array(strtolower($m), ['pages', 'groups', 'people', 'profile.php'], true)) fail('Messenger-এর জন্য ফেসবুক পেজের username বা লিংক দিন (যেমন techillbd বা m.me/techillbd)।');
+    }
+    $s['messenger'] = $m;
+    $wa = digits_only(str_in('whatsapp', 30));
+    if ($wa !== '') {
+        if (preg_match('/^01[3-9]\d{8}$/', $wa)) $wa = '88' . $wa;
+        if (!preg_match('/^\d{8,15}$/', $wa)) fail('হোয়াটসঅ্যাপ নম্বর সঠিক নয় (যেমন 01712345678 বা 8801712345678)।');
+    }
+    $s['whatsapp'] = $wa;
+    $s['wa_text'] = str_in('wa_text', 300);
+    // tawk.to: accept the property ID, the "Direct Chat Link" or the whole embed script.
+    $t = str_in('tawk', 3000);
+    if ($t === '') { $s['tawk_property'] = ''; $s['tawk_widget'] = ''; }
+    elseif (preg_match('#(?:embed\.tawk\.to|tawk\.to/chat)/([a-f0-9]{24})(?:/([A-Za-z0-9]{3,30}))?#i', $t, $x)) { $s['tawk_property'] = strtolower($x[1]); $s['tawk_widget'] = $x[2] ?? 'default'; }
+    elseif (preg_match('/^([a-f0-9]{24})(?:\/([A-Za-z0-9]{3,30}))?$/i', trim($t), $x)) { $s['tawk_property'] = strtolower($x[1]); $s['tawk_widget'] = $x[2] ?? 'default'; }
+    else fail('tawk.to-এর Direct Chat Link বা পুরো widget কোডটা পেস্ট করুন (tawk.to → Administration → Chat Widget)।');
+    settings_store('support', $s);
+    support_settings(true);
+    out(['settings' => support_out()]);
+}
+
+/* ---------- referrals: customer side ---------- */
+
+function public_referral(): ?array {
+    $s = referral_settings();
+    return $s['enabled'] ? ['reward' => (int)$s['reward'], 'discount' => (int)$s['discount'], 'min_order' => (int)$s['min_order']] : null;
+}
+
+function mask_name(?string $n): string {
+    $p = preg_split('/\s+/u', trim((string)$n)) ?: [''];
+    return $p[0] . (isset($p[1]) ? ' ' . mb_substr($p[1], 0, 1) . '.' : '');
+}
+
+// Public: is this code usable? Gives the referrer's first name so the visitor knows who invited them.
+function ref_check(): void {
+    $code = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', (string)($_GET['code'] ?? '')));
+    $s = referral_settings();
+    if (!$s['enabled']) out(['valid' => false, 'message' => 'রেফারেল অফার এখন বন্ধ আছে।']);
+    $r = referrer_by_code($code);
+    if (!$r) out(['valid' => false, 'message' => 'রেফারেল কোডটা সঠিক নয়।']);
+    $u = current_user();
+    if ($u && (int)$u['id'] === (int)$r['id']) out(['valid' => false, 'message' => 'নিজের রেফারেল কোড নিজে ব্যবহার করা যায় না।']);
+    if ($u && $s['first_order_only'] && q('SELECT 1 FROM orders WHERE user_id = ? AND cancelled = 0 LIMIT 1', [$u['id']])->fetch()) out(['valid' => false, 'message' => 'রেফারেল ছাড় শুধু প্রথম অর্ডারে পাওয়া যায়।']);
+    out(['valid' => true, 'code' => $code, 'name' => preg_split('/\s+/u', trim($r['name']))[0], 'discount' => (int)$s['discount'], 'min_order' => (int)$s['min_order']]);
+}
+
+function referral_me_out(array $u): array {
+    $s = referral_settings();
+    $code = ref_code_for($u['id']);
+    $sum = referral_summary($u['id']);
+    $open = (bool)q("SELECT 1 FROM payouts WHERE user_id = ? AND status = 'requested'", [$u['id']])->fetch();
+    $why = !$s['enabled'] && !$sum['n'] ? 'রেফারেল অফার এখন বন্ধ আছে।'
+        : ($open ? 'আগের অনুরোধটা এখনো প্রক্রিয়াধীন।'
+        : ($sum['balance'] < max(1, (int)$s['payout_min']) ? 'কমপক্ষে ' . taka(max(1, (int)$s['payout_min'])) . ' জমা হলে তুলতে পারবেন।'
+        : (email_ready() && !$u['email_verified'] ? 'টাকা তুলতে আগে প্রোফাইল থেকে ইমেইল যাচাই করুন।' : '')));
+    return [
+        'settings' => ['enabled' => (bool)$s['enabled'], 'reward' => (int)$s['reward'], 'discount' => (int)$s['discount'], 'min_order' => (int)$s['min_order'], 'trigger' => $s['trigger'], 'payout_min' => (int)$s['payout_min'], 'first_order_only' => (bool)$s['first_order_only']],
+        'code' => $code, 'link' => site_url('index.html?ref=' . $code), 'summary' => $sum,
+        'can_withdraw' => $why === '', 'withdraw_note' => $why,
+        'referrals' => array_map(fn($r) => ['name' => mask_name($r['name']), 'status' => $r['status'], 'reward' => (int)$r['reward'], 'created' => strtotime($r['created_at'] . ' UTC'), 'earned' => $r['earned_at'] ? strtotime($r['earned_at'] . ' UTC') : null, 'stage' => (int)$r['stage']],
+            q('SELECT r.*, u.name, o.stage FROM referrals r JOIN users u ON u.id = r.referee_id JOIN orders o ON o.id = r.order_id WHERE r.referrer_id = ? ORDER BY r.id DESC LIMIT 200', [$u['id']])->fetchAll()),
+        'payouts' => array_map(fn($p) => ['id' => (int)$p['id'], 'amount' => (int)$p['amount'], 'method' => $p['method'], 'account' => $p['account'], 'status' => $p['status'], 'trx' => $p['trx'], 'note' => $p['note'], 'created' => strtotime($p['created_at'] . ' UTC')],
+            q('SELECT * FROM payouts WHERE user_id = ? ORDER BY id DESC LIMIT 50', [$u['id']])->fetchAll()),
+    ];
+}
+
+function referral_me(): void {
+    $u = require_user();
+    if ($u['role'] !== 'customer') fail('রেফারেল শুধু কাস্টমারদের জন্য।', 403);
+    out(referral_me_out($u));
+}
+
+function payout_request(): void {
+    $u = require_user();
+    if ($u['role'] !== 'customer') fail('রেফারেল শুধু কাস্টমারদের জন্য।', 403);
+    $method = str_in('method', 20);
+    if (!in_array($method, ['bKash', 'Nagad', 'Rocket'], true)) fail('কোন মাধ্যমে টাকা নেবেন বাছুন।');
+    $acct = digits_only(str_in('account', 20));
+    if (!valid_phone($acct)) fail('সঠিক ১১ ডিজিটের নম্বর দিন।');
+    db()->beginTransaction();
+    q('SELECT id FROM users WHERE id = ? FOR UPDATE', [$u['id']]);   // one request at a time per customer
+    $me = referral_me_out($u);
+    if (!$me['can_withdraw']) { db()->rollBack(); fail($me['withdraw_note'] ?: 'এখন টাকা তোলা যাবে না।', 409); }
+    $amount = (int)($_POST['amount'] ?? 0) ?: $me['summary']['balance'];
+    if ($amount < max(1, $me['settings']['payout_min']) || $amount > $me['summary']['balance']) { db()->rollBack(); fail('টাকার পরিমাণ ' . taka(max(1, $me['settings']['payout_min'])) . ' থেকে ' . taka($me['summary']['balance']) . '-এর মধ্যে দিন।'); }
+    q('INSERT INTO payouts (user_id, amount, method, account) VALUES (?,?,?,?)', [$u['id'], $amount, $method, $acct]);
+    db()->commit();
+    if (notify_on('referral')) {
+        $html = mail_layout('রেফারেলের টাকা তোলার অনুরোধ', mail_kv(['কাস্টমার' => $u['name'] . ' · ' . $u['email'], 'টাকা' => taka($amount), 'মাধ্যম' => "$method · $acct"]) . '<p>পাঠানোর পর অ্যাডমিন প্যানেল → রেফারেল থেকে "পরিশোধ করেছি" চাপুন।</p>', 'অ্যাডমিন প্যানেল', site_url('admin.html#referral'));
+        foreach (admin_emails() as $to) mail_queue($to, 'রেফারেল পেমেন্টের অনুরোধ: ' . taka($amount), $html, 'payout');
+    }
+    out(referral_me_out($u));
+}
+
+/* ---------- referrals: admin ---------- */
+
+function referral_admin_out(): array {
+    $t = q("SELECT COUNT(*) n, COALESCE(SUM(status = 'earned'), 0) earned_n, COALESCE(SUM(status = 'pending'), 0) pending_n, COALESCE(SUM(CASE WHEN status = 'earned' THEN reward ELSE 0 END), 0) earned,
+              COALESCE(SUM(CASE WHEN status IN ('pending','earned') THEN discount ELSE 0 END), 0) discounts FROM referrals")->fetch();
+    $p = q("SELECT COALESCE(SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END), 0) paid, COALESCE(SUM(CASE WHEN status = 'requested' THEN amount ELSE 0 END), 0) requested,
+              COALESCE(SUM(status = 'requested'), 0) requests FROM payouts")->fetch();
+    $rev = (int)q("SELECT COALESCE(SUM(o.total), 0) FROM referrals r JOIN orders o ON o.id = r.order_id WHERE r.status = 'earned'")->fetchColumn();
+    return [
+        'settings' => referral_settings(),
+        'totals' => array_map('intval', $t + $p) + ['revenue' => $rev],
+        'top' => array_map(fn($r) => ['id' => (int)$r['id'], 'name' => $r['name'], 'email' => $r['email'], 'code' => $r['ref_code'], 'n' => (int)$r['n'], 'earned' => (int)$r['earned']],
+            q("SELECT u.id, u.name, u.email, u.ref_code, COUNT(*) n, SUM(CASE WHEN r.status = 'earned' THEN r.reward ELSE 0 END) earned FROM referrals r JOIN users u ON u.id = r.referrer_id GROUP BY u.id ORDER BY earned DESC, n DESC LIMIT 10")->fetchAll()),
+        'referrals' => array_map(fn($r) => ['id' => (int)$r['id'], 'order_id' => (int)$r['order_id'], 'order' => $r['ocode'], 'total' => (int)$r['total'], 'code' => $r['code'], 'status' => $r['status'], 'reward' => (int)$r['reward'], 'discount' => (int)$r['discount'],
+                'referrer' => $r['rname'], 'referee' => $r['ename'], 'created' => strtotime($r['created_at'] . ' UTC'), 'note' => $r['note']],
+            q('SELECT r.*, o.code ocode, o.total, a.name rname, b.name ename FROM referrals r JOIN orders o ON o.id = r.order_id JOIN users a ON a.id = r.referrer_id JOIN users b ON b.id = r.referee_id ORDER BY r.id DESC LIMIT 200')->fetchAll()),
+        'payouts' => array_map(fn($p) => ['id' => (int)$p['id'], 'user' => $p['name'], 'email' => $p['email'], 'amount' => (int)$p['amount'], 'method' => $p['method'], 'account' => $p['account'], 'status' => $p['status'], 'trx' => $p['trx'], 'note' => $p['note'],
+                'created' => strtotime($p['created_at'] . ' UTC'), 'processed' => $p['processed_at'] ? strtotime($p['processed_at'] . ' UTC') : null, 'balance' => referral_summary((int)$p['user_id'])['balance'] + ($p['status'] === 'requested' ? (int)$p['amount'] : 0)],
+            q("SELECT p.*, u.name, u.email FROM payouts p JOIN users u ON u.id = p.user_id ORDER BY p.status = 'requested' DESC, p.id DESC LIMIT 200")->fetchAll()),
+    ];
+}
+function referral_admin(): void { require_admin(); out(referral_admin_out()); }
+
+function referral_save(): void {
+    require_admin();
+    $n = function (string $k, int $max) { $v = $_POST[$k] ?? ''; if (!is_numeric($v) || (int)$v < 0 || (int)$v > $max) fail('টাকার পরিমাণ সঠিক নয়।'); return (int)$v; };
+    $s = ['enabled' => !empty($_POST['enabled']), 'reward' => $n('reward', 1000000), 'discount' => $n('discount', 1000000), 'min_order' => $n('min_order', 10000000),
+          'trigger' => ($_POST['trigger'] ?? '') === 'paid' ? 'paid' : 'delivered', 'payout_min' => $n('payout_min', 1000000), 'first_order_only' => !empty($_POST['first_order_only'])];
+    if ($s['enabled'] && !$s['reward'] && !$s['discount']) fail('আয় বা ছাড়, অন্তত একটা শূন্যের বেশি দিন।');
+    settings_store('referral', $s);
+    referral_settings(true);
+    out(referral_admin_out());
+}
+
+// Admin overrides one referral: reject it (no reward), or restore it to follow its order again.
+function referral_op(): void {
+    require_admin();
+    $r = q('SELECT * FROM referrals WHERE id = ?', [(int)($_POST['id'] ?? 0)])->fetch() ?: fail('রেফারেল পাওয়া যায়নি।', 404);
+    $op = str_in('op', 10);
+    if ($op === 'reject') q("UPDATE referrals SET status = 'rejected', note = ? WHERE id = ?", [str_in('note', 255) ?: null, $r['id']]);
+    elseif ($op === 'restore') { q("UPDATE referrals SET status = 'pending', note = NULL WHERE id = ?", [$r['id']]); referral_sync((int)$r['order_id']); }
+    else fail('Unknown op');
+    out(referral_admin_out());
+}
+
+function payout_op(): void {
+    $admin = require_admin();
+    $p = q("SELECT * FROM payouts WHERE id = ? AND status = 'requested'", [(int)($_POST['id'] ?? 0)])->fetch() ?: fail('এই অনুরোধটা আর অপেক্ষায় নেই।', 404);
+    $op = str_in('op', 10);
+    if (!in_array($op, ['paid', 'rejected'], true)) fail('Unknown op');
+    $trx = str_in('trx', 40); $note = str_in('note', 255);
+    if ($op === 'paid' && !preg_match('/^[A-Za-z0-9]{6,20}$/', $trx)) fail('যে TrxID দিয়ে টাকা পাঠিয়েছেন সেটা দিন।');
+    if ($op === 'rejected' && $note === '') fail('কেন বাতিল করছেন, কাস্টমারকে জানাতে একটা কারণ লিখুন।');
+    q('UPDATE payouts SET status = ?, trx = ?, note = ?, processed_at = UTC_TIMESTAMP(), processed_by = ? WHERE id = ?', [$op, $op === 'paid' ? $trx : null, $note ?: null, $admin['id'], $p['id']]);
+    if (notify_on('referral')) {
+        $t = $op === 'paid' ? 'রেফারেলের ' . taka((int)$p['amount']) . ' পাঠানো হয়েছে' : 'রেফারেলের টাকা তোলার অনুরোধ বাতিল হয়েছে';
+        notify_user((int)$p['user_id'], $t, mail_layout($t, $op === 'paid'
+            ? mail_kv(['টাকা' => taka((int)$p['amount']), 'মাধ্যম' => $p['method'] . ' · ' . $p['account'], 'TrxID' => $trx]) . '<p>আপনার রেফারেলের জন্য ধন্যবাদ! আরও বন্ধুকে লিংক পাঠিয়ে আয় চালিয়ে যান।</p>'
+            : '<p>' . h($note) . '</p><p>টাকাটা আপনার ব্যালেন্সে ফিরে গেছে। প্রশ্ন থাকলে আমাদের জানান।</p>', 'ড্যাশবোর্ডে দেখুন', site_url('dashboard.html#referral')), 'payout', null, true);
+    }
+    out(referral_admin_out());
 }

@@ -57,12 +57,17 @@ function check_csrf(): void {
     if (!is_string($sent) || !hash_equals($_SESSION['csrf'] ?? '', $sent)) fail('সেশন মেয়াদোত্তীর্ণ, পেজ রিফ্রেশ করুন।', 419);
 }
 
-function current_user(): ?array {
+function current_user(bool $reload = false): ?array {
     if (empty($_SESSION['uid'])) return null;
     static $u = false;
-    if ($u === false) {
-        $u = q('SELECT id, name, email, phone, role, avatar FROM users WHERE id = ? AND active = 1', [$_SESSION['uid']])->fetch() ?: null;
-        if ($u) $u['id'] = (int)$u['id'];
+    if ($u === false || $reload) {
+        $u = q('SELECT id, name, email, phone, role, avatar, email_verified_at, email_notify FROM users WHERE id = ? AND active = 1', [$_SESSION['uid']])->fetch() ?: null;
+        if ($u) {
+            $u['id'] = (int)$u['id'];
+            $u['email_verified'] = $u['email_verified_at'] !== null;
+            $u['email_notify'] = (bool)$u['email_notify'];
+            unset($u['email_verified_at']);
+        }
     }
     return $u;
 }
@@ -352,7 +357,10 @@ function paystation_verify(array $pay, string $trxHint = '', array $fbCtx = []):
             q('INSERT INTO messages (order_id, from_admin, body) VALUES (?,1,?)', [$o['id'], $txt . "। ধন্যবাদ! আমরা কাজ শুরু করছি" . ($restart ? ', ডেলিভারির কাউন্টডাউন এখন থেকে শুরু।' : '।')]);
         }
         db()->commit();
-        if ($won) fb_capi('Purchase', q('SELECT * FROM orders WHERE id = ?', [$pay['order_id']])->fetch(), $fbCtx);
+        if ($won) {
+            fb_capi('Purchase', q('SELECT * FROM orders WHERE id = ?', [$pay['order_id']])->fetch(), $fbCtx);
+            after_order_paid((int)$pay['order_id']);
+        }
         return 'success';
     }
     q("UPDATE payments SET status = ?, trx_id = COALESCE(?, trx_id), method = COALESCE(?, method), payer = COALESCE(?, payer) WHERE id = ? AND status <> 'success'",
@@ -461,4 +469,355 @@ function fb_context(): array {
     return ['ip' => client_ip(), 'ua' => mb_substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 400),
             'fbp' => preg_match('/^fb\.\d\.\d+\.\d+$/', $_COOKIE['_fbp'] ?? '') ? $_COOKIE['_fbp'] : null,
             'fbc' => preg_match('/^fb\.\d\.\d+\..+$/', $_COOKIE['_fbc'] ?? '') ? mb_substr($_COOKIE['_fbc'], 0, 300) : null];
+}
+
+/* ---------- settings stored as JSON in the settings table ---------- */
+
+function settings_load(string $k, array $defaults, bool $reload = false): array {
+    static $cache = [];
+    if ($reload || !isset($cache[$k])) {
+        $row = q('SELECT v FROM settings WHERE k = ?', [$k])->fetch();
+        $cache[$k] = array_replace_recursive($defaults, $row ? (json_decode($row['v'], true) ?: []) : []);
+    }
+    return $cache[$k];
+}
+
+function settings_store(string $k, array $v): void {
+    q('INSERT INTO settings (k, v) VALUES (?, ?) ON DUPLICATE KEY UPDATE v = VALUES(v)', [$k, json_encode($v, JSON_UNESCAPED_UNICODE)]);
+}
+
+function h($s): string { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
+function taka(int $n): string { return '৳' . bn_digits(number_format($n)); }
+
+/* ---------- email (SMTP or PHP mail()) ---------- */
+
+const EMAIL_DEFAULTS = [
+    'enabled' => false, 'transport' => 'smtp', 'host' => '', 'port' => 465, 'secure' => 'ssl',
+    'username' => '', 'password' => '', 'from_email' => '', 'from_name' => 'Techill', 'reply_to' => '',
+    'admin_emails' => '', 'otp_required' => false,
+    'notify' => ['new_order' => true, 'status' => true, 'message' => true, 'assign' => true, 'referral' => true],
+];
+
+// The SMTP password lives here and is never sent to a browser.
+function email_settings(bool $reload = false): array { return settings_load('email', EMAIL_DEFAULTS, $reload); }
+
+function email_ready(): bool {
+    $e = email_settings();
+    return $e['enabled'] && filter_var($e['from_email'], FILTER_VALIDATE_EMAIL) && ($e['transport'] === 'mail' || $e['host'] !== '');
+}
+
+// Sends one message right away. Returns [ok, error message].
+function mail_send_now(string $to, string $subject, string $html, ?array $e = null): array {
+    $e = $e ?? email_settings();
+    if (!filter_var($to, FILTER_VALIDATE_EMAIL) || preg_match('/[\r\n]/', $to)) return [false, 'প্রাপকের ইমেইল সঠিক নয়।'];
+    $from = $e['from_email'];
+    if (!filter_var($from, FILTER_VALIDATE_EMAIL)) return [false, 'প্রেরকের (From) ইমেইল সঠিক নয়।'];
+    $host = preg_replace('/[^a-z0-9.\-]/i', '', (string)($_SERVER['HTTP_HOST'] ?? '')) ?: 'localhost';
+    $boundary = 'b' . bin2hex(random_bytes(12));
+    $text = trim(html_entity_decode(strip_tags(preg_replace(['#<br\s*/?>#i', '#</(p|div|h\d|tr|li)>#i'], ["\n", "\n"], $html)), ENT_QUOTES, 'UTF-8'));
+    $text = preg_replace("/\n{3,}/", "\n\n", preg_replace('/[ \t]+/', ' ', $text));
+    $enc = fn(string $s) => mb_encode_mimeheader($s, 'UTF-8', 'B', "\r\n");
+    // ASCII names go in quotes (a ":" or "," would otherwise break the header); others as an encoded word.
+    $name = preg_replace('/[\x00-\x1F"\\\\]/', '', $e['from_name'] ?: 'Techill') ?: 'Techill';
+    $fromName = preg_match('/^[\x20-\x7E]*$/', $name) ? '"' . $name . '"' : '=?UTF-8?B?' . base64_encode($name) . '?=';
+    $headers = [
+        'Date: ' . date('r'),
+        'From: ' . $fromName . " <$from>",
+        "To: <$to>",
+        'Subject: ' . $enc($subject),
+        'Message-ID: <' . bin2hex(random_bytes(10)) . '@' . (explode('@', $from)[1] ?? $host) . '>',
+        'MIME-Version: 1.0',
+        "Content-Type: multipart/alternative; boundary=\"$boundary\"",
+    ];
+    if (filter_var($e['reply_to'], FILTER_VALIDATE_EMAIL)) $headers[] = 'Reply-To: <' . $e['reply_to'] . '>';
+    $body = "--$boundary\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n" . chunk_split(base64_encode($text))
+          . "--$boundary\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n" . chunk_split(base64_encode($html))
+          . "--$boundary--\r\n";
+    if ($e['transport'] === 'mail') {
+        // PHP mail() takes To and Subject separately.
+        $extra = array_values(array_filter($headers, fn($l) => !preg_match('/^(To|Subject):/', $l)));
+        $ok = @mail($to, $enc($subject), $body, implode("\r\n", $extra), preg_match('/^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+$/', $from) ? "-f$from" : '');
+        return $ok ? [true, ''] : [false, 'PHP mail() পাঠাতে পারেনি। SMTP ব্যবহার করুন।'];
+    }
+    return smtp_send($e, $from, $to, implode("\r\n", $headers) . "\r\n\r\n" . $body, $host);
+}
+
+// Minimal SMTP client: SSL (465) or STARTTLS (587), AUTH LOGIN/PLAIN. No external library needed.
+function smtp_send(array $e, string $from, string $to, string $message, string $helo): array {
+    $self = (bool)cfg('smtp_allow_self_signed');   // only for a mail server on "localhost" with a certificate for another name
+    $ctx = stream_context_create(['ssl' => ['verify_peer' => !$self, 'verify_peer_name' => !$self, 'allow_self_signed' => $self, 'peer_name' => $e['host'], 'SNI_enabled' => true]]);
+    $port = (int)$e['port'] ?: ($e['secure'] === 'ssl' ? 465 : 587);
+    $fp = @stream_socket_client(($e['secure'] === 'ssl' ? 'ssl://' : 'tcp://') . $e['host'] . ':' . $port, $errno, $errstr, 12, STREAM_CLIENT_CONNECT, $ctx);
+    if (!$fp) return [false, mb_substr('SMTP সার্ভারে সংযোগ হয়নি: ' . ($errstr ?: 'কারণ জানা যায়নি') . " ($errno)", 0, 250)];
+    stream_set_timeout($fp, 20);
+    $read = function () use ($fp): string {
+        $data = '';
+        while (($line = fgets($fp, 2048)) !== false) { $data .= $line; if (strlen($line) < 4 || $line[3] === ' ') break; }
+        return $data;
+    };
+    $cmd = function (?string $c, array $ok, string $hide = '') use ($fp, $read): string {
+        if ($c !== null) fwrite($fp, $c . "\r\n");
+        $r = $read();
+        if (!in_array((int)substr($r, 0, 3), $ok, true)) throw new RuntimeException(trim(($hide ?: (string)$c) . ' → ' . ($r !== '' ? trim($r) : 'উত্তর নেই')));
+        return $r;
+    };
+    try {
+        $cmd(null, [220]);
+        $ehlo = $cmd("EHLO $helo", [250]);
+        if ($e['secure'] === 'tls') {
+            $cmd('STARTTLS', [220]);
+            $method = STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT | (defined('STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT') ? STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT : 0);
+            if (!@stream_socket_enable_crypto($fp, true, $method)) throw new RuntimeException('STARTTLS চালু হয়নি (সার্টিফিকেট বা পোর্ট দেখুন)।');
+            $ehlo = $cmd("EHLO $helo", [250]);
+        }
+        if ($e['username'] !== '') {
+            if (preg_match('/^250[ -]AUTH\b[^\r\n]*\bLOGIN\b/mi', $ehlo)) {
+                $cmd('AUTH LOGIN', [334]);
+                $cmd(base64_encode($e['username']), [334], 'username');
+                $cmd(base64_encode($e['password']), [235], 'password');
+            } else {
+                $cmd('AUTH PLAIN ' . base64_encode("\0" . $e['username'] . "\0" . $e['password']), [235], 'AUTH PLAIN');
+            }
+        }
+        $cmd("MAIL FROM:<$from>", [250]);
+        $cmd("RCPT TO:<$to>", [250, 251]);
+        $cmd('DATA', [354]);
+        $cmd(preg_replace('/^\./m', '..', $message) . "\r\n.", [250], 'DATA');
+        try { $cmd('QUIT', [221]); } catch (RuntimeException $x) {}
+        fclose($fp);
+        return [true, ''];
+    } catch (RuntimeException $x) {
+        @fclose($fp);
+        $m = $x->getMessage();
+        if (preg_match('/password → 5\d\d|AUTH PLAIN → 5\d\d/', $m)) $m = 'ইউজারনেম বা পাসওয়ার্ড ভুল (' . $m . ')';
+        return [false, mb_substr($m, 0, 250)];
+    }
+}
+
+// Queues a notification. It is sent after the response has gone to the browser (PHP-FPM / LiteSpeed),
+// so a slow mail server never slows the page. Every message is logged in email_log.
+function mail_queue(string $to, string $subject, string $html, string $kind, ?int $orderId = null): void {
+    static $registered = false;
+    if (!email_ready() || !filter_var($to, FILTER_VALIDATE_EMAIL)) return;
+    try {
+        q('INSERT INTO email_log (to_email, subject, kind, order_id) VALUES (?,?,?,?)', [mb_substr($to, 0, 190), mb_substr($subject, 0, 255), $kind, $orderId]);
+        $GLOBALS['techill_mail_queue'][] = ['id' => (int)db()->lastInsertId(), 'to' => $to, 'subject' => $subject, 'html' => $html];
+        if (random_int(1, 50) === 1) q('DELETE FROM email_log WHERE created_at < UTC_TIMESTAMP() - INTERVAL 90 DAY');
+    } catch (Throwable $x) { error_log('techill mail queue: ' . $x->getMessage()); return; }
+    if (!$registered) { $registered = true; register_shutdown_function('mail_flush'); }
+}
+
+function mail_flush(): void {
+    $queue = $GLOBALS['techill_mail_queue'] ?? [];
+    $GLOBALS['techill_mail_queue'] = [];
+    if (!$queue) return;
+    if (session_status() === PHP_SESSION_ACTIVE) session_write_close();   // don't hold the user's session while sending
+    if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
+    elseif (function_exists('litespeed_finish_request')) litespeed_finish_request();
+    ignore_user_abort(true);
+    @set_time_limit(120);
+    foreach ($queue as $m) {
+        try {
+            [$ok, $err] = mail_send_now($m['to'], $m['subject'], $m['html']);
+            q("UPDATE email_log SET status = ?, error = ?, sent_at = IF(? = 'sent', UTC_TIMESTAMP(), NULL) WHERE id = ?", [$ok ? 'sent' : 'failed', $ok ? null : mb_substr($err, 0, 255), $ok ? 'sent' : 'failed', $m['id']]);
+        } catch (Throwable $x) { error_log('techill mail: ' . $x->getMessage()); }
+    }
+}
+
+// The one email layout: brand bar, title, body, optional button. $body is already-escaped HTML.
+function mail_layout(string $title, string $body, string $btnText = '', string $btnUrl = ''): string {
+    $btn = $btnText !== '' ? '<p style="margin:26px 0 6px"><a href="' . h($btnUrl) . '" style="display:inline-block;background:#0a84f0;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 24px;border-radius:10px">' . h($btnText) . '</a></p>' : '';
+    return '<!doctype html><html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>'
+        . '<body style="margin:0;background:#f2f5f9;padding:24px 12px;font-family:\'Tiro Bangla\',\'Noto Serif Bengali\',\'Noto Sans Bengali\',Georgia,serif;color:#121822">'
+        . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">'
+        . '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e1e7ef">'
+        . '<tr><td style="background:#0a84f0;padding:18px 28px;color:#ffffff;font-size:20px;font-weight:bold;letter-spacing:.3px">Techill</td></tr>'
+        . '<tr><td style="padding:28px;font-size:16px;line-height:1.75">'
+        . '<h1 style="font-size:21px;line-height:1.35;margin:0 0 14px">' . h($title) . '</h1>' . $body . $btn . '</td></tr>'
+        . '<tr><td style="padding:16px 28px;background:#f7f9fc;color:#5a6578;font-size:13px;line-height:1.6">এই ইমেইল Techill থেকে স্বয়ংক্রিয়ভাবে পাঠানো। উত্তর দিতে ড্যাশবোর্ডের চ্যাট ব্যবহার করুন।</td></tr>'
+        . '</table></td></tr></table></body></html>';
+}
+
+function mail_kv(array $rows): string {
+    $out = '<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;margin:14px 0;font-size:15px;border-collapse:collapse">';
+    foreach ($rows as $k => $v) $out .= '<tr><td style="padding:7px 0;color:#5a6578;border-bottom:1px solid #eef3f9">' . h($k) . '</td><td style="padding:7px 0;text-align:right;font-weight:bold;border-bottom:1px solid #eef3f9">' . h($v) . '</td></tr>';
+    return $out . '</table>';
+}
+
+function notify_on(string $kind): bool { return email_ready() && !empty(email_settings()['notify'][$kind]); }
+
+// Admin addresses for new-order mail: the list in email settings, else every active admin.
+function admin_emails(): array {
+    $list = array_filter(array_map('trim', preg_split('/[,;\s]+/', (string)email_settings()['admin_emails'])), fn($x) => filter_var($x, FILTER_VALIDATE_EMAIL));
+    if (!$list) $list = array_column(q("SELECT email FROM users WHERE role = 'admin' AND active = 1")->fetchAll(), 'email');
+    return array_values(array_unique($list));
+}
+
+// Mail to one account, unless they switched notifications off ($always for receipts and money).
+function notify_user(int $uid, string $subject, string $html, string $kind, ?int $orderId = null, bool $always = false): void {
+    $u = q('SELECT email, email_notify, active FROM users WHERE id = ?', [$uid])->fetch();
+    if (!$u || !$u['active'] || (!$always && !$u['email_notify'])) return;
+    mail_queue($u['email'], $subject, $html, $kind, $orderId);
+}
+
+/* ---------- one-time codes by email ---------- */
+
+const OTP_PURPOSES = ['register', 'verify', 'reset', 'change'];
+
+function otp_hash(string $email, string $purpose, string $code): string {
+    return hash_hmac('sha256', "$email|$purpose|$code", (string)(cfg('geo_salt') ?: cfg('db_pass')) . '|techill-otp');
+}
+
+// Creates a 6-digit code, emails it and returns it. Stops with an error on rate limits or a failed send.
+function otp_issue(string $email, string $purpose): string {
+    if (!email_ready()) fail('ইমেইল সার্ভিস এখন বন্ধ আছে।', 409);
+    $last = q('SELECT created_at > UTC_TIMESTAMP() - INTERVAL 60 SECOND recent FROM email_otps WHERE email = ? AND purpose = ? ORDER BY id DESC LIMIT 1', [$email, $purpose])->fetch();
+    if ($last && $last['recent']) fail('একটা কোড এইমাত্র পাঠানো হয়েছে, ১ মিনিট পর আবার চাইতে পারবেন।', 429);
+    if ((int)q('SELECT COUNT(*) FROM email_otps WHERE email = ? AND created_at > UTC_TIMESTAMP() - INTERVAL 1 HOUR', [$email])->fetchColumn() >= 5
+        || (int)q('SELECT COUNT(*) FROM email_otps WHERE ip = ? AND created_at > UTC_TIMESTAMP() - INTERVAL 1 HOUR', [client_ip()])->fetchColumn() >= 15) fail('অনেকবার কোড চাওয়া হয়েছে, এক ঘণ্টা পরে চেষ্টা করুন।', 429);
+    $code = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    q('INSERT INTO email_otps (email, purpose, code_hash, ip, expires_at) VALUES (?,?,?,?, UTC_TIMESTAMP() + INTERVAL 10 MINUTE)', [$email, $purpose, otp_hash($email, $purpose, $code), client_ip()]);
+    $id = (int)db()->lastInsertId();
+    $what = ['register' => 'অ্যাকাউন্ট খোলার', 'verify' => 'ইমেইল যাচাইয়ের', 'reset' => 'পাসওয়ার্ড রিসেটের', 'change' => 'নতুন ইমেইল যাচাইয়ের'][$purpose];
+    $subject = "Techill $what কোড: $code";
+    $html = mail_layout("আপনার $what কোড", '<p>নিচের কোডটা Techill-এ লিখুন। কোডটা ১০ মিনিট কাজ করবে।</p>'
+        . '<p style="font-size:34px;font-weight:bold;letter-spacing:8px;background:#e8f3ff;color:#0067c7;border-radius:12px;padding:14px 0;text-align:center;font-family:Consolas,Menlo,monospace">' . $code . '</p>'
+        . '<p style="color:#5a6578;font-size:14px">আপনি কোড না চাইলে এই ইমেইল উপেক্ষা করুন। কাউকে এই কোড জানাবেন না, Techill-এর কেউ কখনো কোড চাইবে না।</p>');
+    [$ok, $err] = mail_send_now($email, $subject, $html);
+    q("INSERT INTO email_log (to_email, subject, kind, status, error, sent_at) VALUES (?,?, 'otp', ?, ?, IF(?, UTC_TIMESTAMP(), NULL))", [$email, "Techill $what কোড", $ok ? 'sent' : 'failed', $ok ? null : mb_substr($err, 0, 255), $ok ? 1 : 0]);
+    if (!$ok) {
+        q('DELETE FROM email_otps WHERE id = ?', [$id]);
+        error_log('techill otp mail: ' . $err);
+        fail('কোড পাঠানো যায়নি। একটু পরে আবার চেষ্টা করুন, না হলে আমাদের জানান।', 502);
+    }
+    return $code;
+}
+
+// Checks a code and uses it up. Stops with an error when it is wrong, used or expired.
+function otp_check(string $email, string $purpose, string $code): void {
+    $code = preg_replace('/\D/', '', strtr($code, ['০'=>'0','১'=>'1','২'=>'2','৩'=>'3','৪'=>'4','৫'=>'5','৬'=>'6','৭'=>'7','৮'=>'8','৯'=>'9']));
+    $row = q('SELECT * FROM email_otps WHERE email = ? AND purpose = ? AND consumed_at IS NULL ORDER BY id DESC LIMIT 1', [$email, $purpose])->fetch();
+    if (!$row || strtotime($row['expires_at'] . ' UTC') < time()) fail('কোডের মেয়াদ শেষ বা কোড পাঠানো হয়নি। নতুন কোড নিন।', 422);
+    if ((int)$row['attempts'] >= 5) fail('অনেকবার ভুল কোড দেওয়া হয়েছে। নতুন কোড নিন।', 429);
+    if (strlen($code) !== 6 || !hash_equals($row['code_hash'], otp_hash($email, $purpose, $code))) {
+        q('UPDATE email_otps SET attempts = attempts + 1 WHERE id = ?', [$row['id']]);
+        fail('কোড মেলেনি, আবার দেখে লিখুন।', 422);
+    }
+    q('UPDATE email_otps SET consumed_at = UTC_TIMESTAMP() WHERE id = ?', [$row['id']]);
+    if (random_int(1, 20) === 1) q('DELETE FROM email_otps WHERE created_at < UTC_TIMESTAMP() - INTERVAL 2 DAY');
+}
+
+function otp_required(): bool { return email_ready() && !empty(email_settings()['otp_required']); }
+
+/* ---------- referrals ---------- */
+
+const REFERRAL_DEFAULTS = ['enabled' => true, 'reward' => 1000, 'discount' => 1000, 'min_order' => 5000, 'trigger' => 'delivered', 'payout_min' => 1000, 'first_order_only' => true];
+
+function referral_settings(bool $reload = false): array { return settings_load('referral', REFERRAL_DEFAULTS, $reload); }
+
+function valid_ref_code(string $c): bool { return (bool)preg_match('/^[A-Z0-9]{5,12}$/', $c); }
+
+// The customer's own referral code, created the first time it is needed.
+function ref_code_for(int $uid): string {
+    $c = (string)q('SELECT ref_code FROM users WHERE id = ?', [$uid])->fetchColumn();
+    if ($c !== '') return $c;
+    $abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    for ($i = 0; $i < 20; $i++) {
+        $c = '';
+        for ($j = 0; $j < 7; $j++) $c .= $abc[random_int(0, strlen($abc) - 1)];
+        try { if (q('UPDATE users SET ref_code = ? WHERE id = ? AND ref_code IS NULL', [$c, $uid])->rowCount()) return $c; }
+        catch (PDOException $x) { continue; }   // taken, try another
+        return (string)q('SELECT ref_code FROM users WHERE id = ?', [$uid])->fetchColumn();
+    }
+    fail('রেফারেল কোড তৈরি করা যায়নি, আবার চেষ্টা করুন।', 500);
+}
+
+function referrer_by_code(string $code): ?array {
+    if (!valid_ref_code($code)) return null;
+    return q("SELECT id, name, email, phone FROM users WHERE ref_code = ? AND active = 1 AND role = 'customer'", [$code])->fetch() ?: null;
+}
+
+function digits_only(string $v): string {
+    $d = preg_replace('/\D/', '', strtr($v, ['০'=>'0','১'=>'1','২'=>'2','৩'=>'3','৪'=>'4','৫'=>'5','৬'=>'6','৭'=>'7','৮'=>'8','৯'=>'9']));
+    return str_starts_with($d, '880') ? substr($d, 2) : $d;
+}
+
+// Validates a referral code for an order and returns [referrer row, discount]. Stops with
+// ref_invalid when the code cannot be used, so the checkout can drop it and show the new total.
+function referral_for_order(string $code, string $email, ?int $refereeId, array $phones, int $subtotal): array {
+    $s = referral_settings();
+    $bad = fn(string $m) => out(['error' => $m, 'ref_invalid' => true], 422);
+    if (!$s['enabled']) $bad('রেফারেল অফার এখন বন্ধ আছে। কোড সরিয়ে আবার জমা দিন।');
+    $r = referrer_by_code($code) ?? $bad('রেফারেল কোডটা সঠিক নয়।');
+    if (($refereeId && (int)$r['id'] === $refereeId) || strcasecmp($r['email'], $email) === 0) $bad('নিজের রেফারেল কোড নিজে ব্যবহার করা যায় না।');
+    $rp = digits_only((string)$r['phone']);
+    foreach ($phones as $p) if ($rp !== '' && digits_only((string)$p) === $rp) $bad('নিজের রেফারেল কোড নিজে ব্যবহার করা যায় না।');
+    if ($s['first_order_only'] && $refereeId && q('SELECT 1 FROM orders WHERE user_id = ? AND cancelled = 0 LIMIT 1', [$refereeId])->fetch()) $bad('রেফারেল ছাড় শুধু প্রথম অর্ডারে পাওয়া যায়।');
+    if ($subtotal < (int)$s['min_order']) $bad('রেফারেল ছাড় পেতে অর্ডার কমপক্ষে ' . taka((int)$s['min_order']) . ' হতে হবে।');
+    return [$r, min((int)$s['discount'], $subtotal)];
+}
+
+// Moves a referral between pending / earned / cancelled to match its order. A referral the admin
+// rejected stays rejected. The referrer gets an email the first time it is earned.
+function referral_sync(int $orderId): void {
+    $r = q('SELECT r.*, o.cancelled, o.pay_status, o.stage, o.code ocode FROM referrals r JOIN orders o ON o.id = r.order_id WHERE r.order_id = ?', [$orderId])->fetch();
+    if (!$r || $r['status'] === 'rejected') return;
+    $s = referral_settings();
+    $paid = $r['pay_status'] === 'verified';
+    $want = ($r['cancelled'] || $r['pay_status'] === 'rejected') ? 'cancelled'
+          : (($s['trigger'] === 'paid' ? $paid : ($paid && (int)$r['stage'] === 4)) ? 'earned' : 'pending');
+    if ($want === $r['status']) return;
+    q("UPDATE referrals SET status = ?, earned_at = IF(? = 'earned', COALESCE(earned_at, UTC_TIMESTAMP()), earned_at) WHERE id = ?", [$want, $want, $r['id']]);
+    if ($want === 'earned' && !$r['earned_at'] && notify_on('referral')) {
+        $sum = referral_summary((int)$r['referrer_id']);
+        notify_user((int)$r['referrer_id'], 'অভিনন্দন! রেফারেলে ' . taka((int)$r['reward']) . ' আয় করেছেন',
+            mail_layout('আপনার রেফারেলে ' . taka((int)$r['reward']) . ' যোগ হয়েছে', '<p>আপনার রেফারেল কোড দিয়ে করা একটা অর্ডার সফল হয়েছে। টাকাটা আপনার রেফারেল ব্যালেন্সে যোগ হয়েছে।</p>'
+                . mail_kv(['এখন তোলা যাবে' => taka($sum['balance']), 'মোট আয়' => taka($sum['earned'])]) . '<p>আরও বন্ধুকে লিংক পাঠান, প্রতিটা সফল অর্ডারে আবার আয় করুন।</p>',
+                'ড্যাশবোর্ডে রেফারেল দেখুন', site_url('dashboard.html#referral')), 'referral', $orderId, true);
+    }
+}
+
+function referral_summary(int $uid): array {
+    $r = q("SELECT COUNT(*) n, COALESCE(SUM(status = 'earned'), 0) earned_n, COALESCE(SUM(status = 'pending'), 0) pending_n,
+              COALESCE(SUM(CASE WHEN status = 'earned' THEN reward ELSE 0 END), 0) earned, COALESCE(SUM(CASE WHEN status = 'pending' THEN reward ELSE 0 END), 0) pending
+            FROM referrals WHERE referrer_id = ?", [$uid])->fetch();
+    $p = q("SELECT COALESCE(SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END), 0) paid, COALESCE(SUM(CASE WHEN status = 'requested' THEN amount ELSE 0 END), 0) requested
+            FROM payouts WHERE user_id = ?", [$uid])->fetch();
+    $out = array_map('intval', $r + $p);
+    $out['balance'] = $out['earned'] - $out['paid'] - $out['requested'];
+    return $out;
+}
+
+/* ---------- floating support button ---------- */
+
+const SUPPORT_DEFAULTS = ['enabled' => true, 'messenger' => '', 'whatsapp' => '', 'wa_text' => 'আসসালামু আলাইকুম, Techill-এর প্যাকেজ নিয়ে জানতে চাই।',
+    'tawk_property' => '', 'tawk_widget' => '', 'on_dashboard' => false, 'greeting' => 'প্যাকেজ নিয়ে প্রশ্ন? সরাসরি কথা বলুন'];
+
+function support_settings(bool $reload = false): array { return settings_load('support', SUPPORT_DEFAULTS, $reload); }
+
+/* ---------- order emails ---------- */
+
+const STAGE_NAMES = ['তথ্য জমা', 'পেমেন্ট যাচাই', 'সেটআপ চলছে', 'রিভিউ', 'ডেলিভারি'];
+
+function mail_recent(string $kind, int $orderId, string $to, int $minutes): bool {
+    return (bool)q("SELECT 1 FROM email_log WHERE kind = ? AND order_id = ? AND to_email = ? AND created_at > UTC_TIMESTAMP() - INTERVAL $minutes MINUTE LIMIT 1", [$kind, $orderId, $to])->fetch();
+}
+
+// Customer email for a project update: stage change, payment, delivery link, cancel, or a note from the developer.
+function notify_order_update(int $orderId, array $notes, bool $stageChanged): void {
+    if (!notify_on('status') || (!$notes && !$stageChanged)) return;
+    $o = q('SELECT * FROM orders WHERE id = ?', [$orderId])->fetch();
+    if (!$o) return;
+    $stage = STAGE_NAMES[(int)$o['stage']] ?? '';
+    $subject = $o['cancelled'] ? "অর্ডার {$o['code']} বাতিল করা হয়েছে" : ((int)$o['stage'] === 4 ? "অর্ডার {$o['code']}: ডেলিভারি সম্পন্ন" : ($stageChanged ? "অর্ডার {$o['code']}: এখন \"$stage\" ধাপে" : "অর্ডার {$o['code']}-এ নতুন আপডেট"));
+    $body = '<p>আপনার প্রোজেক্টে নতুন আপডেট এসেছে।</p>' . mail_kv(['অর্ডার' => $o['code'], 'বর্তমান ধাপ' => $stage, 'অগ্রগতি' => bn_digits($o['progress']) . '%']);
+    foreach ($notes as $n) $body .= '<p style="background:#f7f9fc;border-left:3px solid #0a84f0;padding:10px 14px;border-radius:6px;white-space:pre-wrap">' . h($n) . '</p>';
+    if ($o['site_url'] && (int)$o['stage'] === 4) $body .= '<p>আপনার ওয়েবসাইট: <a href="' . h($o['site_url']) . '">' . h($o['site_url']) . '</a></p>';
+    notify_user((int)$o['user_id'], $subject, mail_layout($subject, $body, 'ড্যাশবোর্ডে দেখুন', site_url('dashboard.html#o=' . $o['id'])), 'status', (int)$o['id']);
+}
+
+// After an online payment succeeds (called from paystation_verify).
+function after_order_paid(int $orderId): void {
+    referral_sync($orderId);
+    notify_order_update($orderId, ['অনলাইন পেমেন্ট সফল হয়েছে। ধন্যবাদ! আমরা কাজ শুরু করছি।'], true);
 }

@@ -374,6 +374,26 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
 .timeline li.a i{background:var(--blue);box-shadow:0 0 0 4px var(--blue-soft)}
 .done-card{width:100%;text-align:left}
 
+/* referral */
+.ref-bar{background:linear-gradient(90deg,var(--warn-soft),var(--blue-soft));border-bottom:1px solid var(--line)}
+.ref-bar .container{display:flex;align-items:center;gap:12px;min-height:52px;padding-block:8px;font-size:.95rem}
+.ref-bar svg{width:22px;height:22px;color:var(--warn);flex:none}
+.ref-bar p{flex:1}
+.ref-bar b{color:var(--ink)}
+.ref-bar button{border:0;background:transparent;cursor:pointer;font-size:1.3rem;line-height:1;color:var(--muted);padding:4px 8px}
+.ref-line{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:14px;background:var(--ok-soft);color:var(--ok);border-radius:12px;padding:10px 14px;font-size:.92rem;font-weight:600}
+.ref-line button{border:0;background:transparent;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:.85rem;font-weight:400}
+.ref-ask{margin-top:14px;font-size:.9rem}
+.ref-ask summary{cursor:pointer;color:var(--blue-ink);font-weight:600}
+.ref-ask .row{display:flex;gap:8px;margin-top:10px;padding:0;border:0}
+.ref-ask input{flex:1;min-width:0;border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 12px;outline:none;text-transform:uppercase;letter-spacing:.06em}
+.ref-ask input:focus{border-color:var(--blue)}
+.ref-msg{font-size:.84rem;margin-top:6px;color:var(--danger);min-height:1.2em}
+.otp-row{display:flex;gap:8px}
+.otp-row input{flex:1;min-width:0;letter-spacing:.3em;font-variant-numeric:tabular-nums}
+.ref-promo{width:100%;display:flex;gap:12px;align-items:center;text-align:left;background:linear-gradient(90deg,var(--warn-soft),var(--blue-soft));border-radius:14px;padding:14px 18px;font-size:.95rem}
+.ref-promo svg{width:26px;height:26px;color:var(--warn);flex:none}
+
 @media (max-width:1040px){
   .feats{grid-template-columns:repeat(2,minmax(0,1fr))}
   .flow{grid-template-columns:1fr;gap:28px}
@@ -437,6 +457,7 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
     </div>
   </div>
 </header>
+<div class="ref-bar" id="refBar" hidden><div class="container"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M12 8c-1.5-3-5-3.5-5-1.2C7 8 12 8 12 8zm0 0c1.5-3 5-3.5 5-1.2C17 8 12 8 12 8z"/></svg><p id="refBarText"></p><button type="button" id="refBarX" aria-label="বন্ধ করুন">×</button></div></div>
 
 <main id="top">
   <section class="hero">
@@ -643,6 +664,7 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
             <dl class="facts" id="payFacts"></dl>
             <ul class="lines" id="payLines"></ul>
             <div class="tot"><span>মোট</span><b id="payTotal">৳০</b></div>
+            <div id="refBox"></div>
           </div>
           <div class="card">
             <h3>পেমেন্ট মাধ্যম</h3>
@@ -691,6 +713,7 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
             <div class="f" data-req><label for="i-name">অ্যাডমিনের নাম <span class="req">*</span></label><input type="text" id="i-name" name="admin_name" autocomplete="name"><span class="msg"></span></div>
             <div class="f" data-req data-type="email"><label for="i-email">ইমেইল <span class="req">*</span> <small>(অ্যাডমিন লগইন যাবে)</small></label><input type="email" id="i-email" name="email" autocomplete="email"><span class="msg"></span></div>
             <div class="f" id="f-pass" data-type="pass"><label for="i-pass">পাসওয়ার্ড <span class="req">*</span> <small>(ড্যাশবোর্ডে লগইনের জন্য, ৮+ অক্ষর)</small></label><input type="password" id="i-pass" name="password" autocomplete="new-password" minlength="8"><span class="hint">আগে অ্যাকাউন্ট থাকলে সেই পাসওয়ার্ডটাই দিন।</span><span class="msg"></span></div>
+            <div class="f" id="f-otp" data-type="otp" hidden><label for="i-otp">ইমেইল যাচাই কোড <span class="req">*</span></label><div class="otp-row"><input type="text" id="i-otp" name="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="৬ ডিজিট"><button type="button" class="btn btn-ghost btn-sm" id="otpSend">কোড পাঠান</button></div><span class="hint" id="otpHint">নতুন অ্যাকাউন্টের জন্য ইমেইলে একটা কোড যাবে। আগে অ্যাকাউন্ট থাকলে কোড লাগবে না, শুধু সেই পাসওয়ার্ড দিন।</span><span class="msg"></span></div>
             <p class="f full hint" id="acctNote" hidden></p>
             <div class="f" data-req data-type="phone"><label for="i-wa">হোয়াটসঅ্যাপ নম্বর <span class="req">*</span></label><input type="tel" id="i-wa" name="whatsapp" inputmode="tel" placeholder="01XXXXXXXXX"><span class="msg"></span></div>
             <div class="f" data-req data-type="phone"><label for="i-phone">ফোন নম্বর <span class="req">*</span> <small>(ওয়েবসাইটে দেখাবে)</small></label><input type="tel" id="i-phone" name="phone" inputmode="tel" placeholder="01XXXXXXXXX"><span class="msg"></span></div>
@@ -724,6 +747,7 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
             <li><i></i>ডেলিভারি</li>
           </ol>
           <div class="card done-card"><dl class="facts" id="dFacts" style="margin:0"></dl></div>
+          <a class="ref-promo" id="dRef" href="dashboard.html#referral" hidden style="text-decoration:none;color:inherit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M12 8c-1.5-3-5-3.5-5-1.2C7 8 12 8 12 8zm0 0c1.5-3 5-3.5 5-1.2C17 8 12 8 12 8z"/></svg><span id="dRefText"></span></a>
           <div class="hero-cta" style="margin:0;justify-content:center">
             <a class="btn btn-primary" id="dDash" href="dashboard.html">ড্যাশবোর্ডে প্রোজেক্ট দেখুন</a>
             <a class="btn btn-ghost" id="dWa" href="https://wa.me/" target="_blank" rel="noopener">হোয়াটসঅ্যাপে জানান</a>
@@ -749,6 +773,7 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
 /* ===== প্যাকেজ, দাম, অ্যাড-অন, পেমেন্ট নম্বর: admin.html → "প্যাকেজ ও দাম" থেকে বদলান =====
    ডিফল্ট মান assets/catalog.json-এ। পেজ লোড হলে সার্ভার থেকে সর্বশেষ ক্যাটালগ আসে। */
 let PAYOPTS = {online: false, manual: true, pay_with_charge: 0};
+let AUTH = {email: false, otp: false}, REFCFG = null, refInfo = null, otpSkip = false, otpFor = "";
 let CAT = null, WHATSAPP_NUMBER = "", PAY_NUMBERS = {}, STACKS = {}, GROUPS = [], ADDONS = [], GATEWAY_EXTRA_HOURS = 48;
 function applyCatalog(c){
   CAT = c; WHATSAPP_NUMBER = c.whatsapp || ""; PAY_NUMBERS = c.pay_numbers || {}; STACKS = c.stacks;
@@ -830,6 +855,11 @@ const STEPS = ["টেমপ্লেট","অ্যাড-অন","পেমে
 
 function compute(){
   const p = P(), r = api.compute(CAT, st);
+  r.subtotal = r.total; r.ref = 0;
+  if (refInfo && r.total >= refInfo.min_order){   // same rule as the server: the discount needs a minimum order
+    r.ref = Math.min(refInfo.discount, r.total);
+    r.lines = [...r.lines, {label: `রেফারেল ছাড় (${refInfo.code})`, amt: -r.ref, ref: true}]; r.total -= r.ref;
+  }
   return {p, ...r, tpl: st.tpl != null ? S().templates[st.tpl] : null};
 }
 function cleanup(){
@@ -938,8 +968,9 @@ function factsHTML(c){
 function renderPayment(){
   const c = compute();
   $("payFacts").innerHTML = factsHTML(c);
-  $("payLines").innerHTML = c.lines.map(l => `<li><span>${l.label}</span><span>${tk(l.amt)}</span></li>`).join("");
+  $("payLines").innerHTML = c.lines.map(l => `<li${l.ref ? ' style="color:var(--ok)"' : ""}><span>${l.label}</span><span>${l.amt < 0 ? "−" + tk(-l.amt) : tk(l.amt)}</span></li>`).join("");
   $("payTotal").textContent = tk(c.total);
+  renderRefBox(c);
   $("mAmt").textContent = tk(c.total); $("oAmt").textContent = tk(c.total);
   if (!PAYOPTS.manual && st.method !== "PayStation") st.method = "PayStation";
   if (!PAYOPTS.online && st.method === "PayStation") st.method = "bKash";
@@ -997,6 +1028,7 @@ function validStep(n){
       else if (v && type === "url" && !/^https?:\/\/\S+\.\S+/.test(v)) msg = "https:// দিয়ে শুরু হওয়া পুরো লিংক দিন।";
       else if (type === "pass" && v.length < 8) msg = "পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের দিন।";
       else if (inp.id === "i-csv" && inp.files[0] && !/\.csv$/i.test(inp.files[0].name)) msg = "শুধু .csv ফাইল দিন।";
+      else if (type === "otp" && !otpSkip && !/^\d{6}$/.test(v.replace(/[০-৯]/g, d => "০১২৩৪৫৬৭৮৯".indexOf(d)))) msg = otpFor ? "ইমেইলে পাঠানো ৬ ডিজিটের কোড দিন।" : "\"কোড পাঠান\" চেপে ইমেইলে আসা কোডটা দিন।";
       setErr(w, msg); if (msg && !first) first = inp;
     });
     if (first){ first.focus(); $("formErr").textContent = "লাল চিহ্নিত ঘরগুলো ঠিক করুন।"; return false; }
@@ -1042,15 +1074,20 @@ async function submitOrder(){
   fd.append("stack_key", st.stack); fd.append("pack", st.pack); fd.append("tpl", st.tpl);
   fd.append("addons", JSON.stringify(st.add)); fd.append("total", c.total);
   fd.append("pay_method", st.method);
+  if (refInfo && c.ref) fd.append("ref_code", refInfo.code);
   if (st.method !== "PayStation"){ fd.append("pay_sender", $("paySender").value.trim()); fd.append("pay_trx", $("payTrx").value.trim()); }
   let res;
   try { res = await api.createOrder(fd); }
   catch(e){
-    btn.disabled = false; renderHead();
+    btn.disabled = false;
+    if (e.ref_invalid){ refInfo = null; api.refForget(); $("refBar").hidden = true; e.message += " ছাড় ছাড়া নতুন মোট " + tk(compute().total) + "। আবার জমা দিন।"; }
+    if (e.need_otp){ $("f-otp").hidden = false; otpSkip = false; setErr($("f-otp"), e.message); $("i-otp").focus(); }
+    renderHead();
     if (e.status === 409) setErr($("f-pass"), e.message);
     $("formErr").textContent = e.message || "জমা দেওয়া যায়নি। ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।";
     return;
   }
+  if (refInfo && c.ref) api.refForget();
   me = res.user; syncAccount();
   const o = res.order;
   const order = {
@@ -1075,6 +1112,7 @@ let me = null;
 function syncAccount(){
   $("dashLink").textContent = me ? "ড্যাশবোর্ড" : "লগইন";
   $("f-pass").hidden = !!me;
+  $("f-otp").hidden = !!me || !AUTH.otp || otpSkip;
   $("acctNote").hidden = !me;
   if (me){
     $("acctNote").textContent = `আপনি ${me.email} দিয়ে লগইন করা আছেন। অর্ডারটা এই অ্যাকাউন্টে যোগ হবে।`;
@@ -1087,7 +1125,7 @@ function syncAccount(){
 let timer = null;
 function orderText(o){
   return `আসসালামু আলাইকুম, আমি Techill-এ অর্ডার করেছি।\n\nঅর্ডার: ${o.id}\nনাম: ${o.name}\nপ্ল্যাটফর্ম: ${o.stack}\nপ্যাকেজ: ${o.pack}\nটেমপ্লেট: ${o.tpl}\n` +
-    (o.lines.length > 1 ? "অ্যাড-অন:\n" + o.lines.slice(1).map(l => `- ${l.label}: ${tk(l.amt)}`).join("\n") + "\n" : "") +
+    (o.lines.length > 1 ? "অ্যাড-অন ও ছাড়:\n" + o.lines.slice(1).map(l => `- ${l.label}: ${l.amt < 0 ? "−" + tk(-l.amt) : tk(l.amt)}`).join("\n") + "\n" : "") +
     `মোট: ${tk(o.total)}\nপেমেন্ট: ${MNAME[o.method]} · TrxID ${o.trx}\nডেলিভারি: ${BN(o.hours)} ঘণ্টা`;
 }
 function showDone(o){
@@ -1103,6 +1141,8 @@ function showDone(o){
   $("dFacts").innerHTML = `<dt>প্ল্যাটফর্ম</dt><dd>${o.stack}</dd><dt>প্যাকেজ</dt><dd>${o.pack}</dd><dt>টেমপ্লেট</dt><dd>${o.tpl}</dd><dt>প্রোডাক্ট আপলোড</dt><dd>${BN(o.products)}টা</dd><dt>মোট পেমেন্ট</dt><dd>${tk(o.total)}</dd>`;
   $("dWa").href = `${waBase}?text=${encodeURIComponent(orderText(o))}`;
   $("dDash").href = o.oid ? `dashboard.html#o=${o.oid}` : "dashboard.html";
+  $("dRef").hidden = !REFCFG;
+  if (REFCFG) $("dRefText").innerHTML = `<b>আপনিও আয় করুন:</b> বন্ধুকে আপনার রেফারেল লিংক দিন। তারা পাবেন ${tk(REFCFG.discount)} ছাড়, আর প্রতিটা সফল অর্ডারে আপনি পাবেন ${tk(REFCFG.reward)}। ড্যাশবোর্ড → রেফারেল ↗`;
   tick(o); clearInterval(timer); timer = setInterval(() => tick(o), 1000);
   $("coBody").scrollTop = 0; $("coTitle").focus();
 }
@@ -1138,13 +1178,67 @@ api.init().then(u => { me = u; syncAccount(); return api.catalog(); })
   .then(r => {
     applyCatalog(r.catalog); applyContact(); renderPacks();
     if (r.payments) PAYOPTS = r.payments;
+    if (r.auth) AUTH = r.auth;
+    REFCFG = r.referral || null; syncAccount();
+    if (REFCFG && REF_CODE) applyRef(REF_CODE, true);
+    api.supportWidget(r.support, me);
     if (r.pixel) api.initPixel(r.pixel.id);
     if (PAYOPTS.online) st.method = "PayStation";
     else if (!PAYOPTS.manual) $("packs").insertAdjacentHTML("afterend", '<p class="pk-note">এখন অর্ডার নেওয়া বন্ধ আছে, হোয়াটসঅ্যাপে যোগাযোগ করুন।</p>');
   })
   .catch(() => { $("packs").innerHTML = '<p class="pk-note">প্যাকেজ লোড করা যায়নি, পেজ রিফ্রেশ করুন।</p>'; });
 api.init().then(() => api.startTracking());
-document.addEventListener("click", e => { if (e.target.closest('a[href^="https://wa.me"]')){ api.track("event", {n: "whatsapp_click"}); api.fb("Contact"); } });
+document.addEventListener("click", e => { const a = e.target.closest('a[href^="https://wa.me"]'); if (a && !a.closest("#tsw")){ api.track("event", {n: "whatsapp_click"}); api.fb("Contact"); } });
+
+/* ---------- referral: ?ref=CODE links and the code box in the order summary ---------- */
+const REF_CODE = api.refCapture();
+async function applyRef(code, fromLink){
+  code = String(code || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  let r;
+  try { r = await api.refCheck(code); } catch(e){ r = {valid: false, message: e.message}; }
+  if (!r.valid){
+    if (fromLink) api.refForget(); else { const m = document.querySelector(".ref-msg"); if (m) m.textContent = r.message; }
+    return false;
+  }
+  refInfo = r;
+  $("refBarText").innerHTML = `<b>${esc(r.name)}</b> আপনাকে <b>${tk(r.discount)} ছাড়</b> দিয়েছেন। ${tk(r.min_order)} বা তার বেশি অর্ডারে নিজে থেকেই কাটা যাবে।`;
+  $("refBar").hidden = false;
+  if (!$("co").hidden){ renderHead(); if (st.step === 3) renderPayment(); }
+  return true;
+}
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function renderRefBox(c){
+  const box = $("refBox"); if (!REFCFG){ box.innerHTML = ""; return; }
+  if (refInfo && c.ref) box.innerHTML = `<div class="ref-line"><span>🎁 ${esc(refInfo.name)}-এর রেফারেলে ${tk(c.ref)} ছাড় যোগ হয়েছে</span><button type="button" id="refDrop">সরান</button></div>`;
+  else if (refInfo) box.innerHTML = `<div class="ref-line" style="background:var(--warn-soft);color:var(--warn)"><span>রেফারেল ছাড় পেতে অর্ডার কমপক্ষে ${tk(refInfo.min_order)} হতে হবে। এখন ${tk(c.subtotal)}।</span><button type="button" id="refDrop">সরান</button></div>`;
+  else box.innerHTML = `<details class="ref-ask"><summary>রেফারেল কোড আছে?</summary><div class="row"><input id="refIn" maxlength="12" placeholder="যেমন RAKIB24" aria-label="রেফারেল কোড" autocomplete="off"><button type="button" class="btn btn-ghost btn-sm" id="refApply">প্রয়োগ করুন</button></div><p class="ref-msg" role="alert"></p></details>`;
+}
+$("refBox").addEventListener("click", async e => {
+  if (e.target.id === "refDrop"){ refInfo = null; api.refForget(); $("refBar").hidden = true; renderPayment(); renderHead(); }
+  if (e.target.id === "refApply"){ const b = e.target; b.disabled = true; if (await applyRef($("refIn").value, false)){ try { localStorage.setItem("techill_ref", JSON.stringify({code: refInfo.code, at: Date.now()})); } catch(x){} } else b.disabled = false; }
+});
+$("refBox").addEventListener("keydown", e => { if (e.target.id === "refIn" && e.key === "Enter"){ e.preventDefault(); $("refApply").click(); } });
+$("refBarX").addEventListener("click", () => $("refBar").hidden = true);
+
+/* ---------- email code for a brand-new account (when the admin requires it) ---------- */
+$("otpSend").addEventListener("click", async () => {
+  const email = $("i-email").value.trim().toLowerCase(), b = $("otpSend");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ setErr($("i-email").closest(".f"), "আগে সঠিক ইমেইল দিন।"); $("i-email").focus(); return; }
+  b.disabled = true; b.textContent = "পাঠানো হচ্ছে...";
+  try {
+    const r = await api.otpSend("register", email);
+    otpFor = email; setErr($("f-otp"));
+    $("otpHint").textContent = `${email}-এ কোড পাঠানো হয়েছে, ১০ মিনিট কাজ করবে। Spam ফোল্ডারও দেখুন।` + (r.demo_code ? ` (ডেমো মোড: কোড ${r.demo_code})` : "");
+    $("i-otp").focus();
+    let n = 60; b.textContent = `আবার পাঠান (${BN(n)})`;
+    const t = setInterval(() => { n--; b.textContent = n > 0 ? `আবার পাঠান (${BN(n)})` : "আবার পাঠান"; if (n <= 0){ clearInterval(t); b.disabled = false; } }, 1000);
+  } catch(e){
+    b.disabled = false; b.textContent = "কোড পাঠান";
+    if (e.status === 409 && /আগেই অ্যাকাউন্ট/.test(e.message)){ otpSkip = true; syncAccount(); setErr($("f-pass"), "এই ইমেইলে আগেই অ্যাকাউন্ট আছে। সেই পাসওয়ার্ড দিন, কোড লাগবে না।"); $("i-pass").focus(); return; }
+    setErr($("f-otp"), e.message);
+  }
+});
+$("i-email").addEventListener("input", () => { if (otpSkip || otpFor){ otpSkip = false; otpFor = ""; $("i-otp").value = ""; syncAccount(); } });
 </script>
 
 </body>

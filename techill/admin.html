@@ -405,14 +405,17 @@ const I = {
   user: ic('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'),
   chat: ic('<path d="M4 5h16v11H8l-4 4z"/>'),
   step: ic('<path d="M5 12.5l4.5 4.5L19 7"/>'),
-  ok: ic('<path d="M5 12.5l4.5 4.5L19 7"/>')
+  ok: ic('<path d="M5 12.5l4.5 4.5L19 7"/>'),
+  mail: ic('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/>'),
+  support: ic('<path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="2.5" y="12.5" width="4" height="6" rx="1.6"/><rect x="17.5" y="12.5" width="4" height="6" rx="1.6"/><path d="M19.5 18.5c0 1.6-2.2 2.5-5.5 2.5h-1.5"/>'),
+  gift: ic('<rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M12 8c-1.5-3-5-3.5-5-1.2C7 8 12 8 12 8zm0 0c1.5-3 5-3.5 5-1.2C17 8 12 8 12 8z"/>')
 };
-const SECTIONS = [["overview", "ওভারভিউ", I.home], ["orders", "অর্ডার", I.orders], ["board", "প্রোজেক্ট বোর্ড", I.board], ["analytics", "অ্যানালিটিক্স", I.chart], ["catalog", "প্যাকেজ ও দাম", I.catalog], ["payments", "পেমেন্ট গেটওয়ে", I.money], ["marketing", "Facebook Pixel", I.fb], ["customers", "কাস্টমার", I.customers], ["team", "টিম ও ডেভেলপার", I.team]];
+const SECTIONS = [["overview", "ওভারভিউ", I.home], ["orders", "অর্ডার", I.orders], ["board", "প্রোজেক্ট বোর্ড", I.board], ["analytics", "অ্যানালিটিক্স", I.chart], ["catalog", "প্যাকেজ ও দাম", I.catalog], ["payments", "পেমেন্ট গেটওয়ে", I.money], ["email", "ইমেইল", I.mail], ["marketing", "Facebook Pixel", I.fb], ["support", "সাপোর্ট বাটন", I.support], ["referral", "রেফারেল", I.gift], ["customers", "কাস্টমার", I.customers], ["team", "টিম ও ডেভেলপার", I.team]];
 
 let me = null, sec = "overview", days = 30, stats = null, orders = [], team = [], customers = [], cat = null, draft = null, dirty = false;
 let oFilter = "all", oQuery = "", oStack = "", boardDev = "", custQ = "", custF = "all", edStack = "woo", drawerId = null;
 let an = null, aDays = 30, aTab = "visitors";
-let pset = null, plist = null, ptest = null, mset = null, mtest = null;
+let pset = null, plist = null, ptest = null, mset = null, mtest = null, eset = null, etest = null, sset = null, rdata = null, rFilter = "all";
 let regionName = c => c;
 try { const dn = new Intl.DisplayNames(["bn"], {type: "region"}); regionName = c => { try { return dn.of(c) || c; } catch(e){ return c; } }; } catch(e){}
 const country = c => c ? regionName(c) : "অজানা";
@@ -468,7 +471,7 @@ async function refreshOrders(){ orders = (await api.orders()).orders; renderNav(
 /* ---------- shell ---------- */
 function renderNav(){
   const s = stats?.orders || {};
-  const counts = {orders: (s.pending_pay || 0) + (s.unassigned || 0), board: s.overdue || 0};
+  const counts = {orders: (s.pending_pay || 0) + (s.unassigned || 0), board: s.overdue || 0, referral: stats?.referral?.requests || 0, email: stats?.email?.failed || 0};
   $("nav").innerHTML = SECTIONS.map(([k, l, icon]) => `<button type="button" data-sec="${k}" aria-current="${sec === k}">${icon}<span>${l}</span>${counts[k] ? `<span class="badge b-unread cnt">${BN(counts[k])}</span>` : ""}</button>`).join("")
     + `<hr><a href="dashboard.html">${I.chat}<span>প্রোজেক্ট চ্যাট</span></a><a href="index.html" target="_blank" rel="noopener">${I.home}<span>সাইট দেখুন ↗</span></a>`;
   const urgent = (s.unread || 0) + (s.pending_pay || 0) + (s.overdue || 0);
@@ -481,6 +484,9 @@ function go(s){
   if (s === "customers") api.customers().then(r => { customers = r.customers; if (sec === "customers") render(); });
   if (s === "analytics") loadAnalytics();
   if (s === "payments") loadPayments();
+  if (s === "email") api.emailSettings().then(r => { eset = r.settings; if (sec === "email") render(); }).catch(e => toast(e.message));
+  if (s === "support") api.supportSettings().then(r => { sset = r.settings; if (sec === "support") render(); }).catch(e => toast(e.message));
+  if (s === "referral") api.referralAdmin().then(r => { rdata = r; if (sec === "referral") render(); }).catch(e => toast(e.message));
   if (s === "marketing") api.marketingSettings().then(r => { mset = r.settings; if (sec === "marketing") render(); }).catch(e => toast(e.message));
   if (s === "catalog" && !cat) api.catalog().then(r => { cat = r.catalog; draft = structuredClone(cat); if (sec === "catalog") render(); });
 }
@@ -492,7 +498,7 @@ $("livePill").addEventListener("click", () => { aTab = "visitors"; go("analytics
 function render(){
   const m = $("main");
   if (!stats){ m.innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; return; }
-  ({overview: renderOverview, orders: renderOrders, board: renderBoard, analytics: renderAnalytics, catalog: renderCatalog, payments: renderPayments, marketing: renderMarketing, team: renderTeam, customers: renderCustomers})[sec]();
+  ({overview: renderOverview, orders: renderOrders, board: renderBoard, analytics: renderAnalytics, catalog: renderCatalog, payments: renderPayments, marketing: renderMarketing, email: renderEmail, support: renderSupport, referral: renderReferral, team: renderTeam, customers: renderCustomers})[sec]();
 }
 const rangeSeg = () => `<div class="seg" role="group" aria-label="সময়সীমা">${[7, 30, 90].map(d => `<button type="button" data-days="${d}" aria-pressed="${days === d}">${BN(d)} দিন</button>`).join("")}</div>`;
 $("main").addEventListener("click", async e => {
@@ -549,7 +555,9 @@ function renderOverview(){
     o.unassigned && ["warn", I.user, o.unassigned, "ডেভেলপার দেওয়া হয়নি", "unassigned"],
     o.overdue && ["bad", I.alert, o.overdue, "ডেডলাইন পেরিয়েছে", "late"],
     o.due_soon && ["warn", I.clock, o.due_soon, "২৪ ঘণ্টার মধ্যে ডেলিভারি", "soon"],
-    o.unread && ["bad", I.chat, o.unread, "কাস্টমারের না-পড়া মেসেজ", "unread"]
+    o.unread && ["bad", I.chat, o.unread, "কাস্টমারের না-পড়া মেসেজ", "unread"],
+    s.referral?.requests && ["warn", I.gift, s.referral.requests, "রেফারেলের টাকা তোলার অনুরোধ", "payouts"],
+    s.email?.failed && ["bad", I.mail, s.email.failed, "ইমেইল যায়নি (২৪ ঘণ্টায়)", "mailfail"]
   ].filter(Boolean);
   const revSeries = s.series.reduce((a, r) => a + r.revenue, 0), ordSeries = s.series.reduce((a, r) => a + r.orders, 0);
   $("main").innerHTML = `
@@ -597,6 +605,8 @@ $("main").addEventListener("click", e => {
   if (a){
     const k = a.dataset.alert;
     if (k === "unread") location.href = "dashboard.html";
+    else if (k === "payouts") go("referral");
+    else if (k === "mailfail") go("email");
     else { oFilter = k === "soon" ? "running" : k; go("orders"); }
     return;
   }
@@ -692,6 +702,7 @@ function renderDrawer(d){
       ${o.pay_method === "PayStation" || (d.payments || []).length ? `<div class="box"><h4>অনলাইন পেমেন্ট (PayStation)</h4>
         ${(d.payments || []).length ? `<ul class="tl">${d.payments.map(p => `<li><b>${pstat(p.status)} ${tk(p.amount)}</b>${p.sandbox ? ' <span class="badge b-pending">Sandbox</span>' : ""}<p>${esc(p.invoice)}${p.trx_id ? " · TrxID " + esc(p.trx_id) : ""}${p.method ? " · " + esc(p.method) : ""}${p.payer ? " · " + esc(p.payer) : ""}</p>${p.note ? `<p class="muted">${esc(p.note)}</p>` : ""}<small>${when(p.created)}</small></li>`).join("")}</ul>` : '<p class="muted" style="font-size:.88rem">এখনো কোনো চেষ্টা হয়নি।</p>'}
         ${o.pay_status !== "verified" && (d.payments || []).length ? '<div class="row2" style="margin-top:10px"><button class="btn btn-ghost btn-sm" type="button" id="psVerify">PayStation থেকে আবার যাচাই করুন</button></div>' : ""}</div>` : ""}
+      ${d.referral ? `<div class="box"><h4>রেফারেল ${rstat(d.referral.status)}</h4><dl class="kv"><dt>কোড</dt><dd><b>${esc(d.referral.code)}</b></dd><dt>রেফার করেছেন</dt><dd>${esc(d.referral.referrer.name)}<br><small class="muted">${esc(d.referral.referrer.email)}</small></dd><dt>কাস্টমারের ছাড়</dt><dd>${tk(d.referral.discount)}</dd><dt>রেফারারের আয়</dt><dd>${tk(d.referral.reward)}</dd></dl></div>` : ""}
       <form class="box" id="adjForm"><h4>দাম ও সময় সমন্বয়</h4>
         <div class="grid" style="grid-template-columns:1fr 120px;gap:10px">
           <div class="f"><label for="adj-l">চার্জ / ছাড়ের বিবরণ</label><input class="inp" id="adj-l" name="line_label" placeholder="যেমন: ঈদ ছাড় / অতিরিক্ত পেজ"></div>
@@ -1112,6 +1123,224 @@ function renderMarketing(){
     try { mset = (await api.saveMarketing({pixel_enabled: m.pixel_enabled ? 1 : "", pixel_id: m.pixel_id, test_code: m.test_code, capi_clear: 1})).settings; renderMarketing(); } catch(err){ toast(err.message); }
   });
 }
+
+/* ---------- email (SMTP) ---------- */
+const MAILKIND = {otp: "OTP কোড", new_order: "নতুন অর্ডার", status: "অগ্রগতি", message: "মেসেজ", assign: "অ্যাসাইন", referral: "রেফারেল", payout: "রেফারেল পেমেন্ট", test: "টেস্ট"};
+const NOTIFY = [["new_order", "নতুন অর্ডার", "কাস্টমারকে অর্ডারের রসিদ, আর অ্যাডমিনকে নতুন অর্ডারের খবর"], ["status", "প্রোজেক্টের অগ্রগতি", "ধাপ বদলালে, পেমেন্ট যাচাই হলে, ডেলিভারি বা বাতিল হলে কাস্টমারকে"],
+  ["message", "নতুন মেসেজ", "চ্যাটে মেসেজ এলে অন্য পক্ষকে (একই অর্ডারে ১০ মিনিটে একবার)"], ["assign", "ডেভেলপার অ্যাসাইন", "নতুন প্রোজেক্ট পেলে ডেভেলপারকে"], ["referral", "রেফারেল", "রেফারেলে আয় হলে, টাকা তোলার অনুরোধ আর পেমেন্ট হলে"]];
+const PRESETS = {cpanel: h => ({host: "mail." + (h || "yourdomain.com"), port: 465, secure: "ssl"}), gmail: () => ({host: "smtp.gmail.com", port: 587, secure: "tls"}), zoho: () => ({host: "smtp.zoho.com", port: 465, secure: "ssl"})};
+function renderEmail(){
+  if (!eset){ $("main").innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; return; }
+  const e = eset, st = e.stats, smtp = e.transport !== "mail";
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>ইমেইল</h1><p>OTP দিয়ে ইমেইল যাচাই, পাসওয়ার্ড রিসেট আর অর্ডার, অগ্রগতি ও মেসেজের নোটিফিকেশন এই ইমেইল দিয়ে যাবে।</p></div>
+      <div class="tools">${e.ready ? '<span class="badge b-done" style="font-size:.9rem;padding:4px 14px">ইমেইল চালু</span>' : '<span class="badge b-off" style="font-size:.9rem;padding:4px 14px">ইমেইল বন্ধ</span>'}${e.ready && e.otp_required ? ' <span class="badge b-run" style="font-size:.9rem;padding:4px 14px">OTP বাধ্যতামূলক</span>' : ""}</div></div>
+    <div class="tiles">
+      ${tile("পাঠানো হয়েছে", nf(st.sent), "গত ৩০ দিনে")}
+      ${tile("যায়নি", nf(st.failed), st.failed ? '<span class="late">নিচের তালিকায় কারণ দেখুন</span>' : "গত ৩০ দিনে")}
+      ${tile("নতুন অ্যাকাউন্টে OTP", e.otp_required ? "চালু" : "বন্ধ", e.otp_required ? "ইমেইল যাচাই না করে অ্যাকাউন্ট খোলা যাবে না" : "যাচাই ঐচ্ছিক, প্রোফাইল থেকে করা যায়")}
+      ${tile("নোটিফিকেশন", BN(NOTIFY.filter(([k]) => e.notify[k]).length) + "/" + BN(NOTIFY.length), "ধরনের ইমেইল চালু")}
+    </div>
+    <div class="grid g-main" style="margin-bottom:18px">
+      <form class="card" id="emForm" style="display:grid;gap:14px;align-content:start" novalidate>
+        <div class="ch" style="margin:0"><h3>মেইল সার্ভার</h3><label class="switch"><input type="checkbox" name="enabled" ${e.enabled ? "checked" : ""}><span></span>ইমেইল পাঠানো চালু</label></div>
+        <div class="f"><label>কোন মাধ্যমে পাঠাবেন</label><div class="seg" role="radiogroup" aria-label="মাধ্যম">
+          <label class="seg-r"><input type="radio" name="transport" value="smtp" ${smtp ? "checked" : ""}><span>SMTP (সুপারিশকৃত)</span></label>
+          <label class="seg-r"><input type="radio" name="transport" value="mail" ${smtp ? "" : "checked"}><span>PHP mail()</span></label></div>
+          <small class="muted" style="font-size:.82rem">PHP mail()-এর ইমেইল প্রায়ই Spam-এ যায়। cPanel-এর ইমেইল অ্যাকাউন্ট দিয়ে SMTP ব্যবহার করুন।</small></div>
+        <div id="smtpBox" style="display:grid;gap:12px" ${smtp ? "" : "hidden"}>
+          <div class="row2"><span class="muted" style="font-size:.86rem">দ্রুত বসান:</span><button class="btn btn-ghost btn-sm" type="button" data-preset="cpanel">cPanel ইমেইল</button><button class="btn btn-ghost btn-sm" type="button" data-preset="gmail">Gmail</button><button class="btn btn-ghost btn-sm" type="button" data-preset="zoho">Zoho</button></div>
+          <div class="grid" style="grid-template-columns:minmax(0,1fr) 110px 150px;gap:10px">
+            <div class="f"><label for="em-host">SMTP হোস্ট</label><input class="inp" id="em-host" name="host" value="${esc(e.host)}" placeholder="mail.${esc(e.host_hint || "yourdomain.com")}" autocomplete="off"></div>
+            <div class="f"><label for="em-port">পোর্ট</label><input class="inp" id="em-port" name="port" type="number" min="1" max="65535" value="${e.port}"></div>
+            <div class="f"><label for="em-sec">নিরাপত্তা</label><select class="inp" id="em-sec" name="secure"><option value="ssl" ${e.secure === "ssl" ? "selected" : ""}>SSL (465)</option><option value="tls" ${e.secure === "tls" ? "selected" : ""}>STARTTLS (587)</option><option value="none" ${e.secure === "none" ? "selected" : ""}>নেই (সুপারিশ নয়)</option></select></div>
+          </div>
+          <div class="grid g2" style="gap:10px">
+            <div class="f"><label for="em-user">ইউজারনেম <small>(সাধারণত পুরো ইমেইল)</small></label><input class="inp" id="em-user" name="username" value="${esc(e.username)}" autocomplete="off" placeholder="noreply@${esc(e.host_hint || "yourdomain.com")}"></div>
+            <div class="f"><label for="em-pass">পাসওয়ার্ড ${e.password_set ? "<small>(সেভ করা আছে, বদলাতে চাইলে নতুন দিন)</small>" : ""}</label><input class="inp" id="em-pass" name="password" type="password" autocomplete="new-password" placeholder="${e.password_set ? "••••••••" : "ইমেইল অ্যাকাউন্টের পাসওয়ার্ড"}"></div>
+          </div>
+        </div>
+        <div class="grid g2" style="gap:10px;border-top:1px solid var(--line);padding-top:14px">
+          <div class="f"><label for="em-from">প্রেরকের ইমেইল (From)</label><input class="inp" id="em-from" name="from_email" type="email" value="${esc(e.from_email)}" placeholder="noreply@${esc(e.host_hint || "yourdomain.com")}"></div>
+          <div class="f"><label for="em-fname">প্রেরকের নাম</label><input class="inp" id="em-fname" name="from_name" value="${esc(e.from_name)}" placeholder="Techill"></div>
+          <div class="f"><label for="em-reply">Reply-To <small>(ঐচ্ছিক)</small></label><input class="inp" id="em-reply" name="reply_to" type="email" value="${esc(e.reply_to)}" placeholder="hello@${esc(e.host_hint || "yourdomain.com")}"></div>
+          <div class="f"><label for="em-admins">নতুন অর্ডারের খবর যাবে <small>(কমা দিয়ে একাধিক)</small></label><input class="inp" id="em-admins" name="admin_emails" value="${esc(e.admin_emails)}" placeholder="${esc(e.admin_fallback.join(", ") || "admin@yourdomain.com")}"></div>
+        </div>
+        <div style="border-top:1px solid var(--line);padding-top:14px;display:grid;gap:10px">
+          <label class="switch"><input type="checkbox" name="otp_required" ${e.otp_required ? "checked" : ""}><span></span>নতুন অ্যাকাউন্ট খুলতে ইমেইল OTP বাধ্যতামূলক</label>
+          <small class="muted" style="font-size:.82rem;margin-top:-4px">চালু থাকলে রেজিস্ট্রেশন আর চেকআউটে নতুন কাস্টমারকে ইমেইলে আসা ৬ ডিজিটের কোড দিতে হবে। ভুয়া ইমেইলে অ্যাকাউন্ট আর ভুয়া রেফারেল কমে।</small>
+          <h4 style="font-size:.95rem;margin-top:6px">কোন কোন ইমেইল যাবে</h4>
+          ${NOTIFY.map(([k, l, d]) => `<label class="checks" style="font-size:.92rem;display:flex;gap:10px;align-items:flex-start"><input type="checkbox" name="n_${k}" ${e.notify[k] ? "checked" : ""} style="margin-top:5px"><span><b>${l}</b><br><span class="muted" style="font-size:.84rem">${d}</span></span></label>`).join("")}
+          <small class="muted" style="font-size:.82rem">পাসওয়ার্ড রিসেট আর যাচাইয়ের কোড সবসময় যায়। কাস্টমার চাইলে নিজের প্রোফাইল থেকে অগ্রগতি/মেসেজের ইমেইল বন্ধ করতে পারেন।</small>
+        </div>
+        <div class="row2"><button class="btn btn-primary" type="submit">সেভ করুন</button>${e.password_set ? '<button class="btn btn-ghost btn-sm" type="button" id="emClear">পাসওয়ার্ড মুছুন</button>' : ""}</div>
+        <p class="err" id="emErr" role="alert"></p>
+        <div class="row2" style="border-top:1px solid var(--line);padding-top:14px"><input class="inp" id="emTo" type="email" placeholder="${esc(me.email)}" style="flex:1;min-width:180px" aria-label="টেস্ট ইমেইল যাবে"><button class="btn btn-ghost" type="button" id="emTest">টেস্ট ইমেইল পাঠান</button></div>
+        ${etest ? `<div class="alert ${etest.ok ? "good" : "bad"}" style="cursor:default">${etest.ok ? I.ok : I.alert}<span>${esc(etest.text)}</span></div>` : ""}
+        ${e.openssl ? "" : '<div class="alert bad" style="cursor:default">' + I.alert + '<span>সার্ভারে PHP OpenSSL চালু নেই, SSL/TLS দিয়ে পাঠানো যাবে না। cPanel → Select PHP Version থেকে openssl চালু করুন।</span></div>'}
+      </form>
+      <div class="card" style="display:grid;gap:14px;align-content:start">
+        <h3>cPanel-এ কীভাবে সেটআপ করবেন</h3>
+        <ol class="steps-ol">
+          <li>cPanel → <b>Email Accounts</b> → <b>Create</b>। যেমন <b>noreply@${esc(e.host_hint || "yourdomain.com")}</b>, একটা শক্ত পাসওয়ার্ড দিন।</li>
+          <li>সেই অ্যাকাউন্টের পাশে <b>Connect Devices</b> চাপুন। "Secure SSL/TLS Settings"-এ যে Outgoing Server আর পোর্ট (সাধারণত 465) লেখা, সেটা এখানে দিন।</li>
+          <li>ইউজারনেম = পুরো ইমেইল, পাসওয়ার্ড = ইমেইল অ্যাকাউন্টের পাসওয়ার্ড। From-এও একই ইমেইল দিন।</li>
+          <li>সেভ করে <b>টেস্ট ইমেইল পাঠান</b>। এলে উপরের সুইচ চালু করে আবার সেভ করুন।</li>
+          <li>cPanel → <b>Email Deliverability</b>-এ গিয়ে SPF আর DKIM "Valid" করুন, নইলে ইমেইল Spam-এ যেতে পারে।</li>
+        </ol>
+        <p class="muted" style="font-size:.85rem"><b>Gmail:</b> smtp.gmail.com, পোর্ট 587, STARTTLS। Google অ্যাকাউন্টে 2-Step Verification চালু করে <b>App password</b> বানিয়ে সেটা পাসওয়ার্ড হিসেবে দিন, সাধারণ পাসওয়ার্ড কাজ করবে না। দিনে ৫০০টার বেশি পাঠাবেন না।</p>
+        <p class="muted" style="font-size:.85rem">ইমেইল পাঠানো হয় পেজ লোড হয়ে যাওয়ার পর, তাই মেইল সার্ভার ধীর হলেও সাইট ধীর হবে না। OTP কোড সাথে সাথে যায়।</p>
+      </div>
+    </div>
+    <div class="card" style="padding:10px 14px"><div class="ch" style="padding:8px 6px 0"><h3>সাম্প্রতিক ইমেইল</h3><small>শেষ ৪০টা · মেসেজের লেখা রাখা হয় না</small></div>
+      ${e.log.length ? `<div class="tbl-wrap"><table class="tbl" style="min-width:760px"><thead><tr><th>সময়</th><th>প্রাপক</th><th>বিষয়</th><th>ধরন</th><th>অবস্থা</th></tr></thead><tbody>
+        ${e.log.map(l => `<tr><td>${when(l.created)}</td><td>${esc(l.to)}</td><td style="max-width:320px">${esc(l.subject)}</td><td>${MAILKIND[l.kind] || esc(l.kind)}</td><td>${l.status === "sent" ? '<span class="badge b-done">গেছে</span>' : l.status === "failed" ? '<span class="badge b-late">যায়নি</span>' : '<span class="badge b-pending">লাইনে</span>'}${l.error ? `<span class="sub" style="max-width:280px;white-space:normal">${esc(l.error)}</span>` : ""}</td></tr>`).join("")}
+      </tbody></table></div>` : '<p class="empty">এখনো কোনো ইমেইল পাঠানো হয়নি।</p>'}</div>`;
+  const form = $("emForm");
+  form.addEventListener("change", ev => { if (ev.target.name === "transport") $("smtpBox").hidden = ev.target.value !== "smtp"; });
+  form.querySelectorAll("[data-preset]").forEach(b => b.addEventListener("click", () => {
+    const v = PRESETS[b.dataset.preset](e.host_hint); $("em-host").value = v.host; $("em-port").value = v.port; $("em-sec").value = v.secure;
+    if (b.dataset.preset === "cpanel" && !$("em-user").value && e.host_hint) $("em-user").value = "noreply@" + e.host_hint;
+    if (!$("em-from").value && $("em-user").value.includes("@")) $("em-from").value = $("em-user").value;
+  }));
+  const collect = () => { const f = new FormData(form), d = Object.fromEntries(f); for (const k of ["enabled", "otp_required", ...NOTIFY.map(([k]) => "n_" + k)]) d[k] = f.get(k) ? 1 : ""; return d; };
+  form.addEventListener("submit", async ev => {
+    ev.preventDefault(); $("emErr").textContent = "";
+    try { eset = (await api.saveEmail(collect())).settings; etest = null; renderEmail(); toast(eset.ready ? "সেভ হয়েছে। ইমেইল চালু।" : "সেভ হয়েছে। ইমেইল বন্ধ আছে।"); stats = await api.stats(days).catch(() => stats); renderNav(); }
+    catch(err){ $("emErr").textContent = err.message; }
+  });
+  $("emClear")?.addEventListener("click", async () => {
+    if (!confirm("SMTP পাসওয়ার্ড মুছবেন? ইমেইল বন্ধ হয়ে যাবে।")) return;
+    try { eset = (await api.saveEmail({...collect(), enabled: "", password: "", clear_password: 1})).settings; renderEmail(); } catch(err){ toast(err.message); }
+  });
+  $("emTest").addEventListener("click", async () => {
+    const b = $("emTest"); b.disabled = true; b.textContent = "পাঠানো হচ্ছে...";
+    try { const r = await api.emailTest($("emTo").value.trim()); etest = {ok: r.sent, text: r.sent ? r.message : "পাঠানো যায়নি: " + r.message}; if (r.settings) eset = r.settings; }
+    catch(err){ etest = {ok: false, text: err.message}; }
+    renderEmail();
+  });
+}
+
+/* ---------- floating support button ---------- */
+const SUPCH = [["support_open", "বাটন খুলেছেন"], ["support_whatsapp", "WhatsApp"], ["support_messenger", "Messenger"], ["support_tawk", "লাইভ চ্যাট"]];
+function renderSupport(){
+  if (!sset){ $("main").innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; return; }
+  const s = sset, pub = s.public, c = s.clicks || {};
+  const tawkVal = s.tawk_property ? (s.tawk_property === "demo" ? "demo" : `https://tawk.to/chat/${s.tawk_property}/${s.tawk_widget || "default"}`) : "";
+  const ch = pub ? [pub.messenger && ["Messenger", "linear-gradient(135deg,#00b2ff,#006aff 55%,#a033ff)", pub.messenger.replace("https://", "")], pub.whatsapp && ["WhatsApp", "#25d366", "+" + pub.whatsapp], pub.tawk && ["লাইভ চ্যাট", "#0a84f0", "tawk.to"]].filter(Boolean) : [];
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>সাপোর্ট বাটন</h1><p>সাইটের ডান কোণে ভাসমান বাটন। ক্লিক করলে তিনটা অপশন খোলে: Messenger, WhatsApp আর tawk.to লাইভ চ্যাট। এটা সেলস সাপোর্টের জন্য, তাই ল্যান্ডিং পেজে থাকে।</p></div>
+      <div class="tools">${pub ? '<span class="badge b-done" style="font-size:.9rem;padding:4px 14px">সাইটে দেখাচ্ছে</span>' : '<span class="badge b-off" style="font-size:.9rem;padding:4px 14px">বন্ধ</span>'}</div></div>
+    <div class="tiles">${SUPCH.map(([k, l]) => tile(l, nf(c[k] || 0), "গত ৩০ দিনে আলাদা ভিজিটর")).join("")}</div>
+    <div class="grid g-main">
+      <form class="card" id="supForm" style="display:grid;gap:14px;align-content:start" novalidate>
+        <div class="ch" style="margin:0"><h3>বাটন</h3><label class="switch"><input type="checkbox" name="enabled" ${s.enabled ? "checked" : ""}><span></span>সাইটে দেখান</label></div>
+        <div class="f"><label for="sp-greet">উপরের ছোট লেখা</label><input class="inp" id="sp-greet" name="greeting" maxlength="80" value="${esc(s.greeting)}" placeholder="প্যাকেজ নিয়ে প্রশ্ন? সরাসরি কথা বলুন"></div>
+        <div class="f"><label for="sp-ms">Messenger <small>(ফেসবুক পেজের username বা লিংক)</small></label><input class="inp" id="sp-ms" name="messenger" value="${esc(s.messenger)}" placeholder="techillbd বা https://facebook.com/techillbd" autocomplete="off">
+          <small class="muted" style="font-size:.82rem">ক্লিক করলে m.me লিংক দিয়ে Messenger অ্যাপ (ফোনে) বা messenger.com (কম্পিউটারে) খুলবে। পেজের Settings → Messaging-এ মেসেজ চালু রাখুন।</small></div>
+        <div class="grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:10px">
+          <div class="f"><label for="sp-wa">WhatsApp নম্বর</label><input class="inp" id="sp-wa" name="whatsapp" type="tel" value="${esc(s.whatsapp)}" placeholder="${s.catalog_whatsapp ? esc(s.catalog_whatsapp) + " (প্যাকেজ পেজের নম্বর)" : "01712345678"}"></div>
+          <div class="f"><label for="sp-wat">আগে থেকে লেখা মেসেজ</label><input class="inp" id="sp-wat" name="wa_text" maxlength="300" value="${esc(s.wa_text)}"></div>
+        </div>
+        <small class="muted" style="font-size:.82rem;margin-top:-6px">খালি রাখলে প্যাকেজ ও দাম পেজের হোয়াটসঅ্যাপ নম্বর ব্যবহার হবে। ফোনে WhatsApp অ্যাপ খুলবে, কম্পিউটারে সরাসরি WhatsApp Web।</small>
+        <div class="f"><label for="sp-tawk">tawk.to লাইভ চ্যাট <small>(Direct Chat Link বা পুরো widget কোড)</small></label><textarea class="inp" id="sp-tawk" name="tawk" rows="3" placeholder="https://tawk.to/chat/xxxxxxxxxxxxxxxxxxxxxxxx/1abcdefgh" style="min-height:70px">${esc(tawkVal)}</textarea>
+          <small class="muted" style="font-size:.82rem">tawk.to-তে ফ্রি অ্যাকাউন্ট খুলুন → Administration → Channels → Chat Widget → Direct Chat Link কপি করে এখানে দিন। tawk.to-এর নিজের ভাসমান বাটন লুকানো থাকবে, এই মেনু থেকেই চ্যাট খুলবে। এজেন্টরা tawk.to অ্যাপ থেকে উত্তর দেবেন।</small></div>
+        <label class="checks" style="font-size:.92rem;display:flex;gap:10px;align-items:center"><input type="checkbox" name="on_dashboard" ${s.on_dashboard ? "checked" : ""}> কাস্টমার ড্যাশবোর্ডেও দেখান <span class="muted" style="font-size:.84rem">(সেখানে প্রোজেক্ট চ্যাট তো আছেই)</span></label>
+        <div class="row2"><button class="btn btn-primary" type="submit">সেভ করুন</button><a class="btn btn-ghost btn-sm" href="index.html" target="_blank" rel="noopener">সাইটে দেখুন ↗</a></div>
+        <p class="err" id="spErr" role="alert"></p>
+      </form>
+      <div class="card" style="display:grid;gap:14px;align-content:start">
+        <h3>কাস্টমার যা দেখবে</h3>
+        <div style="background:var(--sunk);border-radius:16px;padding:18px;display:grid;justify-items:end;gap:10px">
+          ${pub ? `${pub.greeting ? `<span style="background:var(--ink);color:var(--bg);border-radius:14px 14px 4px 14px;padding:6px 12px;font-size:.84rem">${esc(pub.greeting)}</span>` : ""}
+            ${ch.map(([t, bg, sub]) => `<div style="display:flex;gap:10px;align-items:center"><span style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:5px 11px;text-align:right;line-height:1.25"><b style="font-size:.9rem">${t}</b><br><small class="muted" style="font-size:.74rem">${esc(sub)}</small></span><span style="width:42px;height:42px;border-radius:50%;background:${bg};display:block"></span></div>`).join("")}
+            <span style="width:52px;height:52px;border-radius:50%;background:var(--blue);display:grid;place-items:center;color:#fff;font-size:1.4rem">×</span>`
+          : '<p class="muted" style="justify-self:center">বাটন বন্ধ, বা কোনো মাধ্যম দেওয়া হয়নি।</p>'}
+        </div>
+        <p class="muted" style="font-size:.85rem">কোন মাধ্যমে বেশি মানুষ যোগাযোগ করছে উপরের সংখ্যায় দেখুন। প্রতিটা ক্লিক Facebook Pixel-এ "Contact" ইভেন্ট হিসেবেও যায়।</p>
+        <p class="muted" style="font-size:.85rem">Facebook-এর পুরনো "Chat Plugin" (সাইটের ভেতরে Messenger চ্যাট) Meta ২০২৪-এ বন্ধ করে দিয়েছে। তাই Messenger বাটন সরাসরি আপনার পেজের ইনবক্সে নিয়ে যায়।</p>
+      </div>
+    </div>`;
+  $("supForm").addEventListener("submit", async ev => {
+    ev.preventDefault(); $("spErr").textContent = "";
+    const f = new FormData(ev.target), d = Object.fromEntries(f); d.enabled = f.get("enabled") ? 1 : ""; d.on_dashboard = f.get("on_dashboard") ? 1 : "";
+    try { sset = (await api.saveSupport(d)).settings; renderSupport(); toast(sset.public ? "সেভ হয়েছে। সাইটে বাটন দেখাচ্ছে।" : "সেভ হয়েছে। বাটন দেখাচ্ছে না।"); }
+    catch(err){ $("spErr").textContent = err.message; }
+  });
+}
+
+/* ---------- referral program ---------- */
+const RSTAT = {pending: ["অপেক্ষায়", "b-pending"], earned: ["আয় হয়েছে", "b-done"], cancelled: ["বাতিল", "b-cancel"], rejected: ["আপনি বাতিল করেছেন", "b-late"]};
+const rstat = st => `<span class="badge ${(RSTAT[st] || ["", "b-off"])[1]}">${(RSTAT[st] || [st])[0]}</span>`;
+const POST = {requested: ["অপেক্ষায়", "b-pending"], paid: ["পাঠানো হয়েছে", "b-done"], rejected: ["বাতিল", "b-cancel"]};
+function renderReferral(){
+  if (!rdata){ $("main").innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; return; }
+  const {settings: s, totals: t, top, referrals, payouts} = rdata;
+  const RF = {all: ["সব", () => true], pending: ["অপেক্ষায়", r => r.status === "pending"], earned: ["আয় হয়েছে", r => r.status === "earned"], cancelled: ["বাতিল", r => r.status === "cancelled" || r.status === "rejected"]};
+  const list = referrals.filter(RF[rFilter][1]), reqs = payouts.filter(p => p.status === "requested");
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>রেফারেল</h1><p>কাস্টমার বন্ধুকে আনলে প্রতিটা সফল অর্ডারে ${tk(s.reward)} পান, বন্ধু পান ${tk(s.discount)} ছাড়। কাস্টমার ড্যাশবোর্ডে নিজের লিংক আর আয় দেখেন।</p></div>
+      <div class="tools">${s.enabled ? '<span class="badge b-done" style="font-size:.9rem;padding:4px 14px">চালু</span>' : '<span class="badge b-off" style="font-size:.9rem;padding:4px 14px">বন্ধ</span>'}</div></div>
+    ${reqs.length ? `<div class="alert warn" style="margin-bottom:16px;cursor:default">${I.gift}<span><b style="font-size:1rem">${BN(reqs.length)}টা টাকা তোলার অনুরোধ অপেক্ষায়</b> · মোট ${tk(t.requested)}। বিকাশ/নগদে পাঠিয়ে "পাঠিয়েছি" চাপুন।</span></div>` : ""}
+    <div class="tiles">
+      ${tile("মোট রেফারেল অর্ডার", nf(t.n), `${nf(t.earned_n)}টা সফল · ${nf(t.pending_n)}টা অপেক্ষায়`)}
+      ${tile("রেফারেলে আসা বিক্রি", tkShort(t.revenue), "সফল রেফারেল অর্ডারের মোট")}
+      ${tile("কাস্টমারদের আয়", tkShort(t.earned), `পাঠানো ${tk(t.paid)} · অপেক্ষায় ${tk(t.requested)}`)}
+      ${tile("নতুন কাস্টমারকে ছাড়", tkShort(t.discounts), "বাতিল অর্ডার বাদে")}
+    </div>
+    <div class="grid g-main" style="margin-bottom:18px">
+      <div class="card" style="padding:10px 14px"><div class="ch" style="padding:8px 6px 0"><h3>টাকা তোলার অনুরোধ</h3><small>অপেক্ষায় থাকাগুলো আগে</small></div>
+        ${payouts.length ? `<div class="tbl-wrap"><table class="tbl" style="min-width:640px"><thead><tr><th>কাস্টমার</th><th class="r">টাকা</th><th>কোথায় পাঠাবেন</th><th>অবস্থা</th><th></th></tr></thead><tbody>
+          ${payouts.map(p => `<tr><td><b>${esc(p.user)}</b><span class="sub">${esc(p.email)} · ${ago(p.created)}</span></td><td class="r num"><b>${tk(p.amount)}</b>${p.status === "requested" && p.balance < p.amount ? '<span class="sub late">ব্যালেন্সের চেয়ে বেশি</span>' : ""}</td>
+            <td>${MNAME[p.method] || esc(p.method)}<span class="sub"><b>${esc(p.account)}</b></span></td>
+            <td><span class="badge ${POST[p.status][1]}">${POST[p.status][0]}</span>${p.trx ? `<span class="sub">TrxID ${esc(p.trx)}</span>` : ""}${p.note ? `<span class="sub">${esc(p.note)}</span>` : ""}</td>
+            <td class="r">${p.status === "requested" ? `<div class="row2" style="justify-content:flex-end;flex-wrap:nowrap"><input class="inp" data-trx="${p.id}" placeholder="TrxID" style="width:120px;padding:5px 8px" aria-label="TrxID"><button class="btn btn-ok btn-sm" type="button" data-paid="${p.id}">পাঠিয়েছি</button><button class="btn btn-ghost btn-sm" type="button" data-prej="${p.id}">বাতিল</button></div>` : ""}</td></tr>`).join("")}
+        </tbody></table></div>` : '<p class="empty">এখনো কেউ টাকা তুলতে চাননি।</p>'}</div>
+      <form class="card" id="refForm" style="display:grid;gap:12px;align-content:start" novalidate>
+        <div class="ch" style="margin:0"><h3>নিয়ম</h3><label class="switch"><input type="checkbox" name="enabled" ${s.enabled ? "checked" : ""}><span></span>চালু</label></div>
+        <div class="grid g2" style="gap:10px">
+          <div class="f"><label for="rf-rew">রেফারারের আয় (৳)</label><input class="inp" id="rf-rew" name="reward" type="number" min="0" step="1" value="${s.reward}"></div>
+          <div class="f"><label for="rf-dis">নতুন কাস্টমারের ছাড় (৳)</label><input class="inp" id="rf-dis" name="discount" type="number" min="0" step="1" value="${s.discount}"></div>
+          <div class="f"><label for="rf-min">ছাড় পেতে কমপক্ষে অর্ডার (৳)</label><input class="inp" id="rf-min" name="min_order" type="number" min="0" step="1" value="${s.min_order}"></div>
+          <div class="f"><label for="rf-pmin">কমপক্ষে কত হলে তোলা যাবে (৳)</label><input class="inp" id="rf-pmin" name="payout_min" type="number" min="0" step="1" value="${s.payout_min}"></div>
+        </div>
+        <div class="f"><label for="rf-trig">রেফারারের আয় কখন যোগ হবে</label><select class="inp" id="rf-trig" name="trigger"><option value="delivered" ${s.trigger === "delivered" ? "selected" : ""}>পেমেন্ট যাচাই হয়ে ওয়েবসাইট ডেলিভারি হলে (সুপারিশকৃত)</option><option value="paid" ${s.trigger === "paid" ? "selected" : ""}>পেমেন্ট যাচাই হলেই</option></select></div>
+        <label class="checks" style="font-size:.92rem;display:flex;gap:10px;align-items:center"><input type="checkbox" name="first_order_only" ${s.first_order_only ? "checked" : ""}> ছাড় শুধু নতুন কাস্টমারের প্রথম অর্ডারে</label>
+        <div class="row2"><button class="btn btn-primary" type="submit">সেভ করুন</button></div>
+        <p class="err" id="rfErr" role="alert"></p>
+        <p class="muted" style="font-size:.84rem">নিরাপত্তা: নিজের কোড নিজে ব্যবহার করা যায় না (ইমেইল আর ফোন মিলিয়ে দেখা হয়)। অর্ডার বাতিল হলে বা পেমেন্ট না এলে আয় যোগ হয় না। সন্দেহজনক কোনো রেফারেল নিচের তালিকা থেকে বাতিল করতে পারেন।</p>
+      </form>
+    </div>
+    <div class="grid g2" style="margin-bottom:18px;grid-template-columns:minmax(0,1fr) minmax(0,2fr)">
+      <div class="card"><div class="ch"><h3>সেরা রেফারার</h3></div>
+        <ul class="people">${top.map(r => `<li>${avatarHTML(r.name)}<div><b>${esc(r.name)}</b><small>${esc(r.code || "")} · ${BN(r.n)}টা রেফারেল</small></div><div style="text-align:right"><b>${tk(r.earned)}</b><small>আয়</small></div></li>`).join("") || '<li class="empty">এখনো কেউ নেই</li>'}</ul></div>
+      <div class="card" style="padding:10px 14px"><div class="ch" style="padding:8px 6px 0"><h3>রেফারেল অর্ডার</h3>
+        <div class="chips">${Object.entries(RF).map(([k, [l, f]]) => `<button type="button" data-rf="${k}" aria-pressed="${rFilter === k}">${l} (${BN(referrals.filter(f).length)})</button>`).join("")}</div></div>
+        ${list.length ? `<div class="tbl-wrap"><table class="tbl" style="min-width:720px"><thead><tr><th>অর্ডার</th><th>রেফারার → নতুন কাস্টমার</th><th class="r">অর্ডার</th><th class="r">ছাড় / আয়</th><th>অবস্থা</th><th></th></tr></thead><tbody>
+          ${list.map(r => `<tr class="click" data-open="${r.order_id}"><td><b>${esc(r.order)}</b><span class="sub">${when(r.created)} · ${esc(r.code)}</span></td><td>${esc(r.referrer)} → ${esc(r.referee)}</td><td class="r num">${tk(r.total)}</td><td class="r num">${tk(r.discount)} / ${tk(r.reward)}</td>
+            <td>${rstat(r.status)}${r.note ? `<span class="sub">${esc(r.note)}</span>` : ""}</td>
+            <td class="r">${r.status === "rejected" ? `<button class="btn btn-ghost btn-sm" type="button" data-rrestore="${r.id}">ফিরিয়ে আনুন</button>` : r.status !== "cancelled" ? `<button class="btn btn-ghost btn-sm" type="button" data-rreject="${r.id}">বাতিল করুন</button>` : ""}</td></tr>`).join("")}
+        </tbody></table></div>` : '<p class="empty">কোনো রেফারেল অর্ডার নেই।</p>'}</div>
+    </div>`;
+  $("refForm").addEventListener("submit", async ev => {
+    ev.preventDefault(); $("rfErr").textContent = "";
+    const f = new FormData(ev.target), d = Object.fromEntries(f); d.enabled = f.get("enabled") ? 1 : ""; d.first_order_only = f.get("first_order_only") ? 1 : "";
+    try { rdata = await api.saveReferral(d); renderReferral(); toast("সেভ হয়েছে।"); } catch(err){ $("rfErr").textContent = err.message; }
+  });
+}
+$("main").addEventListener("click", async e => {
+  if (sec !== "referral") return;
+  const f = e.target.closest("[data-rf]"); if (f){ rFilter = f.dataset.rf; return renderReferral(); }
+  const done = async (p, msg) => { try { rdata = await p; renderReferral(); toast(msg); stats = await api.stats(days).catch(() => stats); renderNav(); } catch(err){ toast(err.message); } };
+  const paid = e.target.closest("[data-paid]");
+  if (paid){ const id = paid.dataset.paid, trx = document.querySelector(`[data-trx="${id}"]`).value.trim(); if (!trx){ toast("যে TrxID দিয়ে টাকা পাঠিয়েছেন সেটা দিন।"); document.querySelector(`[data-trx="${id}"]`).focus(); return; } return done(api.payoutOp({id, op: "paid", trx}), "পেমেন্ট সম্পন্ন হিসেবে রাখা হয়েছে। কাস্টমারকে ইমেইলে জানানো হবে।"); }
+  const rej = e.target.closest("[data-prej]");
+  if (rej){ const note = prompt("কেন বাতিল করছেন? কাস্টমার এই কারণটা দেখবেন।"); if (!note) return; return done(api.payoutOp({id: rej.dataset.prej, op: "rejected", note}), "অনুরোধ বাতিল হয়েছে, টাকা কাস্টমারের ব্যালেন্সে ফিরে গেছে।"); }
+  const rr = e.target.closest("[data-rreject]");
+  if (rr){ e.stopPropagation(); const note = prompt("কেন বাতিল করছেন? (যেমন: নিজের আরেকটা অ্যাকাউন্ট)"); if (note === null) return; return done(api.referralOp({id: rr.dataset.rreject, op: "reject", note}), "রেফারেল বাতিল হয়েছে।"); }
+  const rs = e.target.closest("[data-rrestore]");
+  if (rs){ e.stopPropagation(); return done(api.referralOp({id: rs.dataset.rrestore, op: "restore"}), "রেফারেল আবার চালু হয়েছে।"); }
+}, true);
 
 /* ---------- people drawer (customers & team) ---------- */
 // kind: "customer" | "team"; p: the person, or null to add a new one

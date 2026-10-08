@@ -43,6 +43,9 @@ function migrate(): void {
     if (!$col('visits', 'city')) db()->exec('ALTER TABLE visits ADD browser VARCHAR(30) NULL AFTER device, ADD os VARCHAR(20) NULL AFTER browser,
         ADD country CHAR(2) NULL AFTER os, ADD country_name VARCHAR(60) NULL AFTER country, ADD region VARCHAR(80) NULL AFTER country_name, ADD city VARCHAR(80) NULL AFTER region');
     if (!$col('users', 'avatar')) db()->exec('ALTER TABLE users ADD avatar VARCHAR(60) NULL AFTER active');
+    if (!$col('users', 'email_verified_at')) db()->exec('ALTER TABLE users ADD email_verified_at DATETIME NULL AFTER avatar, ADD email_notify TINYINT(1) NOT NULL DEFAULT 1 AFTER email_verified_at,
+        ADD ref_code VARCHAR(12) NULL AFTER email_notify, ADD referred_by INT UNSIGNED NULL AFTER ref_code, ADD UNIQUE KEY uq_users_ref (ref_code)');
+    if (!$col('orders', 'referrer_id')) db()->exec('ALTER TABLE orders ADD referrer_id INT UNSIGNED NULL AFTER cancelled');
     if (!$col('live_visitors', 'city')) db()->exec('ALTER TABLE live_visitors ADD browser VARCHAR(30) NULL AFTER device, ADD city VARCHAR(80) NULL AFTER browser, ADD country CHAR(2) NULL AFTER city');
 }
 ?><!doctype html>
