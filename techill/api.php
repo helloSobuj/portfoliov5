@@ -15,6 +15,11 @@ const STAGES = 5;          // তথ্য জমা, পেমেন্ট য�
 const LOGIN_LIMIT = 10;    // failed logins per IP per 15 minutes
 const LOCAL_TZ = '+06:00';   // Bangladesh, for "today" and daily charts
 const TRACK_EVENTS = ['checkout_open', 'whatsapp_click', 'package_select'];
+// Browser time zone → country, used only when the IP lookup gives nothing.
+const TZ_COUNTRY = ['Asia/Dhaka' => ['BD', 'Bangladesh'], 'Asia/Kolkata' => ['IN', 'India'], 'Asia/Calcutta' => ['IN', 'India'],
+    'Asia/Dubai' => ['AE', 'United Arab Emirates'], 'Asia/Riyadh' => ['SA', 'Saudi Arabia'], 'Asia/Qatar' => ['QA', 'Qatar'],
+    'Asia/Kuwait' => ['KW', 'Kuwait'], 'Asia/Muscat' => ['OM', 'Oman'], 'Asia/Kuala_Lumpur' => ['MY', 'Malaysia'],
+    'Asia/Singapore' => ['SG', 'Singapore'], 'Europe/London' => ['GB', 'United Kingdom'], 'Europe/Rome' => ['IT', 'Italy']];
 const ORDER_SELECT = 'SELECT o.*, c.name c_name, c.email c_email, c.phone c_phone, d.name d_name FROM orders o JOIN users c ON c.id = o.user_id LEFT JOIN users d ON d.id = o.developer_id';
 
 try {
@@ -41,6 +46,8 @@ try {
         case 'team':         team_list();
         case 'team_save':    $isPost || fail('POST only', 405); team_save();
         case 'customers':    customers_list();
+        case 'customer_save': $isPost || fail('POST only', 405); customer_save();
+        case 'analytics':    analytics();
         case 'export_orders': export_orders();
         default:             fail('Unknown action', 404);
     }
@@ -304,22 +311,32 @@ function track(): void {
     $vid = (string)($_POST['vid'] ?? '');
     $ua = (string)($_SERVER['HTTP_USER_AGENT'] ?? '');
     if (!preg_match('/^[a-f0-9]{32}$/', $vid) || $ua === '' || preg_match('/bot|crawl|spider|slurp|preview|headless|lighthouse/i', $ua)) out([]);
-    $device = preg_match('/ipad|tablet/i', $ua) ? 'tablet' : (preg_match('/mobi|android|iphone/i', $ua) ? 'mobile' : 'desktop');
+    ['device' => $device, 'browser' => $browser, 'os' => $os] = ua_info($ua);
     $path = mb_substr((string)($_POST['p'] ?? '/'), 0, 200);
     if ($path === '' || $path[0] !== '/') $path = '/';
     $type = (string)($_POST['t'] ?? '');
 
+    // The beacon does not wait for an answer; on PHP-FPM let it go before the location lookup.
+    if ($type === 'view' && function_exists('fastcgi_finish_request')) {
+        header('Content-Type: application/json'); echo '{"ok":true}'; fastcgi_finish_request();
+    }
     if ($type === 'view') {
         $ref = parse_url((string)($_POST['r'] ?? ''), PHP_URL_HOST) ?: null;
         if ($ref && strcasecmp($ref, (string)($_SERVER['HTTP_HOST'] ?? '')) === 0) $ref = null;
         $utm = mb_substr(preg_replace('/[^\w.\-]/u', '', (string)($_POST['u'] ?? '')), 0, 60) ?: null;
-        q('INSERT INTO visits (vid, path, ref_host, utm, device) VALUES (?,?,?,?,?)', [$vid, $path, $ref ? mb_substr(strtolower($ref), 0, 120) : null, $utm, $device]);
+        $geo = geo_for_ip(client_ip());
+        if (!$geo['country'] && isset(TZ_COUNTRY[$_POST['tz'] ?? ''])) [$geo['country'], $geo['country_name']] = TZ_COUNTRY[$_POST['tz']];
+        q('INSERT INTO visits (vid, path, ref_host, utm, device, browser, os, country, country_name, region, city) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+          [$vid, $path, $ref ? mb_substr(strtolower($ref), 0, 120) : null, $utm, $device, $browser, $os, $geo['country'], $geo['country_name'], $geo['region'], $geo['city']]);
+        q('INSERT INTO live_visitors (vid, path, device, browser, city, country) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE path = VALUES(path), browser = VALUES(browser),
+           city = VALUES(city), country = VALUES(country), first_seen = IF(last_seen < UTC_TIMESTAMP() - INTERVAL 30 MINUTE, UTC_TIMESTAMP(), first_seen), last_seen = UTC_TIMESTAMP()',
+          [$vid, $path, $device, $browser, $geo['city'], $geo['country']]);
     }
-    if ($type === 'view' || $type === 'ping') {
-        q('INSERT INTO live_visitors (vid, path, device) VALUES (?,?,?) ON DUPLICATE KEY UPDATE path = VALUES(path), last_seen = UTC_TIMESTAMP(),
-           first_seen = IF(last_seen < UTC_TIMESTAMP() - INTERVAL 30 MINUTE, UTC_TIMESTAMP(), first_seen)', [$vid, $path, $device]);
-        if (random_int(1, 100) === 1) q('DELETE FROM live_visitors WHERE last_seen < UTC_TIMESTAMP() - INTERVAL 1 DAY');
+    if ($type === 'ping') {
+        q('INSERT INTO live_visitors (vid, path, device, browser) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE path = VALUES(path),
+           first_seen = IF(last_seen < UTC_TIMESTAMP() - INTERVAL 30 MINUTE, UTC_TIMESTAMP(), first_seen), last_seen = UTC_TIMESTAMP()', [$vid, $path, $device, $browser]);
     }
+    if (($type === 'view' || $type === 'ping') && random_int(1, 100) === 1) q('DELETE FROM live_visitors WHERE last_seen < UTC_TIMESTAMP() - INTERVAL 1 DAY');
     if ($type === 'event' && in_array($_POST['n'] ?? '', TRACK_EVENTS, true)) {
         q('INSERT INTO track_events (vid, name) VALUES (?,?)', [$vid, $_POST['n']]);
     }
@@ -330,7 +347,8 @@ function track(): void {
 
 function admin_stats(): void {
     require_admin();
-    $days = in_array((int)($_GET['days'] ?? 30), [7, 30, 90], true) ? (int)$_GET['days'] : 30;
+    $days = (int)($_GET['days'] ?? 30);
+    if (!in_array($days, [7, 30, 90], true)) $days = 30;
     $local = fn(string $col) => "DATE(CONVERT_TZ($col, '+00:00', '" . LOCAL_TZ . "'))";
     $today = q("SELECT DATE(CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '" . LOCAL_TZ . "')) d")->fetchColumn();
     $since = "UTC_TIMESTAMP() - INTERVAL $days DAY";
@@ -414,6 +432,7 @@ function admin_stats(): void {
             q("SELECT stack, pack, COUNT(*) n, SUM(total) t FROM orders WHERE cancelled = 0 AND created_at >= $since GROUP BY stack, pack ORDER BY n DESC")->fetchAll()),
         'addons' => array_map(fn($k, $n) => ['k' => $k, 'n' => $n], array_keys(array_slice($addons, 0, 10, true)), array_slice($addons, 0, 10, true)),
         'team' => team_rows(),
+        'counts' => people_counts(),
         'activity' => array_slice($activity, 0, 20),
     ]);
 }
@@ -520,6 +539,17 @@ function team_save(): void {
             $pass = (string)($_POST['password'] ?? '');
             if (mb_strlen($pass) < 8) fail('পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের দিন।');
             q('UPDATE users SET password_hash = ? WHERE id = ?', [password_hash($pass, PASSWORD_DEFAULT), $id]);
+        } elseif ($op === 'update') {
+            update_person($id, str_in('name', 120), mb_strtolower(str_in('email', 190)), $t['phone']);
+        } elseif ($op === 'delete') {
+            if ($id === $u['id']) fail('নিজের অ্যাকাউন্ট মোছা যায় না।');
+            if ($t['role'] === 'admin' && (int)q("SELECT COUNT(*) FROM users WHERE role = 'admin' AND active = 1")->fetchColumn() <= 1) fail('অন্তত একজন অ্যাডমিন রাখতে হবে।');
+            db()->beginTransaction();
+            $n = q('SELECT COUNT(*) FROM orders WHERE developer_id = ? AND cancelled = 0 AND stage < 4', [$id])->fetchColumn();
+            q('UPDATE orders SET developer_id = NULL WHERE developer_id = ?', [$id]);
+            q('DELETE FROM users WHERE id = ?', [$id]);
+            db()->commit();
+            out(['team' => team_rows(), 'unassigned' => (int)$n]);
         } else fail('Unknown op');
     }
     out(['team' => team_rows()]);
@@ -527,11 +557,11 @@ function team_save(): void {
 
 function customers_list(): void {
     require_admin();
-    $rows = q("SELECT u.id, u.name, u.email, u.phone, u.created_at,
+    $rows = q("SELECT u.id, u.name, u.email, u.phone, u.active, u.created_at,
                  COUNT(o.id) orders, SUM(CASE WHEN o.cancelled = 0 AND o.pay_status = 'verified' THEN o.total ELSE 0 END) spent,
                  SUM(o.cancelled = 0 AND o.stage < 4) running, MAX(o.created_at) last_order
                FROM users u LEFT JOIN orders o ON o.user_id = u.id WHERE u.role = 'customer' GROUP BY u.id ORDER BY last_order DESC, u.id DESC LIMIT 2000")->fetchAll();
-    out(['customers' => array_map(fn($r) => ['id' => (int)$r['id'], 'name' => $r['name'], 'email' => $r['email'], 'phone' => $r['phone'],
+    out(['customers' => array_map(fn($r) => ['id' => (int)$r['id'], 'name' => $r['name'], 'email' => $r['email'], 'phone' => $r['phone'], 'active' => (bool)$r['active'],
         'orders' => (int)$r['orders'], 'spent' => (int)$r['spent'], 'running' => (int)$r['running'],
         'last_order' => $r['last_order'] ? strtotime($r['last_order'] . ' UTC') : null, 'created' => strtotime($r['created_at'] . ' UTC')], $rows)]);
 }
@@ -591,4 +621,156 @@ function catalog_save(): void {
             'gateway_extra_hours' => $int($in['gateway_extra_hours'] ?? 48, 0, 720), 'groups' => $groups, 'stacks' => $stacks, 'addons' => $addons];
     q("INSERT INTO settings (k, v) VALUES ('catalog', ?) ON DUPLICATE KEY UPDATE v = VALUES(v)", [json_encode($cat, JSON_UNESCAPED_UNICODE)]);
     out(['catalog' => $cat]);
+}
+
+/* ---------- admin: customers & counts ---------- */
+
+function people_counts(): array {
+    $r = q("SELECT SUM(role = 'customer') customers, SUM(role = 'customer' AND active = 1) customers_active,
+              SUM(role = 'developer') developers, SUM(role = 'developer' AND active = 1) developers_active, SUM(role = 'admin') admins FROM users")->fetch();
+    $cat = catalog();
+    $packs = 0; $tpls = 0;
+    foreach ($cat['stacks'] as $S) { $packs += count($S['packs']); $tpls += count($S['templates']); }
+    return array_map('intval', $r) + ['packages' => $packs, 'templates' => $tpls, 'addons' => count($cat['addons']), 'platforms' => count($cat['stacks'])];
+}
+
+function update_person(int $id, string $name, string $email, ?string $phone): void {
+    if ($name === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) fail('নাম ও সঠিক ইমেইল দিন।');
+    if ($phone !== null && $phone !== '' && !valid_phone($phone)) fail('সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন।');
+    if (q('SELECT 1 FROM users WHERE email = ? AND id <> ?', [$email, $id])->fetch()) fail('এই ইমেইলে অন্য একটা অ্যাকাউন্ট আছে।', 409);
+    q('UPDATE users SET name = ?, email = ?, phone = ? WHERE id = ?', [$name, $email, $phone ?: null, $id]);
+}
+
+// Add, edit, block/unblock, reset password or delete a customer. A customer with orders cannot be
+// deleted (that would wipe the orders, chat and files); block the account instead.
+function customer_save(): void {
+    require_admin();
+    $op = str_in('op', 20);
+    if ($op === 'create') {
+        $email = mb_strtolower(str_in('email', 190)); $pass = (string)($_POST['password'] ?? ''); $phone = str_in('phone', 20);
+        if (str_in('name', 120) === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) fail('নাম ও সঠিক ইমেইল দিন।');
+        if ($phone !== '' && !valid_phone($phone)) fail('সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন।');
+        if (mb_strlen($pass) < 8) fail('পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের দিন।');
+        if (q('SELECT 1 FROM users WHERE email = ?', [$email])->fetch()) fail('এই ইমেইলে আগেই অ্যাকাউন্ট আছে।', 409);
+        q("INSERT INTO users (name, email, phone, password_hash, role) VALUES (?,?,?,?,'customer')", [str_in('name', 120), $email, $phone ?: null, password_hash($pass, PASSWORD_DEFAULT)]);
+        customers_list();
+    }
+    $id = (int)($_POST['id'] ?? 0);
+    $c = q("SELECT * FROM users WHERE id = ? AND role = 'customer'", [$id])->fetch();
+    if (!$c) fail('কাস্টমার পাওয়া যায়নি।', 404);
+    if ($op === 'update') update_person($id, str_in('name', 120), mb_strtolower(str_in('email', 190)), str_in('phone', 20));
+    elseif ($op === 'toggle') q('UPDATE users SET active = 1 - active WHERE id = ?', [$id]);
+    elseif ($op === 'password') {
+        $pass = (string)($_POST['password'] ?? '');
+        if (mb_strlen($pass) < 8) fail('পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের দিন।');
+        q('UPDATE users SET password_hash = ? WHERE id = ?', [password_hash($pass, PASSWORD_DEFAULT), $id]);
+    } elseif ($op === 'delete') {
+        if ((int)q('SELECT COUNT(*) FROM orders WHERE user_id = ?', [$id])->fetchColumn() > 0) fail('এই কাস্টমারের অর্ডার আছে, তাই মোছা যাবে না। অ্যাকাউন্ট বন্ধ করে দিন।', 409);
+        q('DELETE FROM users WHERE id = ?', [$id]);
+    } else fail('Unknown op');
+    customers_list();
+}
+
+/* ---------- admin: analytics ---------- */
+
+function analytics(): void {
+    require_admin();
+    $days = (int)($_GET['days'] ?? 30);
+    if (!in_array($days, [7, 30, 90, 365], true)) $days = 30;
+    $tz = LOCAL_TZ;
+    $loc = fn(string $c) => "CONVERT_TZ($c, '+00:00', '$tz')";
+    $since = "UTC_TIMESTAMP() - INTERVAL $days DAY";
+    $prev = "created_at >= UTC_TIMESTAMP() - INTERVAL " . (2 * $days) . " DAY AND created_at < $since";
+    $one = fn(string $sql, array $a = []) => (int)q($sql, $a)->fetchColumn();
+    $kv = fn(string $sql) => array_map(fn($r) => ['k' => (string)$r['k'], 'n' => (int)$r['n']] + (isset($r['t']) ? ['t' => (int)$r['t']] : []), q($sql)->fetchAll());
+    $today = q("SELECT DATE({$loc('UTC_TIMESTAMP()')})")->fetchColumn();
+
+    // visitors
+    $uniq = $one("SELECT COUNT(DISTINCT vid) FROM visits WHERE created_at >= $since");
+    $views = $one("SELECT COUNT(*) FROM visits WHERE created_at >= $since");
+    $returning = $one("SELECT COUNT(DISTINCT v.vid) FROM visits v WHERE v.created_at >= $since AND EXISTS (SELECT 1 FROM visits p WHERE p.vid = v.vid AND p.created_at < $since)");
+    $single = $one("SELECT COUNT(*) FROM (SELECT vid FROM visits WHERE created_at >= $since GROUP BY vid HAVING COUNT(*) = 1) x");
+    $hours = array_fill(0, 24, 0); $week = array_fill(0, 7, 0);
+    foreach (q("SELECT HOUR({$loc('created_at')}) h, COUNT(DISTINCT vid) n FROM visits WHERE created_at >= $since GROUP BY h")->fetchAll() as $r) $hours[(int)$r['h']] = (int)$r['n'];
+    foreach (q("SELECT DAYOFWEEK({$loc('created_at')}) - 1 w, COUNT(DISTINCT vid) n FROM visits WHERE created_at >= $since GROUP BY w")->fetchAll() as $r) $week[(int)$r['w']] = (int)$r['n'];
+
+    // daily series
+    $series = [];
+    for ($i = $days - 1; $i >= 0; $i--) { $d = date('Y-m-d', strtotime("$today -$i day")); $series[$d] = ['d' => $d, 'uniques' => 0, 'visits' => 0, 'orders' => 0, 'earned' => 0]; }
+    foreach (q("SELECT DATE({$loc('created_at')}) d, COUNT(*) v, COUNT(DISTINCT vid) u FROM visits WHERE created_at >= $since GROUP BY d")->fetchAll() as $r)
+        if (isset($series[$r['d']])) { $series[$r['d']]['visits'] = (int)$r['v']; $series[$r['d']]['uniques'] = (int)$r['u']; }
+    foreach (q("SELECT DATE({$loc('created_at')}) d, COUNT(*) n, SUM(CASE WHEN pay_status = 'verified' THEN total ELSE 0 END) t FROM orders WHERE cancelled = 0 AND created_at >= $since GROUP BY d")->fetchAll() as $r)
+        if (isset($series[$r['d']])) { $series[$r['d']]['orders'] = (int)$r['n']; $series[$r['d']]['earned'] = (int)$r['t']; }
+
+    // orders
+    $ord = q("SELECT COUNT(*) n, SUM(cancelled = 1) cancelled, SUM(cancelled = 0 AND stage = 4) done, SUM(cancelled = 0 AND stage < 4) running,
+                SUM(CASE WHEN cancelled = 0 THEN total ELSE 0 END) value FROM orders WHERE created_at >= $since")->fetch();
+    $delivered = q("SELECT o.created_at, o.deadline_at, MIN(e.created_at) done_at FROM orders o JOIN order_events e ON e.order_id = o.id AND e.stage = 4
+                    WHERE o.cancelled = 0 AND o.stage = 4 AND o.created_at >= $since GROUP BY o.id")->fetchAll();
+    $onTime = count(array_filter($delivered, fn($r) => $r['done_at'] <= $r['deadline_at']));
+    $avgHours = $delivered ? array_sum(array_map(fn($r) => (strtotime($r['done_at']) - strtotime($r['created_at'])) / 3600, $delivered)) / count($delivered) : 0;
+    $stages = array_fill(0, STAGES, 0);
+    foreach (q("SELECT stage, COUNT(*) n FROM orders WHERE cancelled = 0 AND created_at >= $since GROUP BY stage")->fetchAll() as $r) $stages[(int)$r['stage']] = (int)$r['n'];
+
+    // where orders came from: the first visit of the browser that placed the order
+    $orderSources = $kv("SELECT COALESCE(NULLIF(fv.utm, ''), fv.ref_host, '') k, COUNT(*) n FROM track_events te
+        JOIN (SELECT v.vid, v.ref_host, v.utm FROM visits v JOIN (SELECT vid, MIN(id) mid FROM visits GROUP BY vid) f ON f.mid = v.id) fv ON fv.vid = te.vid
+        WHERE te.name = 'order' AND te.created_at >= $since GROUP BY k ORDER BY n DESC LIMIT 8");
+
+    // earnings
+    $earn = fn(string $where) => $one("SELECT COALESCE(SUM(total), 0) FROM orders WHERE cancelled = 0 AND pay_status = 'verified' AND $where");
+    $ym = fn(string $mod) => q("SELECT DATE_FORMAT({$loc('UTC_TIMESTAMP()')} $mod, '%Y-%m')")->fetchColumn();
+    $months = [];
+    for ($i = 11; $i >= 0; $i--) { $m = $ym("- INTERVAL $i MONTH"); $months[$m] = ['m' => $m, 'earned' => 0, 'orders' => 0]; }
+    foreach (q("SELECT DATE_FORMAT({$loc('created_at')}, '%Y-%m') m, COUNT(*) n, SUM(CASE WHEN pay_status = 'verified' THEN total ELSE 0 END) t FROM orders
+                WHERE cancelled = 0 AND created_at >= UTC_TIMESTAMP() - INTERVAL 13 MONTH GROUP BY m")->fetchAll() as $r)
+        if (isset($months[$r['m']])) { $months[$r['m']]['earned'] = (int)$r['t']; $months[$r['m']]['orders'] = (int)$r['n']; }
+    $thisM = $ym(''); $lastM = $ym('- INTERVAL 1 MONTH');
+
+    out([
+        'days' => $days,
+        'visitors' => [
+            'uniques' => $uniq, 'views' => $views, 'returning' => $returning, 'new' => $uniq - $returning,
+            'single_page' => $single, 'prev_uniques' => $one("SELECT COUNT(DISTINCT vid) FROM visits WHERE $prev"),
+            'today' => $one("SELECT COUNT(DISTINCT vid) FROM visits WHERE DATE({$loc('created_at')}) = ?", [$today]),
+            'total_uniques' => $one('SELECT COUNT(DISTINCT vid) FROM visits'), 'total_views' => $one('SELECT COUNT(*) FROM visits'),
+        ],
+        'live' => array_map(fn($r) => ['path' => $r['path'], 'device' => $r['device'], 'browser' => $r['browser'], 'city' => $r['city'], 'country' => $r['country'],
+            'since' => strtotime($r['first_seen'] . ' UTC'), 'seen' => strtotime($r['last_seen'] . ' UTC')],
+            q('SELECT * FROM live_visitors WHERE last_seen > UTC_TIMESTAMP() - INTERVAL 2 MINUTE ORDER BY first_seen DESC LIMIT 100')->fetchAll()),
+        'series' => array_values($series), 'hours' => $hours, 'weekdays' => $week,
+        'devices' => $kv("SELECT device k, COUNT(DISTINCT vid) n FROM visits WHERE created_at >= $since GROUP BY device ORDER BY n DESC"),
+        'browsers' => $kv("SELECT COALESCE(browser, 'Other') k, COUNT(DISTINCT vid) n FROM visits WHERE created_at >= $since GROUP BY k ORDER BY n DESC LIMIT 8"),
+        'os' => $kv("SELECT COALESCE(os, 'Other') k, COUNT(DISTINCT vid) n FROM visits WHERE created_at >= $since GROUP BY k ORDER BY n DESC LIMIT 8"),
+        'countries' => $kv("SELECT COALESCE(country, '') k, COUNT(DISTINCT vid) n FROM visits WHERE created_at >= $since GROUP BY k ORDER BY n DESC LIMIT 12"),
+        'cities' => $kv("SELECT COALESCE(city, '') k, COUNT(DISTINCT vid) n FROM visits WHERE created_at >= $since AND city IS NOT NULL GROUP BY k ORDER BY n DESC LIMIT 12"),
+        'regions' => $kv("SELECT COALESCE(region, '') k, COUNT(DISTINCT vid) n FROM visits WHERE created_at >= $since AND region IS NOT NULL GROUP BY k ORDER BY n DESC LIMIT 10"),
+        'referrers' => $kv("SELECT COALESCE(ref_host, '') k, COUNT(DISTINCT vid) n FROM visits WHERE created_at >= $since GROUP BY k ORDER BY n DESC LIMIT 8"),
+        'utm' => $kv("SELECT utm k, COUNT(DISTINCT vid) n FROM visits WHERE created_at >= $since AND utm IS NOT NULL GROUP BY utm ORDER BY n DESC LIMIT 8"),
+        'pages' => $kv("SELECT path k, COUNT(*) n FROM visits WHERE created_at >= $since GROUP BY path ORDER BY n DESC LIMIT 8"),
+        'funnel' => [
+            'visitors' => $uniq,
+            'checkout' => $one("SELECT COUNT(DISTINCT vid) FROM track_events WHERE name = 'checkout_open' AND created_at >= $since"),
+            'whatsapp' => $one("SELECT COUNT(DISTINCT vid) FROM track_events WHERE name = 'whatsapp_click' AND created_at >= $since"),
+            'orders' => (int)$ord['n'] - (int)$ord['cancelled'],
+        ],
+        'orders' => [
+            'count' => (int)$ord['n'], 'prev_count' => $one("SELECT COUNT(*) FROM orders WHERE $prev"), 'cancelled' => (int)$ord['cancelled'],
+            'done' => (int)$ord['done'], 'running' => (int)$ord['running'], 'value' => (int)$ord['value'],
+            'on_time' => $onTime, 'delivered' => count($delivered), 'avg_hours' => round($avgHours, 1), 'stages' => $stages,
+            'by_stack' => $kv("SELECT stack k, COUNT(*) n, SUM(total) t FROM orders WHERE cancelled = 0 AND created_at >= $since GROUP BY stack ORDER BY n DESC"),
+            'by_pack' => $kv("SELECT CONCAT(pack, ' · ', stack) k, COUNT(*) n, SUM(total) t FROM orders WHERE cancelled = 0 AND created_at >= $since GROUP BY pack, stack ORDER BY n DESC"),
+            'by_method' => $kv("SELECT pay_method k, COUNT(*) n, SUM(total) t FROM orders WHERE cancelled = 0 AND created_at >= $since GROUP BY pay_method ORDER BY n DESC"),
+            'by_pay' => $kv("SELECT pay_status k, COUNT(*) n, SUM(total) t FROM orders WHERE cancelled = 0 AND created_at >= $since GROUP BY pay_status"),
+            'sources' => $orderSources,
+        ],
+        'earnings' => [
+            'range' => $earn("created_at >= $since"), 'prev' => $earn($prev),
+            'all_time' => $earn('1'), 'pending' => $one("SELECT COALESCE(SUM(total), 0) FROM orders WHERE cancelled = 0 AND pay_status = 'pending'"),
+            'this_month' => $earn("DATE_FORMAT({$loc('created_at')}, '%Y-%m') = '$thisM'"), 'last_month' => $earn("DATE_FORMAT({$loc('created_at')}, '%Y-%m') = '$lastM'"),
+            'months' => array_values($months),
+            'top_customers' => array_map(fn($r) => ['name' => $r['name'], 'email' => $r['email'], 'orders' => (int)$r['n'], 'total' => (int)$r['t']],
+                q("SELECT u.name, u.email, COUNT(*) n, SUM(o.total) t FROM orders o JOIN users u ON u.id = o.user_id WHERE o.cancelled = 0 AND o.pay_status = 'verified' GROUP BY u.id ORDER BY t DESC LIMIT 8")->fetchAll()),
+        ],
+    ]);
 }

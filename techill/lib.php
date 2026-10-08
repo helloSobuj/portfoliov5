@@ -174,3 +174,49 @@ function save_upload(string $field, int $orderId, int $userId, string $kind): ?i
       [$orderId, $userId, $kind, $name, $stored, $mime, (int)$f['size']]);
     return (int)db()->lastInsertId();
 }
+
+/* ---------- visitor details ---------- */
+
+// Device, browser and OS from the user agent. Facebook / Instagram in-app browsers are kept
+// separate because most Bangladeshi ad traffic opens inside them.
+function ua_info(string $ua): array {
+    $device = preg_match('/ipad|tablet/i', $ua) ? 'tablet' : (preg_match('/mobi|android|iphone/i', $ua) ? 'mobile' : 'desktop');
+    $browser = 'Other';
+    foreach ([
+        'Facebook' => '/FBAN|FBAV|FB_IAB|FBIOS/', 'Instagram' => '/Instagram/', 'Samsung' => '/SamsungBrowser/',
+        'Opera' => '/OPR\/|Opera/', 'Edge' => '/Edg(e|A|iOS)?\//', 'UC' => '/UCBrowser/', 'Firefox' => '/Firefox|FxiOS/',
+        'Chrome' => '/Chrome|CriOS/', 'Safari' => '/Safari/',
+    ] as $name => $re) if (preg_match($re, $ua)) { $browser = $name; break; }
+    $os = preg_match('/android/i', $ua) ? 'Android' : (preg_match('/iphone|ipad|ipod/i', $ua) ? 'iOS'
+        : (preg_match('/windows/i', $ua) ? 'Windows' : (preg_match('/mac os x|macintosh/i', $ua) ? 'macOS' : (preg_match('/linux|cros/i', $ua) ? 'Linux' : 'Other'))));
+    return ['device' => $device, 'browser' => $browser, 'os' => $os];
+}
+
+// Country / region / city for the visitor's IP. Uses Cloudflare's headers when present, otherwise
+// an optional lookup service, cached per salted IP hash for 30 days. Returns nulls when unknown.
+function geo_for_ip(string $ip): array {
+    $none = ['country' => null, 'country_name' => null, 'region' => null, 'city' => null];
+    $cf = strtoupper((string)($_SERVER['HTTP_CF_IPCOUNTRY'] ?? ''));
+    if (preg_match('/^[A-Z]{2}$/', $cf) && $cf !== 'XX' && $cf !== 'T1') {
+        $none['country'] = $cf;
+        $none['city'] = mb_substr((string)($_SERVER['HTTP_CF_IPCITY'] ?? ''), 0, 80) ?: null;
+        $none['region'] = mb_substr((string)($_SERVER['HTTP_CF_REGION'] ?? ''), 0, 80) ?: null;
+    }
+    if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) return $none;
+    $hash = sha1((cfg('geo_salt') ?: (string)cfg('db_pass') . (string)cfg('db_name')) . '|' . $ip);
+    $row = q('SELECT * FROM geo_cache WHERE ip_hash = ? AND created_at > UTC_TIMESTAMP() - INTERVAL IF(country IS NULL, 1, 30) DAY', [$hash])->fetch();
+    if ($row) return ['country' => $row['country'] ?? $none['country'], 'country_name' => $row['country_name'], 'region' => $row['region'] ?? $none['region'], 'city' => $row['city'] ?? $none['city']];
+    $geo = $none;
+    if ((cfg('geo_lookup') ?? 'ipapi') === 'ipapi' && function_exists('curl_init')) {
+        $ch = curl_init('https://ipapi.co/' . rawurlencode($ip) . '/json/');
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 3, CURLOPT_CONNECTTIMEOUT => 2, CURLOPT_USERAGENT => 'Techill/1.0']);
+        $j = json_decode((string)curl_exec($ch), true);
+        curl_close($ch);
+        if (is_array($j) && empty($j['error']) && preg_match('/^[A-Z]{2}$/', (string)($j['country_code'] ?? ''))) {
+            $geo = ['country' => $j['country_code'], 'country_name' => mb_substr((string)($j['country_name'] ?? ''), 0, 60) ?: null,
+                    'region' => mb_substr((string)($j['region'] ?? ''), 0, 80) ?: null, 'city' => mb_substr((string)($j['city'] ?? ''), 0, 80) ?: null];
+        }
+    }
+    q('REPLACE INTO geo_cache (ip_hash, country, country_name, region, city) VALUES (?,?,?,?,?)', [$hash, $geo['country'], $geo['country_name'], $geo['region'], $geo['city']]);
+    return $geo;
+}

@@ -40,6 +40,9 @@ function migrate(): void {
     if (!$col('users', 'active')) db()->exec('ALTER TABLE users ADD active TINYINT(1) NOT NULL DEFAULT 1 AFTER role');
     if (!$col('orders', 'developer_id')) db()->exec('ALTER TABLE orders ADD developer_id INT UNSIGNED NULL AFTER info_json, ADD KEY ix_orders_dev (developer_id)');
     if (!$col('orders', 'cancelled')) db()->exec('ALTER TABLE orders ADD cancelled TINYINT(1) NOT NULL DEFAULT 0 AFTER developer_id');
+    if (!$col('visits', 'city')) db()->exec('ALTER TABLE visits ADD browser VARCHAR(30) NULL AFTER device, ADD os VARCHAR(20) NULL AFTER browser,
+        ADD country CHAR(2) NULL AFTER os, ADD country_name VARCHAR(60) NULL AFTER country, ADD region VARCHAR(80) NULL AFTER country_name, ADD city VARCHAR(80) NULL AFTER region');
+    if (!$col('live_visitors', 'city')) db()->exec('ALTER TABLE live_visitors ADD browser VARCHAR(30) NULL AFTER device, ADD city VARCHAR(80) NULL AFTER browser, ADD country CHAR(2) NULL AFTER city');
 }
 ?><!doctype html>
 <html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">

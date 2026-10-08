@@ -244,6 +244,25 @@ textarea.inp{resize:vertical;min-height:84px}
 .tbl input.inp,.tbl select.inp{padding:6px 8px;font-size:.88rem}
 .savebar{position:sticky;bottom:16px;z-index:5;display:flex;justify-content:space-between;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:14px;padding:12px 16px;margin-top:10px;flex-wrap:wrap}
 
+/* counts strip, analytics */
+.counts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}
+.cnt-card{all:unset;box-sizing:border-box;display:flex;gap:12px;align-items:center;background:var(--blue-soft);border-radius:14px;padding:12px 16px;cursor:pointer;color:var(--blue-ink);min-width:0}
+.cnt-card:hover{outline:1.5px solid var(--blue)}
+.cnt-card svg{width:26px;height:26px;flex:none}
+.cnt-card span{display:grid;line-height:1.3;color:var(--ink);min-width:0}
+.cnt-card b{font-size:1.4rem;font-variant-numeric:tabular-nums}
+.cnt-card small{color:var(--muted);font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.atabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:18px;overflow-x:auto}
+.atabs button{display:flex;gap:8px;align-items:center;border:0;background:transparent;padding:10px 18px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.atabs button svg{width:17px;height:17px}
+.atabs button[aria-selected="true"]{color:var(--blue-ink);border-bottom-color:var(--blue)}
+.sub-h{font-size:1.1rem;margin:6px 0 12px;display:flex;gap:8px;align-items:center}
+.sub-h svg{width:19px;height:19px;color:var(--blue)}
+.dl{font-weight:700}
+.dl.up{color:var(--ok)}
+.dl.dn{color:var(--danger)}
+.tile .s .muted{font-size:.8rem}
+
 /* auth */
 .auth{display:grid;place-items:center;padding:72px 16px}
 .auth-card{width:100%;max-width:420px;background:var(--surface);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:30px;display:grid;gap:14px}
@@ -252,7 +271,7 @@ textarea.inp{resize:vertical;min-height:84px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:12px;font-size:.92rem;z-index:60;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
 
 @media (max-width:1180px){
-  .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tiles,.counts{grid-template-columns:repeat(2,minmax(0,1fr))}
   .g-main,.g3{grid-template-columns:1fr 1fr}
   .packs-ed{grid-template-columns:1fr 1fr}
 }
@@ -355,6 +374,9 @@ const I = {
   orders: ic('<path d="M6 3h12l2 4v13H4V7z"/><path d="M4 7h16M9 11h6"/>'),
   board: ic('<rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="10" rx="1.5"/><rect x="17" y="4" width="4" height="13" rx="1.5"/>'),
   visitors: ic('<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
+  chart: ic('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'),
+  pin: ic('<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>'),
+  plus: ic('<path d="M12 5v14M5 12h14"/>'),
   catalog: ic('<path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>'),
   team: ic('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6 6 0 0 1 3.5 5.5"/>'),
   customers: ic('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'),
@@ -366,10 +388,21 @@ const I = {
   step: ic('<path d="M5 12.5l4.5 4.5L19 7"/>'),
   ok: ic('<path d="M5 12.5l4.5 4.5L19 7"/>')
 };
-const SECTIONS = [["overview", "ওভারভিউ", I.home], ["orders", "অর্ডার", I.orders], ["board", "প্রোজেক্ট বোর্ড", I.board], ["visitors", "ভিজিটর", I.visitors], ["catalog", "প্যাকেজ ও দাম", I.catalog], ["team", "টিম", I.team], ["customers", "কাস্টমার", I.customers]];
+const SECTIONS = [["overview", "ওভারভিউ", I.home], ["orders", "অর্ডার", I.orders], ["board", "প্রোজেক্ট বোর্ড", I.board], ["analytics", "অ্যানালিটিক্স", I.chart], ["catalog", "প্যাকেজ ও দাম", I.catalog], ["customers", "কাস্টমার", I.customers], ["team", "টিম ও ডেভেলপার", I.team]];
 
 let me = null, sec = "overview", days = 30, stats = null, orders = [], team = [], customers = [], cat = null, draft = null, dirty = false;
-let oFilter = "all", oQuery = "", oStack = "", boardDev = "", custQ = "", edStack = "woo", drawerId = null;
+let oFilter = "all", oQuery = "", oStack = "", boardDev = "", custQ = "", custF = "all", edStack = "woo", drawerId = null;
+let an = null, aDays = 30, aTab = "visitors";
+let regionName = c => c;
+try { const dn = new Intl.DisplayNames(["bn"], {type: "region"}); regionName = c => { try { return dn.of(c) || c; } catch(e){ return c; } }; } catch(e){}
+const country = c => c ? regionName(c) : "অজানা";
+const BROWSER = {Facebook: "Facebook অ্যাপ", Instagram: "Instagram অ্যাপ", Samsung: "Samsung Internet", Chrome: "Chrome", Safari: "Safari", Edge: "Edge", Firefox: "Firefox", Opera: "Opera", UC: "UC Browser", Other: "অন্যান্য"};
+const WEEK = ["রবিবার", "সোমবার", "মঙ্গলবার", "বুধবার", "বৃহস্পতিবার", "শুক্রবার", "শনিবার"];
+function delta(cur, prev){
+  if (!prev) return '<span class="muted">আগের তুলনা নেই</span>';
+  const p = (cur - prev) / prev * 100;
+  return `<span class="dl ${p >= 0 ? "up" : "dn"}">${p >= 0 ? "▲" : "▼"} ${BN(Math.abs(p).toFixed(0))}%</span> <span class="muted">আগের ${BN(aDays)} দিনের তুলনায়</span>`;
+}
 
 function toast(m){ const t = $("toast"); t.textContent = m; t.hidden = false; clearTimeout(t._t); t._t = setTimeout(() => t.hidden = true, 3200); }
 
@@ -404,7 +437,11 @@ async function loadAll(){
   stats = s; orders = o.orders; team = t.team;
 }
 async function refreshStats(){
-  try { stats = await api.stats(days); renderLive(); if (sec === "overview" || sec === "visitors") render(); renderNav(); } catch(e){ if (e.status === 401) showAuth(); }
+  try {
+    stats = await api.stats(days); renderLive(); renderNav();
+    if (sec === "overview") render();
+    if (sec === "analytics" && aTab === "visitors" && !document.activeElement?.closest("main select")) loadAnalytics(true);
+  } catch(e){ if (e.status === 401) showAuth(); }
 }
 async function refreshOrders(){ orders = (await api.orders()).orders; renderNav(); }
 
@@ -421,18 +458,19 @@ $("nav").addEventListener("click", e => { const b = e.target.closest("[data-sec]
 function go(s){
   if (sec === "catalog" && dirty && s !== "catalog" && !confirm("প্যাকেজের পরিবর্তন সেভ হয়নি। তবু চলে যাবেন?")) return;
   sec = s; history.replaceState(null, "", "#" + s); renderNav(); render(); scrollTo({top: 0});
-  if (s === "customers" && !customers.length) api.customers().then(r => { customers = r.customers; if (sec === "customers") render(); });
+  if (s === "customers") api.customers().then(r => { customers = r.customers; if (sec === "customers") render(); });
+  if (s === "analytics") loadAnalytics();
   if (s === "catalog" && !cat) api.catalog().then(r => { cat = r.catalog; draft = structuredClone(cat); if (sec === "catalog") render(); });
 }
 function renderLive(){
   if (!stats) return;
   $("livePill").hidden = false; $("liveN").textContent = BN(stats.live.count);
 }
-$("livePill").addEventListener("click", () => go("visitors"));
+$("livePill").addEventListener("click", () => { aTab = "visitors"; go("analytics"); });
 function render(){
   const m = $("main");
   if (!stats){ m.innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; return; }
-  ({overview: renderOverview, orders: renderOrders, board: renderBoard, visitors: renderVisitors, catalog: renderCatalog, team: renderTeam, customers: renderCustomers})[sec]();
+  ({overview: renderOverview, orders: renderOrders, board: renderBoard, analytics: renderAnalytics, catalog: renderCatalog, team: renderTeam, customers: renderCustomers})[sec]();
 }
 const rangeSeg = () => `<div class="seg" role="group" aria-label="সময়সীমা">${[7, 30, 90].map(d => `<button type="button" data-days="${d}" aria-pressed="${days === d}">${BN(d)} দিন</button>`).join("")}</div>`;
 $("main").addEventListener("click", async e => {
@@ -441,20 +479,20 @@ $("main").addEventListener("click", async e => {
 
 /* ---------- charts ---------- */
 // Single-series column chart with hover tooltip; values in ink, bars in the brand blue.
-function columns(rows, val, fmt, label){
+function columns(rows, val, fmt, label, xlab = r => dayLabel(r.d), every0){
   const W = 640, H = 220, P = {l: 44, r: 8, t: 10, b: 26};
   const max = Math.max(1, ...rows.map(val)), nice = niceMax(max), n = rows.length;
   const cw = (W - P.l - P.r) / n, bw = Math.max(2, Math.min(28, cw - 2));
   const y = v => H - P.b - (v / nice) * (H - P.t - P.b);
   const ticks = [0, .5, 1].map(f => f * nice);
-  const every = Math.ceil(n / 7);
+  const every = every0 || Math.ceil(n / 7);
   const id = "c" + Math.random().toString(36).slice(2, 8);
   const bars = rows.map((r, i) => {
     const v = val(r), x = P.l + i * cw + (cw - bw) / 2, yt = y(v), h = H - P.b - yt, rad = Math.min(4, bw / 2, h);
     const path = h > 0 ? `M${x},${H - P.b}V${yt + rad}Q${x},${yt} ${x + rad},${yt}H${x + bw - rad}Q${x + bw},${yt} ${x + bw},${yt + rad}V${H - P.b}Z` : "";
     return `<g>${path ? `<path class="bar" d="${path}"/>` : ""}<rect class="hit" x="${P.l + i * cw}" y="${P.t}" width="${cw}" height="${H - P.t - P.b}" data-i="${i}"/></g>`;
   }).join("");
-  const xl = rows.map((r, i) => i % every === 0 || i === n - 1 ? `<text class="ax" x="${P.l + i * cw + cw / 2}" y="${H - 8}" text-anchor="middle">${dayLabel(r.d)}</text>` : "").join("");
+  const xl = rows.map((r, i) => i % every === 0 || (!every0 && i === n - 1) ? `<text class="ax" x="${P.l + i * cw + cw / 2}" y="${H - 8}" text-anchor="middle">${xlab(r)}</text>` : "").join("");
   const yl = ticks.map(t => `<line class="gl" x1="${P.l}" x2="${W - P.r}" y1="${y(t)}" y2="${y(t)}"/><text class="ax" x="${P.l - 8}" y="${y(t) + 4}" text-anchor="end">${fmt(t, true)}</text>`).join("");
   setTimeout(() => {
     const el = document.getElementById(id); if (!el) return;
@@ -463,14 +501,14 @@ function columns(rows, val, fmt, label){
       el.querySelectorAll(".hl").forEach(b => b.classList.remove("hl"));
       if (!h){ tip.hidden = true; return; }
       const r = rows[+h.dataset.i]; h.previousElementSibling?.classList.add("hl");
-      tip.innerHTML = `${dayLabel(r.d)}<br><b>${fmt(val(r))}</b> ${label}`; tip.hidden = false;
+      tip.innerHTML = `${xlab(r)}<br><b>${fmt(val(r))}</b> ${label}`; tip.hidden = false;
       const bb = h.getBoundingClientRect(); tip.style.left = (bb.left + bb.width / 2 + scrollX) + "px"; tip.style.top = (e.clientY + scrollY - 6) + "px";
       tip.style.position = "absolute";
     });
     el.addEventListener("mouseleave", () => { $("tip").hidden = true; el.querySelectorAll(".hl").forEach(b => b.classList.remove("hl")); });
   });
   return `<div class="chart" id="${id}"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${label}, দিনভিত্তিক">${yl}${bars}${xl}</svg></div>
-    <details class="tv"><summary>টেবিল দেখুন</summary><div class="tbl-wrap"><table class="tbl"><tbody>${rows.slice().reverse().map(r => `<tr><td>${dayLabel(r.d)}</td><td class="r">${fmt(val(r))}</td></tr>`).join("")}</tbody></table></div></details>`;
+    <details class="tv"><summary>টেবিল দেখুন</summary><div class="tbl-wrap"><table class="tbl"><tbody>${(xlab.length && rows[0]?.d ? rows.slice().reverse() : rows).map(r => `<tr><td>${xlab(r)}</td><td class="r">${fmt(val(r))}</td></tr>`).join("")}</tbody></table></div></details>`;
 }
 function niceMax(v){ const p = Math.pow(10, Math.floor(Math.log10(v))), m = v / p; return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * p; }
 const fmtN = (v, axis) => axis && v >= 1000 ? BN((v / 1000).toFixed(v % 1000 ? 1 : 0)) + "k" : nf(v);
@@ -495,6 +533,12 @@ function renderOverview(){
   $("main").innerHTML = `
     <div class="sec-h"><div><h1>আসসালামু আলাইকুম, ${esc(me.name.split(" ")[0])}</h1><p>${new Date().toLocaleDateString("bn-BD", {weekday: "long", day: "numeric", month: "long"})} · ব্যবসার এক নজরে হিসাব</p></div><div class="tools">${rangeSeg()}</div></div>
     <div class="alerts">${alerts.length ? alerts.map(([c, icon, n, l, k]) => `<button type="button" class="alert ${c}" data-alert="${k}">${icon}<b>${BN(n)}</b><span>${l}</span></button>`).join("") : `<div class="alert good">${I.ok}<span>সব ঠিক আছে, এখন জরুরি কিছু নেই।</span></div>`}</div>
+    ${s.counts ? `<div class="counts">
+      <button type="button" class="cnt-card" data-go="customers">${I.customers}<span><b>${nf(s.counts.customers)}</b> কাস্টমার<small>${nf(s.counts.customers_active)} জন সক্রিয়</small></span></button>
+      <button type="button" class="cnt-card" data-go="team">${I.team}<span><b>${nf(s.counts.developers)}</b> ডেভেলপার<small>${nf(s.counts.admins)} জন অ্যাডমিন</small></span></button>
+      <button type="button" class="cnt-card" data-go="catalog">${I.catalog}<span><b>${nf(s.counts.packages)}</b> প্যাকেজ<small>${BN(s.counts.platforms)} প্ল্যাটফর্ম · ${nf(s.counts.templates)} টেমপ্লেট · ${nf(s.counts.addons)} অ্যাড-অন</small></span></button>
+      <button type="button" class="cnt-card" data-go="analytics">${I.chart}<span><b>${nf(v.total_uniques)}</b> মোট ভিজিটর<small>অ্যানালিটিক্সে বিস্তারিত</small></span></button>
+    </div>` : ""}
     <div class="tiles">
       <div class="tile"><span class="l"><span class="dot"></span>এখন সাইটে</span><span class="v">${BN(s.live.count)}</span><span class="s">গত ২ মিনিটে সক্রিয়</span></div>
       <div class="tile"><span class="l">আজকের ভিজিটর</span><span class="v">${nf(v.today_uniques)}</span><span class="s">${nf(v.today)} বার পেজ দেখা</span></div>
@@ -676,30 +720,115 @@ function renderBoard(){
     }).join("")}</div>`;
 }
 
-/* ---------- visitors ---------- */
-function renderVisitors(){
-  const s = stats, v = s.visits;
-  const refs = s.referrers.map(r => ({k: r.k || "সরাসরি / বুকমার্ক", n: r.n}));
-  $("main").innerHTML = `
-    <div class="sec-h"><div><h1>ভিজিটর</h1><p>কে আসছে, কোথা থেকে আসছে, কী দেখছে</p></div><div class="tools">${rangeSeg()}</div></div>
+/* ---------- analytics ---------- */
+async function loadAnalytics(quiet){
+  if (!quiet && !an) render();
+  try { an = await api.analytics(aDays); if (sec === "analytics") render(); } catch(e){ toast(e.message); }
+}
+const tile = (l, v, sub) => `<div class="tile"><span class="l">${l}</span><span class="v">${v}</span><span class="s">${sub}</span></div>`;
+const card = (title, small, body, cls = "") => `<div class="card ${cls}"><div class="ch"><h3>${title}</h3>${small ? `<small>${small}</small>` : ""}</div>${body}</div>`;
+function renderAnalytics(){
+  const head = `<div class="sec-h"><div><h1>অ্যানালিটিক্স</h1><p>ভিজিটর, অর্ডার আর আয়ের পুরো হিসাব</p></div>
+    <div class="tools"><div class="seg" role="group" aria-label="সময়সীমা">${[7, 30, 90, 365].map(d => `<button type="button" data-adays="${d}" aria-pressed="${aDays === d}">${d === 365 ? "১ বছর" : BN(d) + " দিন"}</button>`).join("")}</div></div></div>
+    <div class="atabs" role="tablist">${[["visitors", "ভিজিটর", I.visitors], ["orders", "অর্ডার", I.orders], ["earnings", "আয়", I.money]].map(([k, l, icon]) => `<button type="button" role="tab" data-atab="${k}" aria-selected="${aTab === k}">${icon}${l}</button>`).join("")}</div>`;
+  if (!an){ $("main").innerHTML = head + '<p class="empty">লোড হচ্ছে...</p>'; return; }
+  $("main").innerHTML = head + ({visitors: anVisitors, orders: anOrders, earnings: anEarnings})[aTab]();
+}
+function anVisitors(){
+  const v = an.visitors, u = v.uniques;
+  const live = an.live;
+  return `
     <div class="tiles">
-      <div class="tile"><span class="l"><span class="dot"></span>এখন সাইটে</span><span class="v">${BN(s.live.count)}</span><span class="s">প্রতি ৩০ সেকেন্ডে আপডেট</span></div>
-      <div class="tile"><span class="l">আজ</span><span class="v">${nf(v.today_uniques)}</span><span class="s">${nf(v.today)} পেজ ভিউ</span></div>
-      <div class="tile"><span class="l">${BN(days)} দিনে</span><span class="v">${nf(v.range_uniques)}</span><span class="s">${nf(v.range)} পেজ ভিউ</span></div>
-      <div class="tile"><span class="l">শুরু থেকে</span><span class="v">${nf(v.total_uniques)}</span><span class="s">${nf(v.total)} পেজ ভিউ</span></div>
+      ${tile('<span class="dot"></span>এখন সাইটে', BN(live.length), "গত ২ মিনিটে সক্রিয়")}
+      ${tile("ভিজিটর (" + BN(aDays) + " দিন)", nf(u), delta(u, v.prev_uniques))}
+      ${tile("পেজ ভিউ", nf(v.views), u ? BN((v.views / u).toFixed(1)) + "টা পেজ প্রতি ভিজিটর" : "—")}
+      ${tile("নতুন / ফিরে আসা", `${nf(v.new)} <small class="muted" style="font-size:1rem">/ ${nf(v.returning)}</small>`, pct(v.returning, u) + " আগেও এসেছিলেন")}
+      ${tile("এক পেজ দেখেই চলে গেছেন", pct(v.single_page, u), nf(v.single_page) + " জন (bounce)")}
+      ${tile("আজ", nf(v.today), "জন আলাদা ভিজিটর")}
+      ${tile("শুরু থেকে মোট", nf(v.total_uniques), nf(v.total_views) + " পেজ ভিউ")}
+      ${tile("চেকআউট পর্যন্ত গেছেন", pct(an.funnel.checkout, u), nf(an.funnel.checkout) + " জন")}
     </div>
     <div class="grid g-main" style="margin-bottom:18px">
-      <div class="card"><div class="ch"><h3>দৈনিক পেজ ভিউ</h3><small>${BN(days)} দিন</small></div>${columns(s.series, r => r.visits, fmtN, "পেজ ভিউ")}</div>
-      <div class="card"><div class="ch"><h3>এখন যারা সাইটে</h3><small>${BN(s.live.count)} জন</small></div>
-        ${s.live.list.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>পেজ</th><th>ডিভাইস</th><th class="r">কতক্ষণ</th></tr></thead><tbody>${s.live.list.map(l => `<tr><td>${esc(l.path)}</td><td>${DEV[l.device] || esc(l.device)}</td><td class="r">${BN(Math.max(1, Math.round((l.seen - l.since) / 60)))} মিনিট</td></tr>`).join("")}</tbody></table></div>` : '<p class="empty">এই মুহূর্তে কেউ নেই</p>'}</div>
+      ${card("দৈনিক ভিজিটর", nf(u) + " জন", columns(an.series, r => r.uniques, fmtN, "জন ভিজিটর"))}
+      ${card("এখন যারা সাইটে", BN(live.length) + " জন", live.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>কোথা থেকে</th><th>পেজ</th><th>ডিভাইস</th><th class="r">কতক্ষণ</th></tr></thead><tbody>${live.map(l => `<tr><td>${esc(l.city || "")}${l.city ? ", " : ""}${esc(country(l.country))}</td><td>${esc(l.path)}</td><td>${DEV[l.device] || esc(l.device)}<span class="sub">${esc(BROWSER[l.browser] || l.browser || "")}</span></td><td class="r">${BN(Math.max(1, Math.round((l.seen - l.since) / 60)))} মি.</td></tr>`).join("")}</tbody></table></div>` : '<p class="empty">এই মুহূর্তে কেউ নেই</p>')}
     </div>
-    <div class="grid g2">
-      <div class="card"><div class="ch"><h3>কোথা থেকে আসছে</h3><small>আলাদা ভিজিটর</small></div>${hbars(refs, v.range_uniques)}</div>
-      <div class="card"><div class="ch"><h3>ক্যাম্পেইন (utm_source)</h3><small>Ad লিংকে ?utm_source=fb_ads যোগ করুন</small></div>${hbars(s.utm, v.range_uniques)}</div>
-      <div class="card"><div class="ch"><h3>সবচেয়ে বেশি দেখা পেজ</h3></div>${hbars(s.pages, v.range)}</div>
-      <div class="card"><div class="ch"><h3>ডিভাইস</h3></div>${hbars(s.devices.map(d => ({k: d.k, label: DEV[d.k] || d.k, n: d.n})), v.range_uniques)}</div>
+    <h2 class="sub-h">${I.pin} ভিজিটর কোথা থেকে আসছেন</h2>
+    <div class="grid g3" style="margin-bottom:18px">
+      ${card("দেশ", "", hbars(an.countries.map(c => ({k: c.k, label: country(c.k), n: c.n})), u))}
+      ${card("শহর", "", hbars(an.cities, u) + '<p class="muted" style="font-size:.82rem;margin-top:10px">শহর বের হয় IP থেকে, তাই মোবাইল ডেটায় অনেক সময় কাছের বড় শহর দেখায়।</p>')}
+      ${card("বিভাগ / অঞ্চল", "", hbars(an.regions, u))}
+    </div>
+    <h2 class="sub-h">${I.clock} কখন আসেন</h2>
+    <div class="grid g-main" style="margin-bottom:18px">
+      ${card("দিনের কোন সময়ে", "বাংলাদেশ সময়", columns(an.hours.map((n, h) => ({h, n})), r => r.n, fmtN, "জন ভিজিটর", r => BN(r.h) + "টা", 3) + `<p class="muted" style="font-size:.85rem;margin-top:10px">সবচেয়ে বেশি ভিজিটর আসেন ${BN(an.hours.indexOf(Math.max(...an.hours)))}টার দিকে। Ad বা পোস্ট এর একটু আগে দিন।</p>`)}
+      ${card("সপ্তাহের কোন দিনে", "", hbars(an.weekdays.map((n, i) => ({k: WEEK[i], n})), u))}
+    </div>
+    <h2 class="sub-h">${I.visitors} কী দিয়ে দেখছেন</h2>
+    <div class="grid g3" style="margin-bottom:18px">
+      ${card("ডিভাইস", "", hbars(an.devices.map(d => ({k: d.k, label: DEV[d.k] || d.k, n: d.n})), u))}
+      ${card("ব্রাউজার", "", hbars(an.browsers.map(b => ({k: b.k, label: BROWSER[b.k] || b.k, n: b.n})), u) + (an.browsers[0]?.k === "Facebook" ? '<p class="muted" style="font-size:.82rem;margin-top:10px">বেশিরভাগ ভিজিটর Facebook অ্যাপের ভেতর থেকে আসছেন। চেকআউট যেন অ্যাপের ব্রাউজারেও ঠিকমতো চলে, সেটা নিয়মিত দেখে নিন।</p>' : ""))}
+      ${card("অপারেটিং সিস্টেম", "", hbars(an.os, u))}
+    </div>
+    <h2 class="sub-h">${I.home} কোন পথে আসছেন</h2>
+    <div class="grid g3">
+      ${card("রেফারার", "", hbars(an.referrers.map(r => ({k: r.k || "সরাসরি / বুকমার্ক", n: r.n})), u))}
+      ${card("ক্যাম্পেইন (utm_source)", "", hbars(an.utm, u))}
+      ${card("সবচেয়ে বেশি দেখা পেজ", "", hbars(an.pages, v.views))}
     </div>`;
 }
+function anOrders(){
+  const o = an.orders, f = an.funnel, act = o.count - o.cancelled;
+  return `
+    <div class="tiles">
+      ${tile("অর্ডার (" + BN(aDays) + " দিন)", nf(o.count), delta(o.count, o.prev_count))}
+      ${tile("অর্ডারের মোট মূল্য", tkShort(o.value), "বাতিল বাদে · গড় " + (act ? tk(o.value / act) : "—"))}
+      ${tile("কনভার্শন", pct(f.orders, f.visitors), nf(f.visitors) + " ভিজিটর থেকে " + nf(f.orders) + " অর্ডার")}
+      ${tile("চলমান / সম্পন্ন", `${nf(o.running)} <small class="muted" style="font-size:1rem">/ ${nf(o.done)}</small>`, nf(o.cancelled) + "টা বাতিল (" + pct(o.cancelled, o.count) + ")")}
+      ${tile("সময়মতো ডেলিভারি", o.delivered ? pct(o.on_time, o.delivered) : "—", nf(o.on_time) + " / " + nf(o.delivered) + "টা ডেডলাইনের মধ্যে")}
+      ${tile("গড় ডেলিভারি সময়", o.delivered ? BN(o.avg_hours) + " ঘণ্টা" : "—", "অর্ডার থেকে ডেলিভারি পর্যন্ত")}
+      ${tile("চেকআউট খুলে ছেড়ে গেছেন", nf(Math.max(0, f.checkout - f.orders)), "রিটার্গেটিং Ad-এর জন্য উপযুক্ত")}
+      ${tile("হোয়াটসঅ্যাপে ক্লিক", nf(f.whatsapp), pct(f.whatsapp, f.visitors) + " ভিজিটর")}
+    </div>
+    <div class="grid g-main" style="margin-bottom:18px">
+      ${card("দৈনিক অর্ডার", nf(o.count) + "টা", columns(an.series, r => r.orders, fmtN, "টা অর্ডার"))}
+      ${card("ভিজিটর থেকে অর্ডার", "", hbars([{k: "ভিজিটর", n: f.visitors}, {k: "চেকআউট খুলেছেন", n: f.checkout}, {k: "হোয়াটসঅ্যাপে ক্লিক", n: f.whatsapp}, {k: "অর্ডার করেছেন", n: f.orders}], f.visitors))}
+    </div>
+    <div class="grid g3" style="margin-bottom:18px">
+      ${card("প্যাকেজ অনুযায়ী", "", hbars(o.by_pack.map(p => ({k: p.k, n: p.n})), act))}
+      ${card("প্ল্যাটফর্ম", "", hbars(o.by_stack, act))}
+      ${card("অর্ডার কোথা থেকে এসেছে", "প্রথম ভিজিট অনুযায়ী", hbars(o.sources.map(x => ({k: x.k || "সরাসরি / বুকমার্ক", n: x.n})), 0))}
+    </div>
+    <div class="grid g3">
+      ${card("প্রোজেক্টের ধাপ", "", hbars(STAGES.map((st, i) => ({k: st, n: o.stages[i]})), 0))}
+      ${card("পেমেন্ট মাধ্যম", "", hbars(o.by_method.map(m => ({k: m.k, label: MNAME[m.k] || m.k, n: m.n})), act))}
+      ${card("পেমেন্ট স্ট্যাটাস", "", hbars(o.by_pay.map(m => ({k: m.k, label: PAY[m.k] || m.k, n: m.n})), act))}
+    </div>`;
+}
+function anEarnings(){
+  const e = an.earnings, o = an.orders;
+  const mLabel = m => new Date(m + "-15T00:00:00").toLocaleDateString("bn-BD", {month: "short", year: "2-digit"});
+  return `
+    <div class="tiles">
+      ${tile("আয় (" + BN(aDays) + " দিন)", tkShort(e.range), delta(e.range, e.prev))}
+      ${tile("এই মাসে", tkShort(e.this_month), e.last_month ? (e.this_month >= e.last_month ? '<span class="dl up">▲</span> ' : '<span class="dl dn">▼</span> ') + "গত মাসে " + tk(e.last_month) : "গত মাসে কিছু নেই")}
+      ${tile("শুরু থেকে মোট আয়", tkShort(e.all_time), "শুধু যাচাই হওয়া পেমেন্ট")}
+      ${tile("যাচাই বাকি", tkShort(e.pending), "এখনো হাতে আসেনি")}
+    </div>
+    <div class="grid g2" style="margin-bottom:18px">
+      ${card("মাসিক আয়", "গত ১২ মাস", columns(e.months, r => r.earned, fmtTk, "", r => mLabel(r.m), 2))}
+      ${card("দৈনিক আয়", BN(aDays) + " দিন", columns(an.series, r => r.earned, fmtTk, ""))}
+    </div>
+    <div class="grid g3">
+      ${card("প্যাকেজ অনুযায়ী আয়", "বাতিল বাদে", hbars(o.by_pack.map(p => ({k: p.k, n: p.t})), 0, tk))}
+      ${card("পেমেন্ট মাধ্যম অনুযায়ী", "", hbars(o.by_method.map(m => ({k: m.k, label: MNAME[m.k] || m.k, n: m.t})), 0, tk))}
+      ${card("সবচেয়ে বেশি দিয়েছেন", "শুরু থেকে", e.top_customers.length ? `<ul class="people">${e.top_customers.map(c => `<li><span class="av">${esc(c.name.slice(0, 1))}</span><div><b>${esc(c.name)}</b><small>${esc(c.email)} · ${BN(c.orders)}টা অর্ডার</small></div><b class="num">${tk(c.total)}</b></li>`).join("")}</ul>` : '<p class="empty">এখনো কিছু নেই</p>')}
+    </div>`;
+}
+$("main").addEventListener("click", e => {
+  if (sec !== "analytics") return;
+  const d = e.target.closest("[data-adays]"); if (d){ aDays = +d.dataset.adays; an = null; loadAnalytics(); return; }
+  const t = e.target.closest("[data-atab]"); if (t){ aTab = t.dataset.atab; render(); }
+});
 
 /* ---------- catalog editor ---------- */
 const getP = (o, p) => p.split(".").reduce((a, k) => a?.[k], o);
@@ -712,6 +841,11 @@ function renderCatalog(){
   $("main").innerHTML = `
     <div class="sec-h"><div><h1>প্যাকেজ ও দাম</h1><p>এখানে বদলালে ল্যান্ডিং পেজ আর চেকআউটে সাথে সাথে নতুন দাম দেখাবে। নতুন অর্ডারের দাম সার্ভারও এখান থেকেই হিসাব করে।</p></div>
       <div class="tools"><a class="btn btn-ghost btn-sm" href="index.html#packages" target="_blank" rel="noopener">সাইটে দেখুন ↗</a></div></div>
+    <div class="tiles">
+      ${Object.entries(draft.stacks).map(([k, S]) => tile(esc(S.name) + " প্যাকেজ", BN(S.packs.length), BN(S.templates.length) + "টা টেমপ্লেট · " + S.packs.map(p => tk(p.price)).join(" / "))).join("")}
+      ${tile("মোট প্যাকেজ", BN(Object.values(draft.stacks).reduce((n, S) => n + S.packs.length, 0)), "নিচে যোগ, এডিট বা মুছতে পারবেন")}
+      ${tile("অ্যাড-অন", BN(draft.addons.length), BN(draft.groups.length) + "টা গ্রুপে")}
+    </div>
 
     <div class="card ed-sec"><h3>পেমেন্ট ও যোগাযোগ</h3>
       <div class="ed-grid">
@@ -798,63 +932,129 @@ $("main").addEventListener("click", async e => {
 });
 addEventListener("beforeunload", e => { if (dirty){ e.preventDefault(); e.returnValue = ""; } });
 
+/* ---------- people drawer (customers & team) ---------- */
+// kind: "customer" | "team"; p: the person, or null to add a new one
+function openPerson(kind, p){
+  const isNew = !p, cust = kind === "customer", self = p && p.id === me.id;
+  const ordersHere = cust && p ? p.orders : 0;
+  drawerId = "person";
+  $("drawer").innerHTML = `
+    <div class="dr-h"><div><h2 id="drTitle">${isNew ? (cust ? "নতুন কাস্টমার" : "নতুন টিম মেম্বার") : esc(p.name)}</h2>
+      <p>${isNew ? (cust ? "কাস্টমারের হয়ে অ্যাকাউন্ট খুলে দিন, পরে তিনি নিজে লগইন করবেন।" : "ডেভেলপার শুধু তাকে দেওয়া প্রোজেক্ট দেখবেন।") : esc(p.email)}</p></div>
+      <button class="icon-btn" type="button" id="drClose" aria-label="বন্ধ করুন">${ic('<path d="M6 6l12 12M18 6L6 18"/>')}</button></div>
+    <div class="dr-b">
+      ${!isNew ? `<div class="box"><dl class="kv">
+        ${cust ? `<dt>অর্ডার</dt><dd>${BN(p.orders)}টা · ${BN(p.running)}টা চলমান</dd><dt>মোট পেমেন্ট</dt><dd>${tk(p.spent)}</dd><dt>শেষ অর্ডার</dt><dd>${p.last_order ? ago(p.last_order) : "—"}</dd>`
+               : `<dt>রোল</dt><dd>${p.role === "admin" ? "অ্যাডমিন" : "ডেভেলপার"}</dd><dt>চলমান প্রোজেক্ট</dt><dd>${BN(p.running)}${p.overdue ? ` · <span class="late">${BN(p.overdue)}টা দেরি</span>` : ""}</dd><dt>সম্পন্ন</dt><dd>${BN(p.done)}টা</dd>`}
+        <dt>যোগ দিয়েছেন</dt><dd>${dateOnly(p.created)}</dd><dt>অবস্থা</dt><dd>${p.active ? '<span class="badge b-done">সক্রিয়</span>' : '<span class="badge b-off">বন্ধ</span>'}</dd></dl>
+        ${cust && p.orders ? `<div class="row2" style="margin-top:12px"><button class="btn btn-ghost btn-sm" type="button" id="pOrders">সব অর্ডার দেখুন</button></div>` : ""}</div>` : ""}
+      <form class="box" id="pForm" style="display:grid;gap:12px"><h4>${isNew ? "তথ্য" : "তথ্য বদলান"}</h4>
+        <div class="f"><label for="p-name">নাম</label><input class="inp" id="p-name" name="name" value="${esc(p?.name || "")}" required></div>
+        <div class="f"><label for="p-email">ইমেইল <small>(লগইনের জন্য)</small></label><input class="inp" id="p-email" name="email" type="email" value="${esc(p?.email || "")}" required></div>
+        ${cust ? `<div class="f"><label for="p-phone">মোবাইল <small>(ঐচ্ছিক)</small></label><input class="inp" id="p-phone" name="phone" type="tel" value="${esc(p?.phone || "")}" placeholder="01XXXXXXXXX"></div>` : ""}
+        ${isNew ? `<div class="f"><label for="p-pass">পাসওয়ার্ড <small>(৮+ অক্ষর, পরে তাকে জানিয়ে দিন)</small></label><input class="inp" id="p-pass" name="password" type="text" minlength="8" required></div>` : ""}
+        ${!cust && (isNew || !self) ? `<div class="f"><label for="p-role">রোল</label><select class="inp" id="p-role" name="role"><option value="developer" ${p?.role !== "admin" ? "selected" : ""}>ডেভেলপার</option><option value="admin" ${p?.role === "admin" ? "selected" : ""}>অ্যাডমিন</option></select></div>` : ""}
+        <div class="row2"><button class="btn btn-primary" type="submit">${isNew ? "অ্যাকাউন্ট খুলুন" : "সেভ করুন"}</button></div>
+        <p class="err" id="pErr" role="alert"></p></form>
+      ${!isNew ? `<form class="box" id="pwForm" style="display:grid;gap:10px"><h4>পাসওয়ার্ড রিসেট</h4>
+        <div class="row2"><input class="inp" name="password" type="text" minlength="8" placeholder="নতুন পাসওয়ার্ড (৮+ অক্ষর)" style="flex:1" aria-label="নতুন পাসওয়ার্ড" required><button class="btn btn-ghost btn-sm" type="submit">বদলান</button></div></form>
+      ${self ? "" : `<div class="box"><h4>অ্যাকাউন্ট</h4>
+        <p class="muted" style="font-size:.88rem;margin-bottom:10px">${cust ? "বন্ধ করলে তিনি আর লগইন করতে পারবেন না, তবে অর্ডার আর চ্যাট থেকে যাবে।" : "বন্ধ করলে তিনি লগইন করতে পারবেন না। মুছে ফেললে তার চলমান প্রোজেক্টগুলো আবার অ্যাসাইন করতে হবে।"}</p>
+        <div class="row2"><button class="btn btn-ghost btn-sm" type="button" id="pToggle">${p.active ? "অ্যাকাউন্ট বন্ধ করুন" : "অ্যাকাউন্ট চালু করুন"}</button>
+        <button class="btn btn-danger btn-sm" type="button" id="pDelete" ${ordersHere ? "disabled" : ""}>মুছে ফেলুন</button></div>
+        ${ordersHere ? '<p class="muted" style="font-size:.82rem;margin-top:8px">এই কাস্টমারের অর্ডার আছে, তাই মোছা যাবে না (অর্ডার, চ্যাট আর ফাইল হারিয়ে যেত)। বদলে অ্যাকাউন্ট বন্ধ করুন।</p>' : ""}</div>`}` : ""}
+    </div>`;
+  $("drawer").hidden = false; $("drawerBg").hidden = false; $("drClose").addEventListener("click", closeDrawer); $("p-name").focus();
+  const save = cust ? api.customerSave : api.teamSave;
+  const done = async (r, msg) => {
+    if (cust) customers = r.customers; else team = r.team;
+    stats = await api.stats(days).catch(() => stats); renderNav(); render(); toast(msg);
+  };
+  $("pForm").addEventListener("submit", async e => {
+    e.preventDefault(); $("pErr").textContent = "";
+    const data = Object.fromEntries(new FormData(e.target));
+    try {
+      if (isNew){ await done(await save({op: "create", ...data}), cust ? "কাস্টমার যোগ হয়েছে।" : "টিম মেম্বার যোগ হয়েছে। তিনি dashboard.html থেকে লগইন করবেন।"); closeDrawer(); return; }
+      let r = await save({op: "update", id: p.id, ...data});
+      if (!cust && data.role && data.role !== p.role) r = await save({op: "role", id: p.id, role: data.role});
+      await done(r, "সেভ হয়েছে।");
+      openPerson(kind, (cust ? customers : team).find(x => x.id === p.id));
+    } catch(err){ $("pErr").textContent = err.message; }
+  });
+  $("pwForm")?.addEventListener("submit", async e => {
+    e.preventDefault();
+    try { await save({op: "password", id: p.id, password: new FormData(e.target).get("password")}); e.target.reset(); toast("পাসওয়ার্ড বদলানো হয়েছে। নতুন পাসওয়ার্ডটা তাকে জানিয়ে দিন।"); } catch(err){ toast(err.message); }
+  });
+  $("pToggle")?.addEventListener("click", async () => {
+    try { await done(await save({op: "toggle", id: p.id}), p.active ? "অ্যাকাউন্ট বন্ধ হয়েছে।" : "অ্যাকাউন্ট চালু হয়েছে।"); openPerson(kind, (cust ? customers : team).find(x => x.id === p.id)); } catch(err){ toast(err.message); }
+  });
+  $("pDelete")?.addEventListener("click", async () => {
+    if (!confirm(`${p.name}-এর অ্যাকাউন্ট পুরোপুরি মুছে ফেলবেন? এটা ফেরানো যাবে না।`)) return;
+    try {
+      const r = await save({op: "delete", id: p.id});
+      await done(r, r.unassigned ? `মুছে ফেলা হয়েছে। তার ${BN(r.unassigned)}টা চলমান প্রোজেক্ট এখন অ্যাসাইন ছাড়া, অর্ডার থেকে নতুন ডেভেলপার দিন।` : "মুছে ফেলা হয়েছে।");
+      if (!cust) orders = (await api.orders()).orders;
+      closeDrawer();
+    } catch(err){ toast(err.message); }
+  });
+  $("pOrders")?.addEventListener("click", () => { closeDrawer(); oQuery = p.email; oFilter = "all"; go("orders"); });
+}
+
 /* ---------- team ---------- */
 function renderTeam(){
+  const devs = team.filter(t => t.role === "developer"), admins = team.filter(t => t.role === "admin");
   $("main").innerHTML = `
-    <div class="sec-h"><div><h1>টিম</h1><p>ডেভেলপাররা শুধু তাদের দেওয়া প্রোজেক্ট দেখেন। অ্যাডমিন সব দেখেন, দাম আর পেমেন্ট বদলাতে পারেন।</p></div></div>
-    <div class="grid g-main">
-      <div class="card" style="padding:10px 14px"><div class="tbl-wrap"><table class="tbl" style="min-width:640px"><thead><tr><th>নাম</th><th>রোল</th><th class="r">চলমান</th><th class="r">দেরি</th><th class="r">সম্পন্ন</th><th>অবস্থা</th><th></th></tr></thead><tbody>
-        ${team.map(t => `<tr><td><b>${esc(t.name)}</b><span class="sub">${esc(t.email)}</span></td>
-          <td>${t.id === me.id ? '<span class="badge b-admin">আপনি</span>' : `<select data-role="${t.id}" aria-label="রোল"><option value="developer" ${t.role === "developer" ? "selected" : ""}>ডেভেলপার</option><option value="admin" ${t.role === "admin" ? "selected" : ""}>অ্যাডমিন</option></select>`}</td>
-          <td class="r">${BN(t.running)}</td><td class="r ${t.overdue ? "late" : ""}">${BN(t.overdue)}</td><td class="r">${BN(t.done)}</td>
-          <td>${t.active ? '<span class="badge b-done">সক্রিয়</span>' : '<span class="badge b-off">বন্ধ</span>'}</td>
-          <td style="white-space:nowrap">${t.id === me.id ? "" : `<button class="btn btn-ghost btn-sm" type="button" data-toggle="${t.id}">${t.active ? "বন্ধ করুন" : "চালু করুন"}</button> `}<button class="btn btn-ghost btn-sm" type="button" data-pw="${t.id}">পাসওয়ার্ড</button></td></tr>`).join("")}
-      </tbody></table></div></div>
-      <form class="card" id="memberForm" style="display:grid;gap:12px;align-content:start"><h3>নতুন টিম মেম্বার</h3>
-        <div class="f"><label for="m-name">নাম</label><input class="inp" id="m-name" name="name" required></div>
-        <div class="f"><label for="m-email">ইমেইল</label><input class="inp" id="m-email" name="email" type="email" required></div>
-        <div class="f"><label for="m-pass">পাসওয়ার্ড <small>(৮+ অক্ষর, পরে তাকে জানিয়ে দিন)</small></label><input class="inp" id="m-pass" name="password" type="text" minlength="8" required></div>
-        <div class="f"><label for="m-role">রোল</label><select class="inp" id="m-role" name="role"><option value="developer">ডেভেলপার</option><option value="admin">অ্যাডমিন</option></select></div>
-        <button class="btn btn-primary" type="submit">যোগ করুন</button><p class="err" id="mErr" role="alert"></p></form>
-    </div>`;
-  $("memberForm").addEventListener("submit", async e => {
-    e.preventDefault(); $("mErr").textContent = "";
-    try { team = (await api.teamSave({op: "create", ...Object.fromEntries(new FormData(e.target))})).team; toast("টিম মেম্বার যোগ হয়েছে। dashboard.html থেকে লগইন করতে পারবেন।"); renderTeam(); }
-    catch(err){ $("mErr").textContent = err.message; }
-  });
+    <div class="sec-h"><div><h1>টিম ও ডেভেলপার</h1><p>ডেভেলপাররা শুধু তাদের দেওয়া প্রোজেক্ট দেখেন। অ্যাডমিন সব দেখেন, দাম আর পেমেন্ট বদলাতে পারেন।</p></div>
+      <div class="tools"><button class="btn btn-primary btn-sm" type="button" id="addMember">${I.plus} নতুন মেম্বার</button></div></div>
+    <div class="tiles">
+      ${tile("মোট ডেভেলপার", nf(devs.length), nf(devs.filter(t => t.active).length) + " জন সক্রিয়")}
+      ${tile("অ্যাডমিন", nf(admins.length), "সব কিছু দেখতে ও বদলাতে পারেন")}
+      ${tile("চলমান প্রোজেক্ট", nf(team.reduce((s, t) => s + t.running, 0)), nf(stats?.orders?.unassigned || 0) + "টা এখনো অ্যাসাইন হয়নি")}
+      ${tile("দেরি হচ্ছে", nf(team.reduce((s, t) => s + t.overdue, 0)), "ডেডলাইন পেরিয়ে গেছে")}
+    </div>
+    <div class="card" style="padding:10px 14px"><div class="tbl-wrap"><table class="tbl" style="min-width:700px"><thead><tr><th>নাম</th><th>রোল</th><th class="r">চলমান</th><th class="r">দেরি</th><th class="r">সম্পন্ন</th><th>অবস্থা</th><th></th></tr></thead><tbody>
+      ${team.map(t => `<tr class="click" data-member="${t.id}"><td><b>${esc(t.name)}</b>${t.id === me.id ? ' <span class="badge b-admin">আপনি</span>' : ""}<span class="sub">${esc(t.email)}</span></td>
+        <td>${t.role === "admin" ? "অ্যাডমিন" : "ডেভেলপার"}</td>
+        <td class="r">${BN(t.running)}</td><td class="r ${t.overdue ? "late" : ""}">${BN(t.overdue)}</td><td class="r">${BN(t.done)}</td>
+        <td>${t.active ? '<span class="badge b-done">সক্রিয়</span>' : '<span class="badge b-off">বন্ধ</span>'}</td>
+        <td class="r"><button class="btn btn-ghost btn-sm" type="button" data-member="${t.id}">এডিট</button></td></tr>`).join("")}
+    </tbody></table></div></div>`;
 }
-$("main").addEventListener("click", async e => {
+$("main").addEventListener("click", e => {
   if (sec !== "team") return;
-  const tg = e.target.closest("[data-toggle]"), pw = e.target.closest("[data-pw]");
-  try {
-    if (tg) team = (await api.teamSave({op: "toggle", id: tg.dataset.toggle})).team;
-    else if (pw){ const p = prompt("নতুন পাসওয়ার্ড (কমপক্ষে ৮ অক্ষর):"); if (!p) return; team = (await api.teamSave({op: "password", id: pw.dataset.pw, password: p})).team; toast("পাসওয়ার্ড বদলানো হয়েছে।"); }
-    else return;
-    renderTeam();
-  } catch(err){ toast(err.message); }
-});
-$("main").addEventListener("change", async e => {
-  const r = e.target.closest("[data-role]"); if (!r) return;
-  try { team = (await api.teamSave({op: "role", id: r.dataset.role, role: r.value})).team; toast("রোল বদলানো হয়েছে।"); renderTeam(); } catch(err){ toast(err.message); }
+  if (e.target.closest("#addMember")) return openPerson("team", null);
+  const m = e.target.closest("[data-member]"); if (m) openPerson("team", team.find(t => t.id === +m.dataset.member));
 });
 
 /* ---------- customers ---------- */
+const CF = {all: ["সব", () => true], active: ["এখন প্রোজেক্ট চলছে", c => c.running > 0], repeat: ["একাধিকবার অর্ডার", c => c.orders > 1], none: ["অর্ডার করেননি", c => !c.orders], blocked: ["বন্ধ", c => !c.active]};
 function renderCustomers(){
   const q = custQ.toLowerCase();
-  const list = customers.filter(c => !q || [c.name, c.email, c.phone].some(v => String(v || "").toLowerCase().includes(q)));
+  const list = customers.filter(CF[custF][1]).filter(c => !q || [c.name, c.email, c.phone].some(v => String(v || "").toLowerCase().includes(q)));
   const focus = document.activeElement?.id === "cq";
-  const total = customers.reduce((s, c) => s + c.spent, 0), repeat = customers.filter(c => c.orders > 1).length;
+  const total = customers.reduce((s, c) => s + c.spent, 0), buyers = customers.filter(c => c.orders > 0), repeat = customers.filter(c => c.orders > 1).length;
+  const month = Date.now() / 1000 - 30 * 86400;
   $("main").innerHTML = `
-    <div class="sec-h"><div><h1>কাস্টমার</h1><p>${nf(customers.length)} জন · ${nf(repeat)} জন একাধিকবার অর্ডার করেছেন · মোট ${tk(total)}</p></div>
-      <div class="tools"><input class="search" type="search" id="cq" placeholder="নাম, ইমেইল, ফোন" value="${esc(custQ)}" aria-label="কাস্টমার খুঁজুন"></div></div>
-    <div class="card" style="padding:10px 14px">${list.length ? `<div class="tbl-wrap"><table class="tbl" style="min-width:760px"><thead><tr><th>কাস্টমার</th><th>ফোন</th><th class="r">অর্ডার</th><th class="r">চলমান</th><th class="r">মোট পেমেন্ট</th><th>শেষ অর্ডার</th><th>যোগ দিয়েছেন</th></tr></thead><tbody>
-      ${list.map(c => `<tr class="click" data-cust="${esc(c.email)}"><td><b>${esc(c.name)}</b><span class="sub">${esc(c.email)}</span></td><td>${esc(c.phone || "—")}</td><td class="r">${BN(c.orders)}</td><td class="r">${BN(c.running)}</td><td class="r num">${tk(c.spent)}</td><td>${c.last_order ? ago(c.last_order) : "—"}</td><td>${dateOnly(c.created)}</td></tr>`).join("")}
+    <div class="sec-h"><div><h1>কাস্টমার</h1><p>কাস্টমার যোগ, এডিট, বন্ধ বা মুছে ফেলা যায়। কারো নামে ক্লিক করুন।</p></div>
+      <div class="tools"><input class="search" type="search" id="cq" placeholder="নাম, ইমেইল, ফোন" value="${esc(custQ)}" aria-label="কাস্টমার খুঁজুন"><button class="btn btn-primary btn-sm" type="button" id="addCust">${I.plus} নতুন কাস্টমার</button></div></div>
+    <div class="tiles">
+      ${tile("মোট কাস্টমার", nf(customers.length), nf(customers.filter(c => c.created > month).length) + " জন গত ৩০ দিনে যোগ দিয়েছেন")}
+      ${tile("অর্ডার করেছেন", nf(buyers.length), pct(buyers.length, customers.length) + " অ্যাকাউন্ট")}
+      ${tile("আবার অর্ডার করেছেন", nf(repeat), pct(repeat, buyers.length) + " ক্রেতা ফিরে এসেছেন")}
+      ${tile("কাস্টমার প্রতি গড় আয়", buyers.length ? tk(total / buyers.length) : "—", "মোট " + tk(total))}
+    </div>
+    <div class="chips" style="margin-bottom:14px">${Object.entries(CF).map(([k, [l, f]]) => `<button type="button" data-cf="${k}" aria-pressed="${custF === k}">${l} (${BN(customers.filter(f).length)})</button>`).join("")}</div>
+    <div class="card" style="padding:10px 14px">${list.length ? `<div class="tbl-wrap"><table class="tbl" style="min-width:820px"><thead><tr><th>কাস্টমার</th><th>ফোন</th><th class="r">অর্ডার</th><th class="r">চলমান</th><th class="r">মোট পেমেন্ট</th><th>শেষ অর্ডার</th><th>অবস্থা</th><th></th></tr></thead><tbody>
+      ${list.map(c => `<tr class="click" data-cust="${c.id}"><td><b>${esc(c.name)}</b><span class="sub">${esc(c.email)} · ${dateOnly(c.created)}</span></td><td>${esc(c.phone || "—")}</td><td class="r">${BN(c.orders)}</td><td class="r">${BN(c.running)}</td><td class="r num">${tk(c.spent)}</td><td>${c.last_order ? ago(c.last_order) : "—"}</td>
+        <td>${c.active ? '<span class="badge b-done">সক্রিয়</span>' : '<span class="badge b-off">বন্ধ</span>'}</td><td class="r"><button class="btn btn-ghost btn-sm" type="button" data-cust="${c.id}">এডিট</button></td></tr>`).join("")}
     </tbody></table></div>` : `<p class="empty">${customers.length ? "কাউকে পাওয়া যায়নি।" : "লোড হচ্ছে..."}</p>`}</div>`;
   if (focus){ const i = $("cq"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
 }
 $("main").addEventListener("click", e => {
   if (sec !== "customers") return;
-  const r = e.target.closest("[data-cust]"); if (r){ oQuery = r.dataset.cust; oFilter = "all"; go("orders"); }
+  if (e.target.closest("#addCust")) return openPerson("customer", null);
+  const f = e.target.closest("[data-cf]"); if (f){ custF = f.dataset.cf; return renderCustomers(); }
+  const r = e.target.closest("[data-cust]"); if (r) openPerson("customer", customers.find(c => c.id === +r.dataset.cust));
 });
 
 /* ---------- boot ---------- */

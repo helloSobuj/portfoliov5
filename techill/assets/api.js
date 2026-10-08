@@ -48,7 +48,7 @@ window.TechillAPI = (() => {
   const post = (action, obj) => http(action, {method: "POST", form: toForm(obj)});
 
   /* ---------- demo backend (browser only) ---------- */
-  const KEY = "techill_demo_db_v2", SKEY = "techill_demo_uid", CKEY = "techill_demo_catalog";
+  const KEY = "techill_demo_db_v3", SKEY = "techill_demo_uid", CKEY = "techill_demo_catalog";
   let mem = {}, fileCatalog = null;
   const ls = {
     get(k) { try { const v = localStorage.getItem(k); return v == null ? mem[k] ?? null : JSON.parse(v); } catch (e) { return mem[k] ?? null; } },
@@ -125,8 +125,18 @@ window.TechillAPI = (() => {
       pages: {"/": 62, "/#packages": 21, "/#features": 9, "/dashboard.html": 6, "/#how": 2},
       refs: {"facebook.com": 54, "": 24, "google.com": 12, "m.facebook.com": 6, "instagram.com": 3, "youtube.com": 1},
       utm: {"fb_ads": 61, "boost_eid": 24, "whatsapp_status": 10, "google": 5},
-      devices: {mobile: 81, desktop: 15, tablet: 4}
+      devices: {mobile: 81, desktop: 15, tablet: 4},
+      browsers: {Facebook: 46, Chrome: 31, Samsung: 8, Safari: 7, Instagram: 4, Edge: 2, Other: 2},
+      os: {Android: 79, iOS: 9, Windows: 10, macOS: 2},
+      countries: {BD: 91, AE: 3, SA: 2, MY: 1.5, IT: 1, GB: 1, "": .5},
+      cities: {"Dhaka": 48, "Chattogram": 14, "Gazipur": 7, "Narayanganj": 5, "Sylhet": 5, "Khulna": 4, "Rajshahi": 4, "Cumilla": 3, "Mymensingh": 3, "Rangpur": 2, "Bogura": 2, "Barishal": 2},
+      regions: {"Dhaka Division": 62, "Chittagong Division": 19, "Sylhet Division": 5, "Khulna Division": 4, "Rajshahi Division": 5, "Mymensingh Division": 3, "Rangpur Division": 2, "Barisal Division": 2},
+      hours: [2, 1, .6, .4, .3, .4, .8, 1.6, 2.4, 3.2, 4, 4.4, 4.6, 4.5, 4.2, 4.4, 4.8, 5.2, 5.6, 6.4, 7.4, 8.2, 7, 4.4],
+      returning: .24, single: .41,
+      months: {}
     };
+    // earnings before the seeded orders, so the 12-month chart has a history
+    for (let i = 11; i >= 1; i--) { const m = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() - i, 15)).toISOString().slice(0, 7); analytics.months[m] = {earned: Math.round((38000 + (11 - i) * 9000 + rnd() * 26000) / 100) * 100, orders: 3 + Math.round((11 - i) * .6 + rnd() * 3)}; }
     return {seq, users, orders, events, messages, files, analytics};
   }
   const load = () => ls.get(KEY) || (ls.set(KEY, seed()), ls.get(KEY));
@@ -183,6 +193,27 @@ window.TechillAPI = (() => {
     }).sort((a, b) => b.active - a.active || a.role.localeCompare(b.role));
   }
   const bump = (d, field, k) => { const a = d.analytics; a[field][k] = (a[field][k] || 0) + 1; };
+
+  function updatePerson(d, p, name, email, phone) {
+    name = String(name || "").trim(); email = String(email || "").trim().toLowerCase();
+    if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) bad("নাম ও সঠিক ইমেইল দিন।");
+    if (phone && !phoneOK(phone)) bad("সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন।");
+    if (d.users.some(x => x.email === email && x.id !== p.id)) bad("এই ইমেইলে অন্য একটা অ্যাকাউন্ট আছে।", 409);
+    Object.assign(p, {name, email, phone: phone || null});
+  }
+  function counts(d, c) {
+    const r = role => d.users.filter(u => u.role === role);
+    return {customers: r("customer").length, customers_active: r("customer").filter(u => u.active).length, developers: r("developer").length,
+      developers_active: r("developer").filter(u => u.active).length, admins: r("admin").length,
+      packages: Object.values(c.stacks).reduce((s, S) => s + S.packs.length, 0), templates: Object.values(c.stacks).reduce((s, S) => s + S.templates.length, 0),
+      addons: c.addons.length, platforms: Object.keys(c.stacks).length};
+  }
+  function demoLive(t, n) {
+    const paths = ["/", "/", "/", "/#packages", "/#packages", "/#features", "/dashboard.html"], devs = ["mobile", "mobile", "mobile", "mobile", "desktop", "tablet"];
+    const br = ["Facebook", "Chrome", "Facebook", "Samsung", "Chrome", "Safari"], cities = [["Dhaka", "BD"], ["Chattogram", "BD"], ["Dhaka", "BD"], ["Gazipur", "BD"], ["Sylhet", "BD"], [null, "AE"], ["Khulna", "BD"]];
+    return Array.from({length: n}, (_, i) => ({path: paths[(i * 3 + (t / 60 | 0)) % paths.length], device: devs[(i * 5) % devs.length], browser: br[i % br.length],
+      city: cities[i % cities.length][0], country: cities[i % cities.length][1], since: t - (i * 97 + 40) % 900, seen: t - (i * 13) % 50}));
+  }
 
   const mock = {
     async me() { const d = load(); return {user: meUser(d)}; },
@@ -322,6 +353,15 @@ window.TechillAPI = (() => {
         if (data.op === "toggle") { if (t.id === u.id) bad("নিজের অ্যাকাউন্ট বন্ধ করা যায় না।"); t.active = !t.active; }
         else if (data.op === "role") { if (t.id === u.id) bad("নিজের রোল বদলানো যায় না।"); t.role = data.role === "admin" ? "admin" : "developer"; }
         else if (data.op === "password") { if (String(data.password || "").length < 8) bad("পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের দিন।"); t.pass = data.password; }
+        else if (data.op === "update") updatePerson(d, t, data.name, data.email, t.phone);
+        else if (data.op === "delete") {
+          if (t.id === u.id) bad("নিজের অ্যাকাউন্ট মোছা যায় না।");
+          if (t.role === "admin" && d.users.filter(x => x.role === "admin" && x.active).length <= 1) bad("অন্তত একজন অ্যাডমিন রাখতে হবে।");
+          const mine = d.orders.filter(o => o.developer_id === t.id), n = mine.filter(o => !o.cancelled && o.stage < 4).length;
+          mine.forEach(o => o.developer_id = null);
+          d.users = d.users.filter(x => x.id !== t.id);
+          save(d); return {team: teamRows(d), unassigned: n};
+        }
       }
       save(d); return {team: teamRows(d)};
     },
@@ -329,10 +369,73 @@ window.TechillAPI = (() => {
       const d = load(); needAdmin(d);
       return {customers: d.users.filter(u => u.role === "customer").map(u => {
         const os = d.orders.filter(o => o.user_id === u.id);
-        return {id: u.id, name: u.name, email: u.email, phone: u.phone, orders: os.length, created: u.created,
+        return {id: u.id, name: u.name, email: u.email, phone: u.phone, active: u.active, orders: os.length, created: u.created,
           spent: os.filter(o => !o.cancelled && o.pay_status === "verified").reduce((s, o) => s + o.total, 0),
           running: os.filter(o => !o.cancelled && o.stage < 4).length, last_order: os.length ? Math.max(...os.map(o => o.created)) : null};
       }).sort((a, b) => (b.last_order || 0) - (a.last_order || 0))};
+    },
+    async customer_save(data) {
+      const d = load(); needAdmin(d);
+      if (data.op === "create") {
+        const email = String(data.email || "").trim().toLowerCase();
+        if (!String(data.name || "").trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) bad("নাম ও সঠিক ইমেইল দিন।");
+        if (data.phone && !phoneOK(data.phone)) bad("সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন।");
+        if (String(data.password || "").length < 8) bad("পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের দিন।");
+        if (d.users.some(x => x.email === email)) bad("এই ইমেইলে আগেই অ্যাকাউন্ট আছে।", 409);
+        d.users.push({id: nextId(d), name: String(data.name).trim(), email, phone: data.phone || null, pass: data.password, role: "customer", active: true, created: now()});
+      } else {
+        const c = d.users.find(x => x.id === +data.id && x.role === "customer"); if (!c) bad("কাস্টমার পাওয়া যায়নি।", 404);
+        if (data.op === "update") updatePerson(d, c, data.name, data.email, data.phone);
+        else if (data.op === "toggle") c.active = !c.active;
+        else if (data.op === "password") { if (String(data.password || "").length < 8) bad("পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের দিন।"); c.pass = data.password; }
+        else if (data.op === "delete") {
+          if (d.orders.some(o => o.user_id === c.id)) bad("এই কাস্টমারের অর্ডার আছে, তাই মোছা যাবে না। অ্যাকাউন্ট বন্ধ করে দিন।", 409);
+          d.users = d.users.filter(x => x.id !== c.id);
+        }
+      }
+      save(d); return mock.customers();
+    },
+    async analytics({days}) {
+      const d = load(); needAdmin(d);
+      days = [7, 30, 90, 365].includes(+days) ? +days : 30;
+      const t = now(), a = d.analytics, D = 86400, sum = (arr, f) => arr.reduce((s, x) => s + f(x), 0);
+      const keys = []; for (let i = days - 1; i >= 0; i--) keys.push(dayKey(t - i * D));
+      const prevKeys = []; for (let i = 2 * days - 1; i >= days; i--) prevKeys.push(dayKey(t - i * D));
+      const day = k => a.days[k] || {v: 0, u: 0, checkout: 0, wa: 0};
+      const uniq = sum(keys, k => day(k).u), views = sum(keys, k => day(k).v);
+      const share = (obj, total) => { const s = sum(Object.values(obj), x => x); return Object.entries(obj).map(([k, n]) => ({k, n: Math.round(n / s * total)})).sort((x, y) => y.n - x.n); };
+      const hs = sum(a.hours, x => x), hours = a.hours.map(h => Math.round(h / hs * uniq));
+      const weekdays = [0, 0, 0, 0, 0, 0, 0]; keys.forEach(k => weekdays[new Date(k + "T00:00:00Z").getUTCDay()] += day(k).u);
+      const inR = (o, from, to) => o.created >= t - from * D && o.created < t - to * D;
+      const ords = d.orders.filter(o => inR(o, days, 0)), act = ords.filter(o => !o.cancelled), prev = d.orders.filter(o => inR(o, 2 * days, days));
+      const ver = os => sum(os.filter(o => !o.cancelled && o.pay_status === "verified"), o => o.total);
+      const done = act.filter(o => o.stage === 4).map(o => ({o, at: (d.events.find(e => e.order_id === o.id && e.stage === 4) || {}).created || o.deadline}));
+      const group = (os, key) => { const m = {}; os.forEach(o => { const k = key(o); m[k] = m[k] || {k, n: 0, t: 0}; m[k].n++; m[k].t += o.total; }); return Object.values(m).sort((x, y) => y.n - x.n); };
+      const stages = [0, 0, 0, 0, 0]; act.forEach(o => stages[o.stage]++);
+      const month = off => { const x = new Date(); return new Date(Date.UTC(x.getUTCFullYear(), x.getUTCMonth() - off, 15)).toISOString().slice(0, 7); };
+      const months = []; for (let i = 11; i >= 0; i--) { const m = month(i), os = d.orders.filter(o => !o.cancelled && dayKey(o.created).slice(0, 7) === m), h = a.months[m] || {earned: 0, orders: 0};
+        months.push({m, earned: h.earned + ver(os), orders: h.orders + os.length}); }
+      const cust = {}; d.orders.filter(o => !o.cancelled && o.pay_status === "verified").forEach(o => { const c = d.users.find(x => x.id === o.user_id); cust[c.id] = cust[c.id] || {name: c.name, email: c.email, orders: 0, total: 0}; cust[c.id].orders++; cust[c.id].total += o.total; });
+      const live = Math.max(1, Math.round(4 + 3 * Math.sin(t / 300) + Math.cos(t / 47)));
+      return {
+        days,
+        visitors: {uniques: uniq, views, returning: Math.round(uniq * a.returning), new: uniq - Math.round(uniq * a.returning), single_page: Math.round(uniq * a.single),
+          prev_uniques: sum(prevKeys, k => day(k).u), today: day(dayKey(t)).u, total_uniques: sum(Object.values(a.days), x => x.u) + 12930, total_views: sum(Object.values(a.days), x => x.v) + 18240},
+        live: demoLive(t, live),
+        series: keys.map(k => { const os = d.orders.filter(o => !o.cancelled && dayKey(o.created) === k); return {d: k, uniques: day(k).u, visits: day(k).v, orders: os.length, earned: ver(os)}; }),
+        hours, weekdays,
+        devices: share(a.devices, uniq), browsers: share(a.browsers, uniq), os: share(a.os, uniq), countries: share(a.countries, uniq),
+        cities: share(a.cities, Math.round(uniq * .92)), regions: share(a.regions, Math.round(uniq * .92)),
+        referrers: share(a.refs, uniq), utm: share(a.utm, Math.round(uniq * .62)), pages: share(a.pages, views),
+        funnel: {visitors: uniq, checkout: sum(keys, k => day(k).checkout), whatsapp: sum(keys, k => day(k).wa), orders: act.length},
+        orders: {count: ords.length, prev_count: prev.length, cancelled: ords.length - act.length, done: done.length, running: act.filter(o => o.stage < 4).length, value: sum(act, o => o.total),
+          on_time: done.filter(x => x.at <= x.o.deadline).length, delivered: done.length,
+          avg_hours: done.length ? Math.round(sum(done, x => (x.at - x.o.created) / 3600) / done.length * 10) / 10 : 0, stages,
+          by_stack: group(act, o => o.stack), by_pack: group(act, o => o.pack + " · " + o.stack), by_method: group(act, o => o.pay_method), by_pay: group(act, o => o.pay_status),
+          sources: share({"fb_ads": 5, "facebook.com": 2, "": 1, "google.com": 1}, act.length)},
+        earnings: {range: ver(ords), prev: ver(prev), all_time: ver(d.orders) + sum(Object.values(a.months), m => m.earned), pending: sum(d.orders.filter(o => !o.cancelled && o.pay_status === "pending"), o => o.total),
+          this_month: months[11].earned, last_month: months[10].earned, months, top_customers: Object.values(cust).sort((x, y) => y.total - x.total).slice(0, 8)}
+      };
     },
     async admin_stats({days}) {
       const d = load(); needAdmin(d);
@@ -359,9 +462,10 @@ window.TechillAPI = (() => {
         ...d.messages.filter(m => !m.from_admin).slice(-15).map(m => ({type: "message", order_id: m.order_id, code: code(m.order_id), who: who(m.user_id), text: m.body, unread: !m.seen, created: m.created}))
       ].sort((x, y) => y.created - x.created).slice(0, 20);
       const paths = ["/", "/", "/", "/#packages", "/#packages", "/#features", "/dashboard.html"], devs = ["mobile", "mobile", "mobile", "mobile", "desktop", "tablet"];
+      const liveList = demoLive(t, live);
       return {
         days,
-        live: {count: live, list: Array.from({length: live}, (_, i) => ({path: paths[(i * 3 + (t / 60 | 0)) % paths.length], device: devs[(i * 5) % devs.length], since: t - (i * 97 + 40) % 900, seen: t - (i * 13) % 50}))},
+        live: {count: live, list: liveList},
         visits: {today: (a.days[dayKey(t)] || {}).v || 0, today_uniques: (a.days[dayKey(t)] || {}).u || 0, total: sum(all, x => x.v) + 18240, total_uniques: sum(all, x => x.u) + 12930, range: rv, range_uniques: ru},
         series,
         pages: share(a.pages, rv), referrers: share(a.refs, ru), utm: share(a.utm, Math.round(ru * .62)), devices: share(a.devices, ru),
@@ -377,7 +481,7 @@ window.TechillAPI = (() => {
         },
         packs: Object.values(packs).sort((x, y) => y.n - x.n),
         addons: Object.entries(addons).map(([k, n]) => ({k, n})).sort((x, y) => y.n - x.n).slice(0, 10),
-        team: teamRows(d), activity
+        team: teamRows(d), counts: counts(d, await demoCatalog()), activity
       };
     },
     track({t, p, r, n}) {
@@ -439,6 +543,8 @@ window.TechillAPI = (() => {
     team: () => run("team", {}, () => http("team")),
     teamSave: data => run("team_save", data, () => post("team_save", data)),
     customers: () => run("customers", {}, () => http("customers")),
+    customerSave: data => run("customer_save", data, () => post("customer_save", data)),
+    analytics: days => run("analytics", {days}, () => http("analytics", {params: {days}})),
     async exportUrl() { await ready; return demo ? mock.exportCSV() : "api.php?action=export_orders"; },
     fileUrl: id => demo ? mock.fileUrl(id) : "api.php?action=file&id=" + encodeURIComponent(id),
     /* analytics beacon: page view now, a heartbeat every 30s while the tab is visible */
@@ -451,7 +557,8 @@ window.TechillAPI = (() => {
     },
     startTracking() {
       const u = new URLSearchParams(location.search).get("utm_source") || "";
-      this.track("view", {r: document.referrer, u});
+      let tz = ""; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (e) {}
+      this.track("view", {r: document.referrer, u, tz});
       setInterval(() => { if (!document.hidden) this.track("ping"); }, 30000);
     },
     resetDemo() { ls.del(KEY); ls.del(SKEY); ls.del(CKEY); }

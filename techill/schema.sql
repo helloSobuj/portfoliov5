@@ -106,6 +106,12 @@ CREATE TABLE IF NOT EXISTS visits (
   ref_host   VARCHAR(120) NULL,
   utm        VARCHAR(60)  NULL,
   device     ENUM('mobile','tablet','desktop') NOT NULL DEFAULT 'desktop',
+  browser    VARCHAR(30)  NULL,
+  os         VARCHAR(20)  NULL,
+  country    CHAR(2)      NULL,
+  country_name VARCHAR(60) NULL,
+  region     VARCHAR(80)  NULL,
+  city       VARCHAR(80)  NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   KEY ix_visits_time (created_at),
   KEY ix_visits_vid (vid)
@@ -123,7 +129,21 @@ CREATE TABLE IF NOT EXISTS live_visitors (
   vid       CHAR(32)     PRIMARY KEY,
   path      VARCHAR(200) NOT NULL,
   device    ENUM('mobile','tablet','desktop') NOT NULL DEFAULT 'desktop',
+  browser   VARCHAR(30)  NULL,
+  city      VARCHAR(80)  NULL,
+  country   CHAR(2)      NULL,
   first_seen DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   last_seen DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   KEY ix_live_seen (last_seen)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- IP → location lookups, cached so each visitor IP is looked up at most once a month.
+-- The IP itself is never stored, only a salted hash of it.
+CREATE TABLE IF NOT EXISTS geo_cache (
+  ip_hash    CHAR(40) PRIMARY KEY,
+  country    CHAR(2)     NULL,
+  country_name VARCHAR(60) NULL,
+  region     VARCHAR(80) NULL,
+  city       VARCHAR(80) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
