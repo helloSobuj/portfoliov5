@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Techill অ্যাডমিন</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tiro+Bangla:ital@0;1&display=swap">
+<style>
+/* Layout: sticky header with live pill; left section nav (horizontal on mobile); one section visible at a time:
+   overview (alerts, KPI tiles, charts, funnel, pipeline, team, activity), orders table + side drawer, project board,
+   visitors, package & price editor, team, customers */
+:root{
+  --bg:#f7f9fc;--surface:#ffffff;--sunk:#eef3f9;--ink:#121822;--muted:#5a6578;--line:#e1e7ef;--grid:#edf1f6;
+  --blue:#0a84f0;--blue-ink:#0067c7;--blue-soft:#e8f3ff;--on-blue:#ffffff;
+  --ok:#12a150;--ok-soft:#e4f6eb;--warn:#a85800;--warn-soft:#fff3e0;--danger:#d93025;--danger-soft:#fdecea;
+  --shadow:0 1px 2px rgb(16 24 40 / .04),0 18px 40px -18px rgb(16 24 40 / .16);
+  --font:"Tiro Bangla","Noto Serif Bengali",Georgia,serif;
+  --r:18px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0b1018;--surface:#111925;--sunk:#0e1520;--ink:#e9eef5;--muted:#98a4b7;--line:#1f2b3b;--grid:#18222f;
+    --blue:#3aa0ff;--blue-ink:#7cc0ff;--blue-soft:#10223a;--on-blue:#04121f;
+    --ok:#3ccf7f;--ok-soft:#0f2a1c;--warn:#ffb454;--warn-soft:#2c1f0c;--danger:#ff6b60;--danger-soft:#2d1311;
+    --shadow:0 1px 2px rgb(0 0 0 / .3),0 18px 40px -18px rgb(0 0 0 / .6);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0b1018;--surface:#111925;--sunk:#0e1520;--ink:#e9eef5;--muted:#98a4b7;--line:#1f2b3b;--grid:#18222f;
+  --blue:#3aa0ff;--blue-ink:#7cc0ff;--blue-soft:#10223a;--on-blue:#04121f;
+  --ok:#3ccf7f;--ok-soft:#0f2a1c;--warn:#ffb454;--warn-soft:#2c1f0c;--danger:#ff6b60;--danger-soft:#2d1311;
+  --shadow:0 1px 2px rgb(0 0 0 / .3),0 18px 40px -18px rgb(0 0 0 / .6);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.6}
+h1,h2,h3,h4{margin:0;line-height:1.25;font-weight:700}
+p{margin:0}
+a{color:inherit}
+button,input,textarea,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:8px}
+.num{font-variant-numeric:tabular-nums}
+
+.logo{display:block;height:34px;width:auto}
+.logo-d{display:none}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .logo-l{display:none}:root:not([data-theme="light"]) .logo-d{display:block}}
+:root[data-theme="dark"] .logo-l{display:none}
+:root[data-theme="dark"] .logo-d{display:block}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:10px 18px;font-weight:600;text-decoration:none;cursor:pointer;border:1.5px solid transparent;transition:transform .15s,border-color .15s;white-space:nowrap;background:transparent}
+.btn:hover{transform:translateY(-1px)}
+.btn-primary{background:var(--blue);color:var(--on-blue)}
+.btn-ghost{border-color:var(--line)}
+.btn-ghost:hover{border-color:var(--blue)}
+.btn-danger{border-color:var(--danger);color:var(--danger)}
+.btn-ok{background:var(--ok);color:#fff}
+.btn-sm{padding:6px 12px;font-size:.9rem;border-radius:10px}
+.btn[disabled]{opacity:.5;cursor:not-allowed;transform:none}
+.icon-btn{width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer;flex:none}
+.icon-btn svg{width:19px;height:19px}
+.theme-btn .moon{display:none}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .theme-btn .sun{display:none}:root:not([data-theme="light"]) .theme-btn .moon{display:block}}
+:root[data-theme="dark"] .theme-btn .sun{display:none}
+:root[data-theme="dark"] .theme-btn .moon{display:block}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:.78rem;font-weight:600;border-radius:999px;padding:2px 10px;white-space:nowrap}
+.b-unread{background:var(--danger);color:#fff;min-width:22px;justify-content:center;padding:1px 7px}
+.b-pending{background:var(--warn-soft);color:var(--warn)}
+.b-verified,.b-done{background:var(--ok-soft);color:var(--ok)}
+.b-rejected,.b-late{background:var(--danger-soft);color:var(--danger)}
+.b-run,.b-admin{background:var(--blue-soft);color:var(--blue-ink)}
+.b-cancel,.b-off{background:var(--sunk);color:var(--muted)}
+
+/* header */
+.hdr{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.hdr-in{display:flex;align-items:center;justify-content:space-between;gap:12px;height:64px;padding-inline:24px;max-width:1440px;margin:0 auto}
+.hdr-l,.hdr-r{display:flex;align-items:center;gap:12px;min-width:0}
+.tag{font-size:.8rem;font-weight:600;color:var(--blue-ink);background:var(--blue-soft);border-radius:8px;padding:2px 10px}
+.live-pill{display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 14px;font-size:.9rem;cursor:pointer}
+.live-pill b{font-variant-numeric:tabular-nums}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--ok);flex:none}
+@media (prefers-reduced-motion:no-preference){.dot{animation:pulse 1.8s ease-out infinite}@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 60%,transparent)}100%{box-shadow:0 0 0 9px transparent}}}
+.demo-bar{background:var(--warn-soft);color:var(--warn);font-size:.88rem;text-align:center;padding:7px 16px}
+.demo-bar b{color:var(--ink)}
+.demo-bar button{all:unset;cursor:pointer;text-decoration:underline;margin-left:6px}
+
+/* shell */
+.shell{display:grid;grid-template-columns:220px minmax(0,1fr);gap:28px;max-width:1440px;margin:0 auto;padding:24px 24px 72px}
+.nav{position:sticky;top:88px;align-self:start;display:grid;gap:2px}
+.nav button{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;cursor:pointer;color:var(--muted);font-weight:600}
+.nav button:hover{background:var(--sunk);color:var(--ink)}
+.nav button[aria-current="true"]{background:var(--blue-soft);color:var(--blue-ink)}
+.nav button svg{width:18px;height:18px;flex:none}
+.nav .cnt{margin-left:auto}
+.nav hr{border:0;border-top:1px solid var(--line);margin:10px 4px}
+.nav a{display:flex;gap:10px;padding:9px 12px;border-radius:10px;color:var(--muted);text-decoration:none;font-weight:600;font-size:.94rem}
+.nav a:hover{background:var(--sunk);color:var(--ink)}
+.nav a svg{width:18px;height:18px;flex:none}
+main{min-width:0}
+.sec-h{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.sec-h h1{font-size:1.6rem}
+.sec-h p{color:var(--muted);margin-top:2px}
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}
+.seg button{border:0;background:transparent;border-radius:9px;padding:5px 14px;font-weight:600;cursor:pointer;color:var(--muted);font-size:.9rem}
+.seg button[aria-pressed="true"]{background:var(--blue);color:var(--on-blue)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:22px;min-width:0}
+.card h3{font-size:1.05rem}
+.card .ch{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.card .ch small{color:var(--muted);font-size:.85rem}
+.grid{display:grid;gap:18px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g-main{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+.muted{color:var(--muted)}
+.empty{color:var(--muted);text-align:center;padding:24px 8px}
+
+/* alerts */
+.alerts{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.alert{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:10px 14px;cursor:pointer;text-align:left;font-size:.93rem}
+.alert b{font-size:1.25rem;font-variant-numeric:tabular-nums;line-height:1}
+.alert.warn{border-color:color-mix(in srgb,var(--warn) 45%,var(--line));background:var(--warn-soft)}
+.alert.bad{border-color:color-mix(in srgb,var(--danger) 45%,var(--line));background:var(--danger-soft)}
+.alert.good{background:var(--ok-soft);border-color:transparent;cursor:default}
+.alert svg{width:18px;height:18px;flex:none}
+
+/* stat tiles */
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 18px;display:grid;gap:4px;min-width:0}
+.tile .l{color:var(--muted);font-size:.86rem;display:flex;align-items:center;gap:8px}
+.tile .v{font-size:1.85rem;font-weight:700;line-height:1.15;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile .s{color:var(--muted);font-size:.82rem}
+
+/* charts */
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:220px;overflow:visible}
+.chart .gl{stroke:var(--grid);stroke-width:1}
+.chart .ax{fill:var(--muted);font-size:11px;font-family:var(--font)}
+.chart .bar{fill:var(--blue)}
+.chart .bar.dim{fill:color-mix(in srgb,var(--blue) 35%,var(--surface))}
+.chart .hit{fill:transparent;cursor:crosshair}
+.chart .hl{fill:var(--blue-ink)}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);border-radius:10px;padding:7px 11px;font-size:.84rem;line-height:1.35;white-space:nowrap;transform:translate(-50%,calc(-100% - 10px));box-shadow:var(--shadow);z-index:5}
+.tip b{font-variant-numeric:tabular-nums}
+details.tv{margin-top:10px;font-size:.88rem}
+details.tv summary{cursor:pointer;color:var(--muted)}
+details.tv table{margin-top:8px}
+.hb{display:grid;gap:10px}
+.hb-row{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.6fr) auto;gap:12px;align-items:center;font-size:.92rem}
+.hb-row .k{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb-track{height:10px;background:var(--sunk);border-radius:999px;overflow:hidden}
+.hb-track i{display:block;height:100%;background:var(--blue);border-radius:0 4px 4px 0;min-width:3px}
+.hb-row .n{font-variant-numeric:tabular-nums;font-weight:600;min-width:48px;text-align:right}
+.hb-row .n small{color:var(--muted);font-weight:400}
+
+/* lists */
+.feed{list-style:none;margin:0;padding:0;display:grid;gap:2px;max-height:480px;overflow-y:auto}
+.feed li{display:grid;grid-template-columns:28px 1fr;gap:10px;padding:9px 6px;border-radius:10px;cursor:pointer}
+.feed li:hover{background:var(--sunk)}
+.feed .fi{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:var(--blue-soft);color:var(--blue)}
+.feed .fi.m{background:var(--ok-soft);color:var(--ok)}
+.feed .fi svg{width:15px;height:15px}
+.feed p{font-size:.9rem;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.feed small{color:var(--muted);font-size:.78rem}
+.people{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.people li{display:grid;grid-template-columns:36px 1fr auto;gap:12px;align-items:center}
+.av{width:36px;height:36px;border-radius:50%;background:var(--blue-soft);color:var(--blue-ink);display:grid;place-items:center;font-weight:700;font-size:.95rem}
+.people small{color:var(--muted);display:block;font-size:.8rem}
+
+/* tables */
+.tbl-wrap{overflow-x:auto;margin-inline:-4px}
+table.tbl{width:100%;border-collapse:collapse;font-size:.9rem}
+.tbl th{text-align:left;font-weight:600;color:var(--muted);font-size:.8rem;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl tbody tr.click{cursor:pointer}
+.tbl tbody tr.click:hover{background:var(--sunk)}
+.tbl .r{text-align:right}
+.tbl .sub{display:block;color:var(--muted);font-size:.78rem}
+.tbl select{border:1.5px solid var(--line);background:var(--surface);border-radius:9px;padding:4px 8px;max-width:170px}
+.late{color:var(--danger);font-weight:600}
+.mini{height:5px;width:70px;background:var(--line);border-radius:999px;overflow:hidden;margin-top:4px}
+.mini i{display:block;height:100%;background:var(--blue)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips button{border:1.5px solid var(--line);background:transparent;border-radius:999px;padding:3px 13px;font-size:.86rem;cursor:pointer;color:var(--muted)}
+.chips button[aria-pressed="true"]{border-color:var(--blue);color:var(--blue-ink);background:var(--blue-soft);font-weight:600}
+.search{border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 12px;outline:none;min-width:220px}
+.search:focus{border-color:var(--blue)}
+
+/* board */
+.board{display:grid;grid-template-columns:repeat(5,minmax(190px,1fr));gap:14px;overflow-x:auto;padding-bottom:8px}
+.col{background:var(--sunk);border-radius:16px;padding:12px;display:grid;gap:10px;align-content:start;min-height:200px}
+.col h3{font-size:.95rem;display:flex;justify-content:space-between;padding:2px 4px}
+.kc{all:unset;box-sizing:border-box;display:grid;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;font-size:.88rem}
+.kc:hover{border-color:var(--blue)}
+.kc.late{border-color:color-mix(in srgb,var(--danger) 55%,var(--line))}
+.kc .t{display:flex;justify-content:space-between;gap:6px}
+.kc small{color:var(--muted)}
+.kc .mini{width:100%}
+
+/* drawer */
+.drawer-bg{position:fixed;inset:0;background:rgb(8 12 20 / .45);z-index:40}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100%);background:var(--bg);z-index:41;overflow-y:auto;box-shadow:var(--shadow);border-left:1px solid var(--line)}
+.dr-h{position:sticky;top:0;background:var(--surface);border-bottom:1px solid var(--line);padding:16px 20px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;z-index:2}
+.dr-h h2{font-size:1.3rem;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dr-h p{color:var(--muted);font-size:.9rem}
+.dr-b{padding:18px 20px 40px;display:grid;gap:14px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+.box h4{font-size:.95rem;margin-bottom:10px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:.9rem}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;text-align:right;word-break:break-word}
+.lines{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:.9rem}
+.lines li{display:flex;justify-content:space-between;gap:12px}
+.lines li.t{border-top:1.5px dashed var(--line);padding-top:8px;font-weight:700}
+.row2{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.f{display:grid;gap:5px;min-width:0}
+.f label{font-weight:600;font-size:.86rem}
+.f label small{font-weight:400;color:var(--muted)}
+.inp{width:100%;border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 11px;outline:none;min-width:0}
+.inp:focus{border-color:var(--blue)}
+textarea.inp{resize:vertical;min-height:84px}
+.err{color:var(--danger);font-size:.86rem;min-height:1.2em}
+.tl{list-style:none;margin:0;padding:0;display:grid;gap:10px;font-size:.88rem}
+.tl li{border-left:2px solid var(--line);padding-left:12px}
+.tl small{color:var(--muted);display:block}
+.tl p{white-space:pre-wrap}
+
+/* catalog editor */
+.ed-sec{display:grid;gap:14px;margin-bottom:22px}
+.ed-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.ed-grid .w2{grid-column:span 2}
+.ed-grid .w4{grid-column:1/-1}
+.packs-ed{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.pk{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:10px;align-content:start}
+.pk .h{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.pk .g2i{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pk .g3i{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.checks{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.86rem}
+.checks label{display:flex;gap:6px;align-items:center;font-weight:400}
+.sw{display:flex;gap:6px;align-items:center;font-size:.88rem;font-weight:600}
+.tbl input.inp,.tbl select.inp{padding:6px 8px;font-size:.88rem}
+.savebar{position:sticky;bottom:16px;z-index:5;display:flex;justify-content:space-between;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:14px;padding:12px 16px;margin-top:10px;flex-wrap:wrap}
+
+/* auth */
+.auth{display:grid;place-items:center;padding:72px 16px}
+.auth-card{width:100%;max-width:420px;background:var(--surface);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:30px;display:grid;gap:14px}
+.auth-card h1{font-size:1.5rem}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:12px;font-size:.92rem;z-index:60;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
+
+@media (max-width:1180px){
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g-main,.g3{grid-template-columns:1fr 1fr}
+  .packs-ed{grid-template-columns:1fr 1fr}
+}
+@media (max-width:900px){
+  .shell{grid-template-columns:1fr;gap:16px;padding-top:12px}
+  .nav{position:sticky;top:64px;z-index:20;display:flex;overflow-x:auto;background:var(--bg);padding:6px 0;margin-inline:-24px;padding-inline:24px;border-bottom:1px solid var(--line)}
+  .nav button{white-space:nowrap;flex:none}
+  .nav hr,.nav a{display:none}
+  .g2,.g-main,.g3{grid-template-columns:1fr}
+  .ed-grid{grid-template-columns:1fr 1fr}
+  .packs-ed{grid-template-columns:1fr}
+  .who{display:none}
+}
+@media (max-width:640px){
+  .hdr-in{padding-inline:16px}
+  .shell{padding-inline:16px}
+  .nav{margin-inline:-16px;padding-inline:16px}
+  .tile .v{font-size:1.5rem}
+  .tag,.dash-link{display:none}
+  .search{min-width:0;width:100%}
+  .hb-row{grid-template-columns:minmax(0,1fr) auto}
+  .hb-row .hb-track{grid-column:1/-1;grid-row:2}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div class="hdr-in">
+    <div class="hdr-l">
+      <a href="index.html" aria-label="Techill হোম"><img class="logo logo-l" src="assets/logo-light.png" alt="Techill by RedBolt IT"><img class="logo logo-d" src="assets/logo-dark.png" alt="Techill by RedBolt IT"></a>
+      <span class="tag">অ্যাডমিন</span>
+    </div>
+    <div class="hdr-r">
+      <button class="live-pill" type="button" id="livePill" hidden title="এখন সাইটে আছেন"><span class="dot"></span><span>লাইভ <b id="liveN">০</b></span></button>
+      <a class="btn btn-ghost btn-sm dash-link" href="dashboard.html" id="dashLink" hidden>প্রোজেক্ট চ্যাট</a>
+      <button class="icon-btn theme-btn" id="themeBtn" type="button" aria-label="দিন/রাত থিম বদলান">
+        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></svg>
+        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+      </button>
+      <button class="btn btn-ghost btn-sm" id="logoutBtn" type="button" hidden>লগআউট</button>
+    </div>
+  </div>
+</header>
+<div class="demo-bar" id="demoBar" hidden>ডেমো মোড: নমুনা ডেটা, শুধু এই ব্রাউজারে। অ্যাডমিন <b>admin@techill.top / admin1234</b> · ডেভেলপার <b>dev@techill.top / dev12345</b><button type="button" id="resetDemo">রিসেট</button></div>
+
+<section class="auth" id="auth" hidden>
+  <form class="auth-card" id="loginForm" novalidate>
+    <h1>অ্যাডমিন লগইন</h1>
+    <p class="muted" id="authMsg">ব্যবসার পুরো হিসাব এক জায়গায়।</p>
+    <div class="f"><label for="l-email">ইমেইল</label><input class="inp" type="email" id="l-email" name="email" autocomplete="email" required></div>
+    <div class="f"><label for="l-pass">পাসওয়ার্ড</label><input class="inp" type="password" id="l-pass" name="password" autocomplete="current-password" required></div>
+    <button class="btn btn-primary" type="submit">লগইন</button>
+    <p class="err" id="loginErr" role="alert"></p>
+  </form>
+</section>
+
+<div class="shell" id="shell" hidden>
+  <nav class="nav" id="nav" aria-label="অ্যাডমিন মেনু"></nav>
+  <main id="main"></main>
+</div>
+
+<div class="drawer-bg" id="drawerBg" hidden></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drTitle" hidden></aside>
+<div class="tip" id="tip" hidden></div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="assets/api.js"></script>
+<script>
+const api = window.TechillAPI;
+const $ = id => document.getElementById(id);
+const BN = s => String(s).replace(/\d/g, d => "০১২৩৪৫৬৭৮৯"[d]);
+const nf = n => BN(Math.round(n).toLocaleString("en-IN"));
+const tk = n => "৳" + nf(n);
+const tkShort = n => n >= 1e5 ? "৳" + BN((n / 1e5).toFixed(n >= 1e6 ? 0 : 1)) + " লাখ" : tk(n);
+const pct = (a, b) => b ? BN((a / b * 100).toFixed(a / b < .1 ? 1 : 0)) + "%" : "—";
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const nowS = () => Math.floor(Date.now() / 1000);
+const when = t => new Date(t * 1000).toLocaleString("bn-BD", {day: "numeric", month: "short", hour: "numeric", minute: "2-digit"});
+const dateOnly = t => new Date(t * 1000).toLocaleDateString("bn-BD", {day: "numeric", month: "short", year: "numeric"});
+const dayLabel = d => new Date(d + "T00:00:00").toLocaleDateString("bn-BD", {day: "numeric", month: "short"});
+function ago(t){
+  const s = Math.max(0, nowS() - t);
+  if (s < 60) return "এইমাত্র";
+  if (s < 3600) return BN(Math.floor(s / 60)) + " মিনিট আগে";
+  if (s < 86400) return BN(Math.floor(s / 3600)) + " ঘণ্টা আগে";
+  return BN(Math.floor(s / 86400)) + " দিন আগে";
+}
+function left(t){
+  const s = t - nowS(), a = Math.abs(s), h = Math.floor(a / 3600), txt = h >= 48 ? BN(Math.floor(h / 24)) + " দিন" : h ? BN(h) + " ঘণ্টা" : BN(Math.floor(a / 60)) + " মিনিট";
+  return s < 0 ? txt + " দেরি" : txt + " বাকি";
+}
+const STAGES = api.STAGES;
+const PAY = {pending: "যাচাই বাকি", verified: "যাচাই হয়েছে", rejected: "পাওয়া যায়নি"};
+const MNAME = {bKash: "বিকাশ", Nagad: "নগদ", Rocket: "রকেট"};
+const DEV = {mobile: "মোবাইল", desktop: "ডেস্কটপ", tablet: "ট্যাবলেট"};
+const ic = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const I = {
+  home: ic('<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/>'),
+  orders: ic('<path d="M6 3h12l2 4v13H4V7z"/><path d="M4 7h16M9 11h6"/>'),
+  board: ic('<rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="10" rx="1.5"/><rect x="17" y="4" width="4" height="13" rx="1.5"/>'),
+  visitors: ic('<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
+  catalog: ic('<path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>'),
+  team: ic('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6 6 0 0 1 3.5 5.5"/>'),
+  customers: ic('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'),
+  alert: ic('<path d="M12 3l9.5 17h-19z"/><path d="M12 10v4M12 17.5v.01"/>'),
+  clock: ic('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+  money: ic('<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/>'),
+  user: ic('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'),
+  chat: ic('<path d="M4 5h16v11H8l-4 4z"/>'),
+  step: ic('<path d="M5 12.5l4.5 4.5L19 7"/>'),
+  ok: ic('<path d="M5 12.5l4.5 4.5L19 7"/>')
+};
+const SECTIONS = [["overview", "ওভারভিউ", I.home], ["orders", "অর্ডার", I.orders], ["board", "প্রোজেক্ট বোর্ড", I.board], ["visitors", "ভিজিটর", I.visitors], ["catalog", "প্যাকেজ ও দাম", I.catalog], ["team", "টিম", I.team], ["customers", "কাস্টমার", I.customers]];
+
+let me = null, sec = "overview", days = 30, stats = null, orders = [], team = [], customers = [], cat = null, draft = null, dirty = false;
+let oFilter = "all", oQuery = "", oStack = "", boardDev = "", custQ = "", edStack = "woo", drawerId = null;
+
+function toast(m){ const t = $("toast"); t.textContent = m; t.hidden = false; clearTimeout(t._t); t._t = setTimeout(() => t.hidden = true, 3200); }
+
+/* ---------- theme ---------- */
+(function(){
+  try { const s = JSON.parse(localStorage.getItem("techill_theme")); if (s === "light" || s === "dark") document.documentElement.dataset.theme = s; } catch(e){}
+  $("themeBtn").addEventListener("click", () => {
+    const c = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    const n = c === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = n;
+    try { localStorage.setItem("techill_theme", JSON.stringify(n)); } catch(e){}
+  });
+})();
+
+/* ---------- auth ---------- */
+function showAuth(msg){
+  $("auth").hidden = false; $("shell").hidden = true; $("logoutBtn").hidden = !me; $("livePill").hidden = true; $("dashLink").hidden = true;
+  if (msg) $("authMsg").innerHTML = msg;
+}
+$("loginForm").addEventListener("submit", async e => {
+  e.preventDefault(); $("loginErr").textContent = "";
+  const btn = e.target.querySelector("button"); btn.disabled = true;
+  try { me = (await api.login(Object.fromEntries(new FormData(e.target)))).user; e.target.reset(); boot(); }
+  catch(err){ $("loginErr").textContent = err.message; }
+  finally { btn.disabled = false; }
+});
+$("logoutBtn").addEventListener("click", async () => { await api.logout().catch(() => {}); me = null; showAuth("ব্যবসার পুরো হিসাব এক জায়গায়।"); });
+$("resetDemo").addEventListener("click", () => { api.resetDemo(); location.reload(); });
+
+/* ---------- data ---------- */
+async function loadAll(){
+  const [s, o, t] = await Promise.all([api.stats(days), api.orders(), api.team()]);
+  stats = s; orders = o.orders; team = t.team;
+}
+async function refreshStats(){
+  try { stats = await api.stats(days); renderLive(); if (sec === "overview" || sec === "visitors") render(); renderNav(); } catch(e){ if (e.status === 401) showAuth(); }
+}
+async function refreshOrders(){ orders = (await api.orders()).orders; renderNav(); }
+
+/* ---------- shell ---------- */
+function renderNav(){
+  const s = stats?.orders || {};
+  const counts = {orders: (s.pending_pay || 0) + (s.unassigned || 0), board: s.overdue || 0};
+  $("nav").innerHTML = SECTIONS.map(([k, l, icon]) => `<button type="button" data-sec="${k}" aria-current="${sec === k}">${icon}<span>${l}</span>${counts[k] ? `<span class="badge b-unread cnt">${BN(counts[k])}</span>` : ""}</button>`).join("")
+    + `<hr><a href="dashboard.html">${I.chat}<span>প্রোজেক্ট চ্যাট</span></a><a href="index.html" target="_blank" rel="noopener">${I.home}<span>সাইট দেখুন ↗</span></a>`;
+  const urgent = (s.unread || 0) + (s.pending_pay || 0) + (s.overdue || 0);
+  document.title = (urgent ? `(${BN(urgent)}) ` : "") + "Techill অ্যাডমিন";
+}
+$("nav").addEventListener("click", e => { const b = e.target.closest("[data-sec]"); if (b) go(b.dataset.sec); });
+function go(s){
+  if (sec === "catalog" && dirty && s !== "catalog" && !confirm("প্যাকেজের পরিবর্তন সেভ হয়নি। তবু চলে যাবেন?")) return;
+  sec = s; history.replaceState(null, "", "#" + s); renderNav(); render(); scrollTo({top: 0});
+  if (s === "customers" && !customers.length) api.customers().then(r => { customers = r.customers; if (sec === "customers") render(); });
+  if (s === "catalog" && !cat) api.catalog().then(r => { cat = r.catalog; draft = structuredClone(cat); if (sec === "catalog") render(); });
+}
+function renderLive(){
+  if (!stats) return;
+  $("livePill").hidden = false; $("liveN").textContent = BN(stats.live.count);
+}
+$("livePill").addEventListener("click", () => go("visitors"));
+function render(){
+  const m = $("main");
+  if (!stats){ m.innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; return; }
+  ({overview: renderOverview, orders: renderOrders, board: renderBoard, visitors: renderVisitors, catalog: renderCatalog, team: renderTeam, customers: renderCustomers})[sec]();
+}
+const rangeSeg = () => `<div class="seg" role="group" aria-label="সময়সীমা">${[7, 30, 90].map(d => `<button type="button" data-days="${d}" aria-pressed="${days === d}">${BN(d)} দিন</button>`).join("")}</div>`;
+$("main").addEventListener("click", async e => {
+  const d = e.target.closest("[data-days]"); if (d){ days = +d.dataset.days; stats = await api.stats(days); render(); }
+});
+
+/* ---------- charts ---------- */
+// Single-series column chart with hover tooltip; values in ink, bars in the brand blue.
+function columns(rows, val, fmt, label){
+  const W = 640, H = 220, P = {l: 44, r: 8, t: 10, b: 26};
+  const max = Math.max(1, ...rows.map(val)), nice = niceMax(max), n = rows.length;
+  const cw = (W - P.l - P.r) / n, bw = Math.max(2, Math.min(28, cw - 2));
+  const y = v => H - P.b - (v / nice) * (H - P.t - P.b);
+  const ticks = [0, .5, 1].map(f => f * nice);
+  const every = Math.ceil(n / 7);
+  const id = "c" + Math.random().toString(36).slice(2, 8);
+  const bars = rows.map((r, i) => {
+    const v = val(r), x = P.l + i * cw + (cw - bw) / 2, yt = y(v), h = H - P.b - yt, rad = Math.min(4, bw / 2, h);
+    const path = h > 0 ? `M${x},${H - P.b}V${yt + rad}Q${x},${yt} ${x + rad},${yt}H${x + bw - rad}Q${x + bw},${yt} ${x + bw},${yt + rad}V${H - P.b}Z` : "";
+    return `<g>${path ? `<path class="bar" d="${path}"/>` : ""}<rect class="hit" x="${P.l + i * cw}" y="${P.t}" width="${cw}" height="${H - P.t - P.b}" data-i="${i}"/></g>`;
+  }).join("");
+  const xl = rows.map((r, i) => i % every === 0 || i === n - 1 ? `<text class="ax" x="${P.l + i * cw + cw / 2}" y="${H - 8}" text-anchor="middle">${dayLabel(r.d)}</text>` : "").join("");
+  const yl = ticks.map(t => `<line class="gl" x1="${P.l}" x2="${W - P.r}" y1="${y(t)}" y2="${y(t)}"/><text class="ax" x="${P.l - 8}" y="${y(t) + 4}" text-anchor="end">${fmt(t, true)}</text>`).join("");
+  setTimeout(() => {
+    const el = document.getElementById(id); if (!el) return;
+    el.addEventListener("mousemove", e => {
+      const h = e.target.closest(".hit"); const tip = $("tip");
+      el.querySelectorAll(".hl").forEach(b => b.classList.remove("hl"));
+      if (!h){ tip.hidden = true; return; }
+      const r = rows[+h.dataset.i]; h.previousElementSibling?.classList.add("hl");
+      tip.innerHTML = `${dayLabel(r.d)}<br><b>${fmt(val(r))}</b> ${label}`; tip.hidden = false;
+      const bb = h.getBoundingClientRect(); tip.style.left = (bb.left + bb.width / 2 + scrollX) + "px"; tip.style.top = (e.clientY + scrollY - 6) + "px";
+      tip.style.position = "absolute";
+    });
+    el.addEventListener("mouseleave", () => { $("tip").hidden = true; el.querySelectorAll(".hl").forEach(b => b.classList.remove("hl")); });
+  });
+  return `<div class="chart" id="${id}"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${label}, দিনভিত্তিক">${yl}${bars}${xl}</svg></div>
+    <details class="tv"><summary>টেবিল দেখুন</summary><div class="tbl-wrap"><table class="tbl"><tbody>${rows.slice().reverse().map(r => `<tr><td>${dayLabel(r.d)}</td><td class="r">${fmt(val(r))}</td></tr>`).join("")}</tbody></table></div></details>`;
+}
+function niceMax(v){ const p = Math.pow(10, Math.floor(Math.log10(v))), m = v / p; return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * p; }
+const fmtN = (v, axis) => axis && v >= 1000 ? BN((v / 1000).toFixed(v % 1000 ? 1 : 0)) + "k" : nf(v);
+const fmtTk = (v, axis) => axis ? (v >= 1e5 ? BN((v / 1e5).toFixed(1)) + "লা" : v >= 1000 ? BN(Math.round(v / 1000)) + "k" : BN(v)) : tk(v);
+function hbars(items, total, fmt = nf){
+  if (!items.length) return '<p class="empty">এখনো কোনো ডেটা নেই।</p>';
+  const max = Math.max(1, ...items.map(i => i.n));
+  return `<div class="hb">${items.map(i => `<div class="hb-row"><span class="k" title="${esc(i.k)}">${esc(i.label ?? i.k)}</span><span class="hb-track"><i style="width:${i.n / max * 100}%"></i></span><span class="n">${fmt(i.n)}${total ? ` <small>${pct(i.n, total)}</small>` : ""}</span></div>`).join("")}</div>`;
+}
+
+/* ---------- overview ---------- */
+function renderOverview(){
+  const s = stats, o = s.orders, v = s.visits, f = s.funnel;
+  const alerts = [
+    o.pending_pay && ["warn", I.money, o.pending_pay, "পেমেন্ট যাচাই বাকি", "pending"],
+    o.unassigned && ["warn", I.user, o.unassigned, "ডেভেলপার দেওয়া হয়নি", "unassigned"],
+    o.overdue && ["bad", I.alert, o.overdue, "ডেডলাইন পেরিয়েছে", "late"],
+    o.due_soon && ["warn", I.clock, o.due_soon, "২৪ ঘণ্টার মধ্যে ডেলিভারি", "soon"],
+    o.unread && ["bad", I.chat, o.unread, "কাস্টমারের না-পড়া মেসেজ", "unread"]
+  ].filter(Boolean);
+  const revSeries = s.series.reduce((a, r) => a + r.revenue, 0), ordSeries = s.series.reduce((a, r) => a + r.orders, 0);
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>আসসালামু আলাইকুম, ${esc(me.name.split(" ")[0])}</h1><p>${new Date().toLocaleDateString("bn-BD", {weekday: "long", day: "numeric", month: "long"})} · ব্যবসার এক নজরে হিসাব</p></div><div class="tools">${rangeSeg()}</div></div>
+    <div class="alerts">${alerts.length ? alerts.map(([c, icon, n, l, k]) => `<button type="button" class="alert ${c}" data-alert="${k}">${icon}<b>${BN(n)}</b><span>${l}</span></button>`).join("") : `<div class="alert good">${I.ok}<span>সব ঠিক আছে, এখন জরুরি কিছু নেই।</span></div>`}</div>
+    <div class="tiles">
+      <div class="tile"><span class="l"><span class="dot"></span>এখন সাইটে</span><span class="v">${BN(s.live.count)}</span><span class="s">গত ২ মিনিটে সক্রিয়</span></div>
+      <div class="tile"><span class="l">আজকের ভিজিটর</span><span class="v">${nf(v.today_uniques)}</span><span class="s">${nf(v.today)} বার পেজ দেখা</span></div>
+      <div class="tile"><span class="l">মোট ভিজিট</span><span class="v">${nf(v.total)}</span><span class="s">${nf(v.total_uniques)} জন আলাদা ভিজিটর</span></div>
+      <div class="tile"><span class="l">কনভার্শন (${BN(days)} দিন)</span><span class="v">${pct(f.orders, f.visitors)}</span><span class="s">${nf(f.visitors)} ভিজিটর থেকে ${nf(f.orders)} অর্ডার</span></div>
+      <div class="tile"><span class="l">মোট আয় (যাচাই হওয়া)</span><span class="v">${tkShort(o.revenue)}</span><span class="s">এই মাসে ${tk(o.revenue_month)}</span></div>
+      <div class="tile"><span class="l">পেমেন্ট যাচাই বাকি</span><span class="v">${tkShort(o.pending_amount)}</span><span class="s">${nf(o.pending_pay)}টা অর্ডার</span></div>
+      <div class="tile"><span class="l">চলমান প্রোজেক্ট</span><span class="v">${nf(o.running)}</span><span class="s">${nf(o.done)}টা সম্পন্ন · ${nf(o.cancelled)}টা বাতিল</span></div>
+      <div class="tile"><span class="l">গড় অর্ডার</span><span class="v">${tkShort(o.avg_order)}</span><span class="s">মোট ${nf(o.total)}টা অর্ডার</span></div>
+    </div>
+    <div class="grid g-main" style="margin-bottom:18px">
+      <div class="card"><div class="ch"><h3>দৈনিক ভিজিটর</h3><small>${nf(v.range_uniques)} জন · ${BN(days)} দিনে</small></div>${columns(s.series, r => r.uniques, fmtN, "জন ভিজিটর")}</div>
+      <div class="card"><div class="ch"><h3>ভিজিটর থেকে অর্ডার</h3><small>${BN(days)} দিন</small></div>
+        ${hbars([{k: "ভিজিটর", n: f.visitors}, {k: "চেকআউট খুলেছেন", n: f.checkout}, {k: "হোয়াটসঅ্যাপে ক্লিক", n: f.whatsapp}, {k: "অর্ডার করেছেন", n: f.orders}], f.visitors)}
+        <p class="muted" style="font-size:.86rem;margin-top:14px">চেকআউট খুলে অর্ডার না করা ${nf(Math.max(0, f.checkout - f.orders))} জন, এদের জন্য রিটার্গেটিং Ad চালানো যায়।</p>
+      </div>
+    </div>
+    <div class="grid g2" style="margin-bottom:18px">
+      <div class="card"><div class="ch"><h3>দৈনিক অর্ডার</h3><small>${nf(ordSeries)}টা · ${tk(revSeries)}</small></div>${columns(s.series, r => r.orders, fmtN, "টা অর্ডার")}</div>
+      <div class="card"><div class="ch"><h3>দৈনিক অর্ডারের মূল্য</h3><small>বাতিল বাদে</small></div>${columns(s.series, r => r.revenue, fmtTk, "")}</div>
+    </div>
+    <div class="grid g3">
+      <div class="card"><div class="ch"><h3>প্রোজেক্ট পাইপলাইন</h3><small>বাতিল বাদে</small></div>${hbars(STAGES.map((st, i) => ({k: st, n: o.stages[i]})), 0)}
+        <div class="ch" style="margin:22px 0 12px"><h3>জনপ্রিয় প্যাকেজ</h3><small>${BN(days)} দিন</small></div>${hbars(s.packs.map(p => ({k: p.pack + " · " + p.stack, n: p.n})), 0)}</div>
+      <div class="card"><div class="ch"><h3>টিমের কাজের চাপ</h3><button class="btn btn-ghost btn-sm" type="button" data-go="team">টিম</button></div>
+        <ul class="people">${s.team.filter(t => t.active).map(t => `<li><span class="av">${esc(t.name.slice(0, 1))}</span><div><b>${esc(t.name)}</b><small>${t.role === "admin" ? "অ্যাডমিন" : "ডেভেলপার"} · ${BN(t.done)}টা সম্পন্ন</small></div><div style="text-align:right"><b>${BN(t.running)}</b><small class="${t.overdue ? "late" : ""}">${t.overdue ? BN(t.overdue) + "টা দেরি" : "চলমান"}</small></div></li>`).join("") || '<li class="empty">কোনো ডেভেলপার নেই</li>'}</ul>
+        <div class="ch" style="margin:22px 0 12px"><h3>জনপ্রিয় অ্যাড-অন</h3></div>${hbars(s.addons.slice(0, 6), 0)}</div>
+      <div class="card"><div class="ch"><h3>সাম্প্রতিক কার্যকলাপ</h3></div>
+        <ul class="feed">${s.activity.map(a => `<li data-order="${a.order_id}"><span class="fi ${a.type === "message" ? "m" : ""}">${a.type === "message" ? I.chat : I.step}</span><div><p>${a.type === "message" ? `<b>${esc(a.who || "কাস্টমার")}:</b> ` : ""}${esc(a.text)}</p><small>${esc(a.code)} · ${ago(a.created)}${a.unread ? ' · <span class="late">না-পড়া</span>' : ""}</small></div></li>`).join("") || '<li class="empty">এখনো কিছু নেই</li>'}</ul></div>
+    </div>`;
+}
+$("main").addEventListener("click", e => {
+  const a = e.target.closest("[data-alert]");
+  if (a){
+    const k = a.dataset.alert;
+    if (k === "unread") location.href = "dashboard.html";
+    else { oFilter = k === "soon" ? "running" : k; go("orders"); }
+    return;
+  }
+  const g = e.target.closest("[data-go]"); if (g) return go(g.dataset.go);
+  const fo = e.target.closest("[data-order]"); if (fo) openDrawer(+fo.dataset.order);
+});
+
+/* ---------- orders ---------- */
+const isLate = o => !o.cancelled && o.stage < 4 && o.deadline < nowS();
+const OF = {
+  all: ["সব", () => true], running: ["চলমান", o => !o.cancelled && o.stage < 4], late: ["দেরি", isLate],
+  unassigned: ["অ্যাসাইন হয়নি", o => !o.cancelled && o.stage < 4 && !o.developer], pending: ["পেমেন্ট বাকি", o => !o.cancelled && o.pay_status === "pending"],
+  done: ["সম্পন্ন", o => !o.cancelled && o.stage === 4], cancelled: ["বাতিল", o => o.cancelled]
+};
+function statusBadge(o){
+  if (o.cancelled) return '<span class="badge b-cancel">বাতিল</span>';
+  if (o.stage === 4) return '<span class="badge b-done">সম্পন্ন</span>';
+  if (isLate(o)) return '<span class="badge b-late">দেরি হচ্ছে</span>';
+  return `<span class="badge b-run">${STAGES[o.stage]}</span>`;
+}
+const devOptions = sel => `<option value="">— অ্যাসাইন করুন —</option>` + team.filter(t => t.active).map(t => `<option value="${t.id}" ${sel === t.id ? "selected" : ""}>${esc(t.name)} (${BN(t.running)})</option>`).join("");
+function renderOrders(){
+  const q = oQuery.toLowerCase();
+  const list = orders.filter(OF[oFilter][1]).filter(o => !oStack || o.stack === oStack)
+    .filter(o => !q || [o.code, o.pack, o.template, o.customer?.name, o.customer?.email, o.customer?.phone, o.pay_trx].some(v => String(v || "").toLowerCase().includes(q)));
+  const sum = list.filter(o => !o.cancelled).reduce((s, o) => s + o.total, 0);
+  const focus = document.activeElement?.id === "oq";
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>অর্ডার</h1><p>${nf(list.length)}টা অর্ডার · ${tk(sum)}</p></div>
+      <div class="tools"><input class="search" type="search" id="oq" placeholder="কোড, নাম, ফোন, TrxID" value="${esc(oQuery)}" aria-label="অর্ডার খুঁজুন">
+        <select class="search" id="ostack" style="min-width:0" aria-label="প্ল্যাটফর্ম"><option value="">সব প্ল্যাটফর্ম</option>${["WooCommerce", "Laravel"].map(s => `<option ${oStack === s ? "selected" : ""}>${s}</option>`).join("")}</select>
+        <button class="btn btn-ghost btn-sm" type="button" id="exportBtn">CSV এক্সপোর্ট</button></div></div>
+    <div class="chips" style="margin-bottom:14px">${Object.entries(OF).map(([k, [l, f]]) => `<button type="button" data-of="${k}" aria-pressed="${oFilter === k}">${l} (${BN(orders.filter(f).length)})</button>`).join("")}</div>
+    <div class="card" style="padding:10px 14px">${list.length ? `<div class="tbl-wrap"><table class="tbl" style="min-width:980px"><thead><tr>
+      <th>অর্ডার</th><th>কাস্টমার</th><th>প্যাকেজ</th><th class="r">মোট</th><th>পেমেন্ট</th><th>অবস্থা</th><th>ডেলিভারি</th><th>ডেভেলপার</th></tr></thead><tbody>
+      ${list.map(o => `<tr class="click" data-open="${o.id}">
+        <td><b>${esc(o.code)}</b>${o.unread ? ` <span class="badge b-unread">${BN(o.unread)}</span>` : ""}<span class="sub">${when(o.created)}</span></td>
+        <td>${esc(o.customer?.name)}<span class="sub">${esc(o.customer?.phone || o.customer?.email)}</span></td>
+        <td>${esc(o.pack)}<span class="sub">${esc(o.stack)} · ${esc(o.template)}</span></td>
+        <td class="r num">${tk(o.total)}</td>
+        <td><span class="badge b-${o.pay_status}">${PAY[o.pay_status]}</span><span class="sub">${MNAME[o.pay_method] || ""} · ${esc(o.pay_trx)}</span></td>
+        <td>${statusBadge(o)}<span class="mini"><i style="width:${o.progress}%"></i></span></td>
+        <td class="${isLate(o) ? "late" : ""}">${o.cancelled || o.stage === 4 ? "—" : left(o.deadline)}<span class="sub">${o.cancelled || o.stage === 4 ? "" : when(o.deadline)}</span></td>
+        <td><select data-assign="${o.id}" aria-label="ডেভেলপার" ${o.cancelled ? "disabled" : ""}>${devOptions(o.developer?.id)}</select></td>
+      </tr>`).join("")}</tbody></table></div>` : '<p class="empty">এই ফিল্টারে কোনো অর্ডার নেই।</p>'}</div>`;
+  if (focus){ const i = $("oq"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
+}
+$("main").addEventListener("input", e => {
+  if (e.target.id === "oq"){ oQuery = e.target.value; renderOrders(); }
+  if (e.target.id === "cq"){ custQ = e.target.value; renderCustomers(); }
+});
+$("main").addEventListener("change", async e => {
+  if (e.target.id === "ostack"){ oStack = e.target.value; renderOrders(); }
+  if (e.target.id === "boardDev"){ boardDev = e.target.value; renderBoard(); }
+  const as = e.target.closest("[data-assign]");
+  if (as){
+    try { await api.assign(+as.dataset.assign, as.value); toast("ডেভেলপার আপডেট হয়েছে।"); [orders, team] = [(await api.orders()).orders, (await api.team()).team]; render(); }
+    catch(err){ toast(err.message); }
+  }
+});
+$("main").addEventListener("click", async e => {
+  if (e.target.closest("select")) return;
+  const of = e.target.closest("[data-of]"); if (of){ oFilter = of.dataset.of; return renderOrders(); }
+  const op = e.target.closest("[data-open]"); if (op) return openDrawer(+op.dataset.open);
+  if (e.target.closest("#exportBtn")){ const a = document.createElement("a"); a.href = await api.exportUrl(); a.download = "techill-orders.csv"; document.body.appendChild(a); a.click(); a.remove(); }
+});
+
+/* ---------- order drawer ---------- */
+async function openDrawer(id){
+  drawerId = id;
+  $("drawer").innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; $("drawer").hidden = false; $("drawerBg").hidden = false;
+  try { renderDrawer(await api.order(id)); } catch(e){ toast(e.message); closeDrawer(); }
+}
+function closeDrawer(){ $("drawer").hidden = true; $("drawerBg").hidden = true; drawerId = null; }
+$("drawerBg").addEventListener("click", closeDrawer);
+addEventListener("keydown", e => { if (e.key === "Escape" && drawerId) closeDrawer(); });
+function renderDrawer(d){
+  const o = d.order, c = o.customer || {}, i = o.info || {};
+  const wa = (c.phone || i.whatsapp || "").replace(/\D/g, "").replace(/^0/, "880");
+  $("drawer").innerHTML = `
+    <div class="dr-h"><div><h2 id="drTitle">${esc(o.code)} ${statusBadge(o)}</h2><p>${esc(o.pack)} · ${esc(o.stack)} · ${esc(o.template)}</p></div><button class="icon-btn" type="button" id="drClose" aria-label="বন্ধ করুন">${ic('<path d="M6 6l12 12M18 6L6 18"/>')}</button></div>
+    <div class="dr-b">
+      <div class="row2"><a class="btn btn-primary btn-sm" href="dashboard.html#o=${o.id}">চ্যাট ও অগ্রগতি আপডেট</a>${wa ? `<a class="btn btn-ghost btn-sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">হোয়াটসঅ্যাপ</a>` : ""}${o.site_url ? `<a class="btn btn-ghost btn-sm" href="${esc(o.site_url)}" target="_blank" rel="noopener noreferrer">সাইট ↗</a>` : ""}</div>
+      <div class="box"><h4>অগ্রগতি · ${BN(o.progress)}%</h4><div class="mini" style="width:100%;height:8px"><i style="width:${o.progress}%"></i></div>
+        <dl class="kv" style="margin-top:12px"><dt>ধাপ</dt><dd>${STAGES[o.stage]}</dd><dt>ডেলিভারি</dt><dd class="${isLate(o) ? "late" : ""}">${when(o.deadline)}${o.stage < 4 && !o.cancelled ? " · " + left(o.deadline) : ""}</dd><dt>অর্ডারের সময়</dt><dd>${when(o.created)}</dd></dl></div>
+      <div class="box"><h4>ডেভেলপার</h4><select class="inp" data-assign="${o.id}" ${o.cancelled ? "disabled" : ""}>${devOptions(o.developer?.id)}</select></div>
+      <div class="box"><h4>কাস্টমার</h4><dl class="kv"><dt>নাম</dt><dd>${esc(c.name)}</dd><dt>ইমেইল</dt><dd>${esc(c.email)}</dd><dt>ফোন</dt><dd>${esc(i.phone || c.phone)}</dd><dt>হোয়াটসঅ্যাপ</dt><dd>${esc(i.whatsapp)}</dd>${i.fb_page ? `<dt>ফেসবুক</dt><dd><a href="${esc(i.fb_page)}" target="_blank" rel="noopener noreferrer">${esc(i.fb_page)}</a></dd>` : ""}${i.address ? `<dt>ঠিকানা</dt><dd>${esc(i.address)}</dd>` : ""}</dl>
+        ${i.business_intro ? `<p class="muted" style="font-size:.88rem;margin-top:10px;white-space:pre-wrap">${esc(i.business_intro)}</p>` : ""}</div>
+      <div class="box"><h4>পেমেন্ট <span class="badge b-${o.pay_status}">${PAY[o.pay_status]}</span></h4>
+        <dl class="kv"><dt>মাধ্যম</dt><dd>${MNAME[o.pay_method] || esc(o.pay_method)}</dd><dt>যে নম্বর থেকে</dt><dd>${esc(o.pay_sender)}</dd><dt>TrxID</dt><dd><b>${esc(o.pay_trx)}</b></dd></dl>
+        <ul class="lines" style="margin-top:12px">${o.lines.map(l => `<li><span>${esc(l.label)}</span><span>${l.amt < 0 ? "−" : ""}${tk(Math.abs(l.amt))}</span></li>`).join("")}<li class="t"><span>মোট</span><span>${tk(o.total)}</span></li></ul>
+        ${o.cancelled ? "" : `<div class="row2" style="margin-top:12px">${o.pay_status !== "verified" ? `<button class="btn btn-ok btn-sm" type="button" data-pay="verified">${tk(o.total)} পেয়েছি, যাচাই করুন</button>` : ""}${o.pay_status !== "rejected" ? '<button class="btn btn-ghost btn-sm" type="button" data-pay="rejected">পেমেন্ট পাওয়া যায়নি</button>' : ""}${o.pay_status !== "pending" ? '<button class="btn btn-ghost btn-sm" type="button" data-pay="pending">যাচাই বাকি করুন</button>' : ""}</div>`}</div>
+      <form class="box" id="adjForm"><h4>দাম ও সময় সমন্বয়</h4>
+        <div class="grid" style="grid-template-columns:1fr 120px;gap:10px">
+          <div class="f"><label for="adj-l">চার্জ / ছাড়ের বিবরণ</label><input class="inp" id="adj-l" name="line_label" placeholder="যেমন: ঈদ ছাড় / অতিরিক্ত পেজ"></div>
+          <div class="f"><label for="adj-a">টাকা <small>(ছাড়: −)</small></label><input class="inp" id="adj-a" name="line_amt" type="number" step="1" placeholder="-500"></div>
+          <div class="f"><label for="adj-h">ডেডলাইন বাড়ান <small>(ঘণ্টা)</small></label><input class="inp" id="adj-h" name="extend_hours" type="number" min="1" max="720" placeholder="24"></div>
+        </div>
+        <div class="row2" style="margin-top:10px"><button class="btn btn-primary btn-sm" type="submit">সেভ করুন</button><button class="btn ${o.cancelled ? "btn-ghost" : "btn-danger"} btn-sm" type="button" id="cancelBtn">${o.cancelled ? "অর্ডার আবার চালু করুন" : "অর্ডার বাতিল করুন"}</button></div>
+        <p class="err" id="adjErr" role="alert"></p></form>
+      <div class="box"><h4>ইতিহাস</h4><ul class="tl">${d.events.slice(0, 8).map(e => `<li><b>${STAGES[e.stage]} · ${BN(e.progress)}%</b>${e.note ? `<p>${esc(e.note)}</p>` : ""}<small>${when(e.created)}</small></li>`).join("")}</ul></div>
+      <div class="box"><h4>ফাইল (${BN(d.files.length)}) · মেসেজ (${BN(d.messages.length)})</h4><p class="muted" style="font-size:.88rem">${d.files.map(f => esc(f.name)).join(", ") || "কোনো ফাইল নেই"}</p>
+        ${d.messages.length ? `<p style="font-size:.88rem;margin-top:8px"><b>সর্বশেষ:</b> ${esc(d.messages[d.messages.length - 1].body).slice(0, 160)}</p>` : ""}</div>
+    </div>`;
+  $("drClose").addEventListener("click", closeDrawer); $("drClose").focus();
+  const after = async () => { orders = (await api.orders()).orders; team = (await api.team()).team; stats = await api.stats(days); renderNav(); renderLive(); render(); renderDrawer(await api.order(o.id)); };
+  $("drawer").querySelectorAll("[data-pay]").forEach(b => b.addEventListener("click", async () => {
+    try { await api.adminUpdate({order_id: o.id, stage: b.dataset.pay === "verified" ? Math.max(1, o.stage) : o.stage, progress: b.dataset.pay === "verified" ? Math.max(15, o.progress) : o.progress, pay_status: b.dataset.pay, site_url: o.site_url || ""}); toast("পেমেন্ট স্ট্যাটাস আপডেট হয়েছে।"); after(); }
+    catch(err){ toast(err.message); }
+  }));
+  $("drawer").querySelector("[data-assign]").addEventListener("change", async e => { try { await api.assign(o.id, e.target.value); toast("ডেভেলপার আপডেট হয়েছে।"); after(); } catch(err){ toast(err.message); } });
+  $("adjForm").addEventListener("submit", async e => {
+    e.preventDefault(); $("adjErr").textContent = "";
+    const data = Object.fromEntries(new FormData(e.target));
+    if (!data.line_label && !data.extend_hours){ $("adjErr").textContent = "কিছু লিখুন।"; return; }
+    if (data.line_label && !data.line_amt){ $("adjErr").textContent = "টাকার পরিমাণ দিন।"; return; }
+    try { await api.adjust({order_id: o.id, ...data}); toast("সেভ হয়েছে।"); after(); } catch(err){ $("adjErr").textContent = err.message; }
+  });
+  $("cancelBtn").addEventListener("click", async () => {
+    if (!o.cancelled && !confirm(`${o.code} বাতিল করবেন?`)) return;
+    try { await api.adjust({order_id: o.id, cancelled: o.cancelled ? 0 : 1}); toast(o.cancelled ? "অর্ডার চালু হয়েছে।" : "অর্ডার বাতিল হয়েছে।"); after(); } catch(err){ toast(err.message); }
+  });
+}
+
+/* ---------- board ---------- */
+function renderBoard(){
+  const list = orders.filter(o => !o.cancelled).filter(o => !boardDev || String(o.developer?.id || "none") === boardDev);
+  const run = list.filter(o => o.stage < 4);
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>প্রোজেক্ট বোর্ড</h1><p>${nf(run.length)}টা চলমান · ${nf(run.filter(isLate).length)}টা দেরি হচ্ছে</p></div>
+      <div class="tools"><select class="search" id="boardDev" style="min-width:0" aria-label="ডেভেলপার"><option value="">সব ডেভেলপার</option><option value="none" ${boardDev === "none" ? "selected" : ""}>অ্যাসাইন হয়নি</option>${team.map(t => `<option value="${t.id}" ${boardDev === String(t.id) ? "selected" : ""}>${esc(t.name)}</option>`).join("")}</select></div></div>
+    <div class="board">${STAGES.map((st, i) => {
+      let col = list.filter(o => o.stage === i).sort((a, b) => a.deadline - b.deadline);
+      const more = i === 4 && col.length > 8 ? col.length - 8 : 0; if (i === 4) col = col.sort((a, b) => b.created - a.created).slice(0, 8);
+      return `<div class="col"><h3><span>${st}</span><span class="muted">${BN(list.filter(o => o.stage === i).length)}</span></h3>
+        ${col.map(o => `<button type="button" class="kc ${isLate(o) ? "late" : ""}" data-open="${o.id}">
+          <span class="t"><b>${esc(o.code)}</b>${o.unread ? `<span class="badge b-unread">${BN(o.unread)}</span>` : o.pay_status !== "verified" ? `<span class="badge b-${o.pay_status}">${PAY[o.pay_status]}</span>` : ""}</span>
+          <span>${esc(o.customer?.name)} · ${esc(o.pack)}</span>
+          <small>${o.developer ? esc(o.developer.name) : '<span class="late">ডেভেলপার নেই</span>'}</small>
+          <span class="mini"><i style="width:${o.progress}%"></i></span>
+          <small class="${isLate(o) ? "late" : ""}">${i === 4 ? "ডেলিভারি সম্পন্ন" : left(o.deadline)}</small>
+        </button>`).join("") || '<p class="muted" style="font-size:.86rem;padding:4px">খালি</p>'}${more ? `<small class="muted">আরও ${BN(more)}টা</small>` : ""}</div>`;
+    }).join("")}</div>`;
+}
+
+/* ---------- visitors ---------- */
+function renderVisitors(){
+  const s = stats, v = s.visits;
+  const refs = s.referrers.map(r => ({k: r.k || "সরাসরি / বুকমার্ক", n: r.n}));
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>ভিজিটর</h1><p>কে আসছে, কোথা থেকে আসছে, কী দেখছে</p></div><div class="tools">${rangeSeg()}</div></div>
+    <div class="tiles">
+      <div class="tile"><span class="l"><span class="dot"></span>এখন সাইটে</span><span class="v">${BN(s.live.count)}</span><span class="s">প্রতি ৩০ সেকেন্ডে আপডেট</span></div>
+      <div class="tile"><span class="l">আজ</span><span class="v">${nf(v.today_uniques)}</span><span class="s">${nf(v.today)} পেজ ভিউ</span></div>
+      <div class="tile"><span class="l">${BN(days)} দিনে</span><span class="v">${nf(v.range_uniques)}</span><span class="s">${nf(v.range)} পেজ ভিউ</span></div>
+      <div class="tile"><span class="l">শুরু থেকে</span><span class="v">${nf(v.total_uniques)}</span><span class="s">${nf(v.total)} পেজ ভিউ</span></div>
+    </div>
+    <div class="grid g-main" style="margin-bottom:18px">
+      <div class="card"><div class="ch"><h3>দৈনিক পেজ ভিউ</h3><small>${BN(days)} দিন</small></div>${columns(s.series, r => r.visits, fmtN, "পেজ ভিউ")}</div>
+      <div class="card"><div class="ch"><h3>এখন যারা সাইটে</h3><small>${BN(s.live.count)} জন</small></div>
+        ${s.live.list.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>পেজ</th><th>ডিভাইস</th><th class="r">কতক্ষণ</th></tr></thead><tbody>${s.live.list.map(l => `<tr><td>${esc(l.path)}</td><td>${DEV[l.device] || esc(l.device)}</td><td class="r">${BN(Math.max(1, Math.round((l.seen - l.since) / 60)))} মিনিট</td></tr>`).join("")}</tbody></table></div>` : '<p class="empty">এই মুহূর্তে কেউ নেই</p>'}</div>
+    </div>
+    <div class="grid g2">
+      <div class="card"><div class="ch"><h3>কোথা থেকে আসছে</h3><small>আলাদা ভিজিটর</small></div>${hbars(refs, v.range_uniques)}</div>
+      <div class="card"><div class="ch"><h3>ক্যাম্পেইন (utm_source)</h3><small>Ad লিংকে ?utm_source=fb_ads যোগ করুন</small></div>${hbars(s.utm, v.range_uniques)}</div>
+      <div class="card"><div class="ch"><h3>সবচেয়ে বেশি দেখা পেজ</h3></div>${hbars(s.pages, v.range)}</div>
+      <div class="card"><div class="ch"><h3>ডিভাইস</h3></div>${hbars(s.devices.map(d => ({k: d.k, label: DEV[d.k] || d.k, n: d.n})), v.range_uniques)}</div>
+    </div>`;
+}
+
+/* ---------- catalog editor ---------- */
+const getP = (o, p) => p.split(".").reduce((a, k) => a?.[k], o);
+const setP = (o, p, v) => { const ks = p.split("."), last = ks.pop(); ks.reduce((a, k) => a[k], o)[last] = v; };
+function renderCatalog(){
+  if (!draft){ $("main").innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; return; }
+  const S = draft.stacks[edStack], base = `stacks.${edStack}`;
+  const inp = (p, type = "text", extra = "") => `<input class="inp" data-p="${p}" data-t="${type === "number" ? "int" : "str"}" type="${type}" value="${esc(getP(draft, p) ?? "")}" ${extra}>`;
+  const simple = draft.addons.filter(a => !a.qty), qtyAdd = draft.addons.filter(a => a.qty);
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>প্যাকেজ ও দাম</h1><p>এখানে বদলালে ল্যান্ডিং পেজ আর চেকআউটে সাথে সাথে নতুন দাম দেখাবে। নতুন অর্ডারের দাম সার্ভারও এখান থেকেই হিসাব করে।</p></div>
+      <div class="tools"><a class="btn btn-ghost btn-sm" href="index.html#packages" target="_blank" rel="noopener">সাইটে দেখুন ↗</a></div></div>
+
+    <div class="card ed-sec"><h3>পেমেন্ট ও যোগাযোগ</h3>
+      <div class="ed-grid">
+        <div class="f"><label>হোয়াটসঅ্যাপ নম্বর <small>(8801...)</small></label>${inp("whatsapp", "tel")}</div>
+        <div class="f"><label>বিকাশ নম্বর</label>${inp("pay_numbers.bKash", "tel")}</div>
+        <div class="f"><label>নগদ নম্বর</label>${inp("pay_numbers.Nagad", "tel")}</div>
+        <div class="f"><label>রকেট নম্বর</label>${inp("pay_numbers.Rocket", "tel")}</div>
+        <div class="f"><label>গেটওয়ে নিলে বাড়তি সময় <small>(ঘণ্টা)</small></label>${inp("gateway_extra_hours", "number", 'min="0" max="720"')}</div>
+      </div></div>
+
+    <div class="sec-h" style="margin-bottom:12px"><div class="seg" role="group" aria-label="প্ল্যাটফর্ম">${Object.entries(draft.stacks).map(([k, s]) => `<button type="button" data-ed-stack="${k}" aria-pressed="${edStack === k}">${esc(s.name)}</button>`).join("")}</div>
+      <div class="tools"><label class="sw">ডোমেইন ও হোস্টিং (১ বছর) দাম ${inp(base + ".domainPrice", "number", 'min="0" style="width:120px"')}</label></div></div>
+
+    <div class="ed-sec"><div class="packs-ed">${S.packs.map((p, i) => { const pb = `${base}.packs.${i}`; return `<div class="pk">
+      <div class="h"><b>প্যাকেজ ${BN(i + 1)}</b><span class="row2"><label class="sw"><input type="checkbox" data-p="${pb}.popular" data-t="bool" ${p.popular ? "checked" : ""}> জনপ্রিয়</label><button class="btn btn-ghost btn-sm" type="button" data-del="${base}.packs" data-i="${i}" aria-label="প্যাকেজ মুছুন">মুছুন</button></span></div>
+      <div class="g2i"><div class="f"><label>নাম</label>${inp(pb + ".name")}</div><div class="f"><label>ইংরেজি নাম</label>${inp(pb + ".en")}</div></div>
+      <div class="f"><label>ট্যাগলাইন</label>${inp(pb + ".tag")}</div>
+      <div class="g3i"><div class="f"><label>দাম ৳</label>${inp(pb + ".price", "number", 'min="0"')}</div><div class="f"><label>ঘণ্টা</label>${inp(pb + ".hours", "number", 'min="1"')}</div><div class="f"><label>প্রোডাক্ট</label>${inp(pb + ".products", "number", 'min="0"')}</div></div>
+      <div class="f"><label>ফিচার <small>(প্রতি লাইনে একটা; "+" দিয়ে শুরু = আগের প্যাকেজের সব)</small></label><textarea class="inp" data-p="${pb}.feat" data-t="lines" rows="6">${esc((p.feat || []).join("\n"))}</textarea></div>
+      <div class="f"><label>প্যাকেজে যা ফ্রি</label><div class="checks">${simple.filter(a => !a.only || a.only === edStack).map(a => `<label><input type="checkbox" data-incl="${pb}" value="${esc(a.key)}" ${(p.incl || []).includes(a.key) ? "checked" : ""}> ${esc(a.name)}</label>`).join("")}</div></div>
+      ${qtyAdd.length ? `<div class="g2i">${qtyAdd.map(a => `<div class="f"><label>${esc(a.name)} ফ্রি <small>(টা)</small></label><input class="inp" type="number" min="0" max="20" data-inclqty="${pb}" data-k="${esc(a.key)}" value="${(p.inclQty || {})[a.key] || 0}"></div>`).join("")}</div>` : ""}
+    </div>`; }).join("")}</div>
+    <div><button class="btn btn-ghost btn-sm" type="button" data-add="pack">+ নতুন প্যাকেজ</button></div></div>
+
+    <div class="card ed-sec"><div class="ch" style="margin:0"><h3>টেমপ্লেট (${esc(S.name)})</h3><button class="btn btn-ghost btn-sm" type="button" data-add="tpl">+ টেমপ্লেট</button></div>
+      <div class="tbl-wrap"><table class="tbl" style="min-width:760px"><thead><tr><th>কোড</th><th>নাম</th><th>কাদের জন্য</th><th>ডেমো লিংক</th><th>রং</th><th></th></tr></thead><tbody>
+      ${S.templates.map((t, i) => { const tb = `${base}.templates.${i}`; return `<tr><td style="width:80px">${inp(tb + ".code")}</td><td>${inp(tb + ".name")}</td><td>${inp(tb + ".niche")}</td><td>${inp(tb + ".demo", "url")}</td>
+        <td style="white-space:nowrap"><input type="color" data-p="${tb}.t" data-t="str" value="${esc(t.t)}" aria-label="মূল রং"> <input type="color" data-p="${tb}.t2" data-t="str" value="${esc(t.t2)}" aria-label="হালকা রং"></td>
+        <td><button class="btn btn-ghost btn-sm" type="button" data-del="${base}.templates" data-i="${i}">মুছুন</button></td></tr>`; }).join("")}
+      </tbody></table></div></div>
+
+    <div class="card ed-sec"><div class="ch" style="margin:0"><h3>অ্যাড-অন (দুই প্ল্যাটফর্মেই)</h3><button class="btn btn-ghost btn-sm" type="button" data-add="addon">+ অ্যাড-অন</button></div>
+      <div class="tbl-wrap"><table class="tbl" style="min-width:980px"><thead><tr><th>key</th><th>নাম</th><th>নোট</th><th>দাম ৳</th><th>গ্রুপ</th><th>কোথায়</th><th>সংখ্যা</th><th>গেটওয়ে</th><th></th></tr></thead><tbody>
+      ${draft.addons.map((a, i) => { const ab = `addons.${i}`; return `<tr>
+        <td style="width:120px">${a._new ? inp(ab + ".key") : `<code>${esc(a.key)}</code>`}</td><td>${inp(ab + ".name")}</td><td>${inp(ab + ".note")}</td>
+        <td style="width:110px">${a.key === "domain" ? '<span class="sub">প্ল্যাটফর্ম অনুযায়ী</span>' : inp(ab + ".price", "number", 'min="0"')}</td>
+        <td><select class="inp" data-p="${ab}.g" data-t="int">${draft.groups.map((g, gi) => `<option value="${gi}" ${a.g === gi ? "selected" : ""}>${esc(g)}</option>`).join("")}</select></td>
+        <td><select class="inp" data-p="${ab}.only" data-t="str"><option value="">দুটোতেই</option><option value="woo" ${a.only === "woo" ? "selected" : ""}>WooCommerce</option><option value="laravel" ${a.only === "laravel" ? "selected" : ""}>Laravel</option></select></td>
+        <td><input type="checkbox" data-p="${ab}.qty" data-t="bool" ${a.qty ? "checked" : ""} aria-label="সংখ্যা দিয়ে নেওয়া যায়"></td>
+        <td><input type="checkbox" data-p="${ab}.gw" data-t="bool" ${a.gw ? "checked" : ""} aria-label="পেমেন্ট গেটওয়ে, বাড়তি সময় লাগে"></td>
+        <td>${["domain", "products25", "pixel", "capi"].includes(a.key) ? "" : `<button class="btn btn-ghost btn-sm" type="button" data-del="addons" data-i="${i}">মুছুন</button>`}</td></tr>`; }).join("")}
+      </tbody></table></div></div>
+
+    <div class="savebar"><span class="muted" id="saveState">${dirty ? "সেভ না করা পরিবর্তন আছে" : "সব সেভ করা আছে"}</span>
+      <span class="row2"><button class="btn btn-ghost btn-sm" type="button" id="catReset">ডিফল্টে ফেরান</button><button class="btn btn-ghost btn-sm" type="button" id="catUndo" ${dirty ? "" : "disabled"}>বাতিল</button><button class="btn btn-primary" type="button" id="catSave" ${dirty ? "" : "disabled"}>সেভ করুন</button></span></div>`;
+}
+function markDirty(){ dirty = true; const s = $("saveState"); if (s){ s.textContent = "সেভ না করা পরিবর্তন আছে"; $("catSave").disabled = false; $("catUndo").disabled = false; } }
+$("main").addEventListener("input", e => {
+  if (sec !== "catalog") return;
+  const t = e.target;
+  if (t.dataset.p){
+    const v = t.dataset.t === "int" ? (t.value === "" ? "" : +t.value) : t.dataset.t === "bool" ? t.checked : t.dataset.t === "lines" ? t.value.split("\n").map(x => x.trim()).filter(Boolean) : t.value;
+    if (t.dataset.p.endsWith(".only") && !v) delete getP(draft, t.dataset.p.replace(/\.only$/, "")).only; else setP(draft, t.dataset.p, v);
+    markDirty();
+  }
+  if (t.dataset.incl){ const p = getP(draft, t.dataset.incl); p.incl = [...t.closest(".checks").querySelectorAll("input:checked")].map(x => x.value); markDirty(); }
+  if (t.dataset.inclqty){ const p = getP(draft, t.dataset.inclqty); p.inclQty = {...(p.inclQty || {}), [t.dataset.k]: +t.value || 0}; if (!+t.value) delete p.inclQty[t.dataset.k]; markDirty(); }
+});
+$("main").addEventListener("change", e => { if (sec === "catalog" && (e.target.type === "checkbox" || e.target.tagName === "SELECT")) e.target.dispatchEvent(new Event("input", {bubbles: true})); });
+$("main").addEventListener("click", async e => {
+  if (sec !== "catalog") return;
+  const st = e.target.closest("[data-ed-stack]"); if (st){ edStack = st.dataset.edStack; return renderCatalog(); }
+  const del = e.target.closest("[data-del]");
+  if (del){ const arr = getP(draft, del.dataset.del); if (arr.length <= 1 && !del.dataset.del.startsWith("addons")) return toast("অন্তত একটা রাখতে হবে।"); arr.splice(+del.dataset.i, 1); markDirty(); return renderCatalog(); }
+  const add = e.target.closest("[data-add]");
+  if (add){
+    const S = draft.stacks[edStack];
+    if (add.dataset.add === "pack") S.packs.push({name: "নতুন প্যাকেজ", en: "New", tag: "", price: 9999, products: 20, hours: 48, feat: ["ফিচার লিখুন"], incl: [], inclQty: {}});
+    if (add.dataset.add === "tpl") S.templates.push({code: (edStack === "woo" ? "W" : "L") + (S.templates.length + 1), name: "নতুন টেমপ্লেট", niche: "", demo: "https://", t: "#0a84f0", t2: "#e8f3ff"});
+    if (add.dataset.add === "addon") draft.addons.push({key: "new_addon_" + (draft.addons.length + 1), g: 0, name: "নতুন অ্যাড-অন", price: 1000, _new: true});
+    markDirty(); return renderCatalog();
+  }
+  if (e.target.closest("#catUndo")){ draft = structuredClone(cat); dirty = false; return renderCatalog(); }
+  if (e.target.closest("#catReset")){
+    if (!confirm("সব প্যাকেজ, দাম আর অ্যাড-অন শুরুর মানে ফিরে যাবে। নিশ্চিত?")) return;
+    try { cat = (await api.resetCatalog()).catalog; draft = structuredClone(cat); dirty = false; renderCatalog(); toast("ডিফল্ট ক্যাটালগ ফিরে এসেছে।"); } catch(err){ toast(err.message); }
+  }
+  if (e.target.closest("#catSave")){
+    const clean = structuredClone(draft); clean.addons.forEach(a => delete a._new);
+    const btn = $("catSave"); btn.disabled = true;
+    try { cat = (await api.saveCatalog(clean)).catalog; draft = structuredClone(cat); dirty = false; renderCatalog(); toast("সেভ হয়েছে। সাইটে নতুন দাম দেখাচ্ছে।"); }
+    catch(err){ toast(err.message); btn.disabled = false; }
+  }
+});
+addEventListener("beforeunload", e => { if (dirty){ e.preventDefault(); e.returnValue = ""; } });
+
+/* ---------- team ---------- */
+function renderTeam(){
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>টিম</h1><p>ডেভেলপাররা শুধু তাদের দেওয়া প্রোজেক্ট দেখেন। অ্যাডমিন সব দেখেন, দাম আর পেমেন্ট বদলাতে পারেন।</p></div></div>
+    <div class="grid g-main">
+      <div class="card" style="padding:10px 14px"><div class="tbl-wrap"><table class="tbl" style="min-width:640px"><thead><tr><th>নাম</th><th>রোল</th><th class="r">চলমান</th><th class="r">দেরি</th><th class="r">সম্পন্ন</th><th>অবস্থা</th><th></th></tr></thead><tbody>
+        ${team.map(t => `<tr><td><b>${esc(t.name)}</b><span class="sub">${esc(t.email)}</span></td>
+          <td>${t.id === me.id ? '<span class="badge b-admin">আপনি</span>' : `<select data-role="${t.id}" aria-label="রোল"><option value="developer" ${t.role === "developer" ? "selected" : ""}>ডেভেলপার</option><option value="admin" ${t.role === "admin" ? "selected" : ""}>অ্যাডমিন</option></select>`}</td>
+          <td class="r">${BN(t.running)}</td><td class="r ${t.overdue ? "late" : ""}">${BN(t.overdue)}</td><td class="r">${BN(t.done)}</td>
+          <td>${t.active ? '<span class="badge b-done">সক্রিয়</span>' : '<span class="badge b-off">বন্ধ</span>'}</td>
+          <td style="white-space:nowrap">${t.id === me.id ? "" : `<button class="btn btn-ghost btn-sm" type="button" data-toggle="${t.id}">${t.active ? "বন্ধ করুন" : "চালু করুন"}</button> `}<button class="btn btn-ghost btn-sm" type="button" data-pw="${t.id}">পাসওয়ার্ড</button></td></tr>`).join("")}
+      </tbody></table></div></div>
+      <form class="card" id="memberForm" style="display:grid;gap:12px;align-content:start"><h3>নতুন টিম মেম্বার</h3>
+        <div class="f"><label for="m-name">নাম</label><input class="inp" id="m-name" name="name" required></div>
+        <div class="f"><label for="m-email">ইমেইল</label><input class="inp" id="m-email" name="email" type="email" required></div>
+        <div class="f"><label for="m-pass">পাসওয়ার্ড <small>(৮+ অক্ষর, পরে তাকে জানিয়ে দিন)</small></label><input class="inp" id="m-pass" name="password" type="text" minlength="8" required></div>
+        <div class="f"><label for="m-role">রোল</label><select class="inp" id="m-role" name="role"><option value="developer">ডেভেলপার</option><option value="admin">অ্যাডমিন</option></select></div>
+        <button class="btn btn-primary" type="submit">যোগ করুন</button><p class="err" id="mErr" role="alert"></p></form>
+    </div>`;
+  $("memberForm").addEventListener("submit", async e => {
+    e.preventDefault(); $("mErr").textContent = "";
+    try { team = (await api.teamSave({op: "create", ...Object.fromEntries(new FormData(e.target))})).team; toast("টিম মেম্বার যোগ হয়েছে। dashboard.html থেকে লগইন করতে পারবেন।"); renderTeam(); }
+    catch(err){ $("mErr").textContent = err.message; }
+  });
+}
+$("main").addEventListener("click", async e => {
+  if (sec !== "team") return;
+  const tg = e.target.closest("[data-toggle]"), pw = e.target.closest("[data-pw]");
+  try {
+    if (tg) team = (await api.teamSave({op: "toggle", id: tg.dataset.toggle})).team;
+    else if (pw){ const p = prompt("নতুন পাসওয়ার্ড (কমপক্ষে ৮ অক্ষর):"); if (!p) return; team = (await api.teamSave({op: "password", id: pw.dataset.pw, password: p})).team; toast("পাসওয়ার্ড বদলানো হয়েছে।"); }
+    else return;
+    renderTeam();
+  } catch(err){ toast(err.message); }
+});
+$("main").addEventListener("change", async e => {
+  const r = e.target.closest("[data-role]"); if (!r) return;
+  try { team = (await api.teamSave({op: "role", id: r.dataset.role, role: r.value})).team; toast("রোল বদলানো হয়েছে।"); renderTeam(); } catch(err){ toast(err.message); }
+});
+
+/* ---------- customers ---------- */
+function renderCustomers(){
+  const q = custQ.toLowerCase();
+  const list = customers.filter(c => !q || [c.name, c.email, c.phone].some(v => String(v || "").toLowerCase().includes(q)));
+  const focus = document.activeElement?.id === "cq";
+  const total = customers.reduce((s, c) => s + c.spent, 0), repeat = customers.filter(c => c.orders > 1).length;
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>কাস্টমার</h1><p>${nf(customers.length)} জন · ${nf(repeat)} জন একাধিকবার অর্ডার করেছেন · মোট ${tk(total)}</p></div>
+      <div class="tools"><input class="search" type="search" id="cq" placeholder="নাম, ইমেইল, ফোন" value="${esc(custQ)}" aria-label="কাস্টমার খুঁজুন"></div></div>
+    <div class="card" style="padding:10px 14px">${list.length ? `<div class="tbl-wrap"><table class="tbl" style="min-width:760px"><thead><tr><th>কাস্টমার</th><th>ফোন</th><th class="r">অর্ডার</th><th class="r">চলমান</th><th class="r">মোট পেমেন্ট</th><th>শেষ অর্ডার</th><th>যোগ দিয়েছেন</th></tr></thead><tbody>
+      ${list.map(c => `<tr class="click" data-cust="${esc(c.email)}"><td><b>${esc(c.name)}</b><span class="sub">${esc(c.email)}</span></td><td>${esc(c.phone || "—")}</td><td class="r">${BN(c.orders)}</td><td class="r">${BN(c.running)}</td><td class="r num">${tk(c.spent)}</td><td>${c.last_order ? ago(c.last_order) : "—"}</td><td>${dateOnly(c.created)}</td></tr>`).join("")}
+    </tbody></table></div>` : `<p class="empty">${customers.length ? "কাউকে পাওয়া যায়নি।" : "লোড হচ্ছে..."}</p>`}</div>`;
+  if (focus){ const i = $("cq"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
+}
+$("main").addEventListener("click", e => {
+  if (sec !== "customers") return;
+  const r = e.target.closest("[data-cust]"); if (r){ oQuery = r.dataset.cust; oFilter = "all"; go("orders"); }
+});
+
+/* ---------- boot ---------- */
+async function boot(){
+  if (!me) return showAuth();
+  if (me.role !== "admin") return showAuth(`এই পেজ শুধু অ্যাডমিনের জন্য। আপনার প্রোজেক্টগুলো <a href="dashboard.html">ড্যাশবোর্ডে</a> দেখুন।`);
+  $("auth").hidden = true; $("shell").hidden = false; $("logoutBtn").hidden = false; $("dashLink").hidden = false;
+  sec = SECTIONS.some(([k]) => k === location.hash.slice(1)) ? location.hash.slice(1) : "overview";
+  render();
+  try { await loadAll(); } catch(e){ if (e.status === 401 || e.status === 403) return showAuth(); toast(e.message); return; }
+  renderNav(); renderLive(); go(sec);
+  setInterval(() => { if (!document.hidden) refreshStats(); }, 30000);
+  setInterval(() => { if (!document.hidden && sec !== "catalog") refreshOrders().then(() => { if (["orders", "board"].includes(sec) && !document.activeElement?.closest("select,input")) render(); }); }, 60000);
+}
+(async () => {
+  me = await api.init();
+  $("demoBar").hidden = !api.demo;
+  boot();
+})();
+</script>
+</body>
+</html>

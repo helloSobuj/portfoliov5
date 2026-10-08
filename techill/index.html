@@ -730,69 +730,13 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
 
 <script src="assets/api.js"></script>
 <script>
-/* ================= CONFIG: এখানে বদলান ================= */
-const WHATSAPP_NUMBER = "";           // যেমন "8801XXXXXXXXX"
-const PAY_NUMBERS = { bKash:"01XXXXXXXXX", Nagad:"01XXXXXXXXX", Rocket:"01XXXXXXXXX" };
-
-const STACKS = {
-  woo: {
-    name:"WooCommerce", domainPrice:3500,
-    templates:[
-      {code:"W1", name:"ফ্যাশন হাউস", niche:"পোশাক, জুতা, ব্যাগ", demo:"https://demo.techill.top/w1", t:"#c2410c", t2:"#fde3d3"},
-      {code:"W2", name:"গ্যাজেট জোন", niche:"মোবাইল এক্সেসরিজ, গ্যাজেট", demo:"https://demo.techill.top/w2", t:"#1d4ed8", t2:"#dbe5fb"},
-      {code:"W3", name:"বিউটি কর্নার", niche:"কসমেটিকস, স্কিনকেয়ার", demo:"https://demo.techill.top/w3", t:"#be185d", t2:"#f9dce9"},
-      {code:"W4", name:"ফ্রেশ বাজার", niche:"গ্রোসারি, অর্গানিক ফুড", demo:"https://demo.techill.top/w4", t:"#15803d", t2:"#d9f0e0"},
-      {code:"W5", name:"হোম ডেকর", niche:"ঘর সাজানো, লাইফস্টাইল", demo:"https://demo.techill.top/w5", t:"#7c5a2e", t2:"#efe4d3"}
-    ],
-    packs:[
-      {name:"স্টার্টার", en:"Starter", tag:"প্রথম অনলাইন দোকানের জন্য", price:6999, products:15, hours:24,
-       feat:["রেডি টেমপ্লেট সেটআপ ও ব্র্যান্ডিং","ক্যাশ অন ডেলিভারি (COD)","ম্যানুয়াল বিকাশ/নগদ পেমেন্ট","বাংলা ও ইংরেজি, মোবাইল-বান্ধব","হোয়াটসঅ্যাপ অর্ডার বাটন","৭ দিন সাপোর্ট"], incl:[], inclQty:{}},
-      {name:"বিজনেস", en:"Business", tag:"নিয়মিত অর্ডার আসা পেজের জন্য", price:11999, products:40, hours:48, popular:true,
-       feat:["+স্টার্টারের সব কিছু","১ বছরের .com ডোমেইন ও হোস্টিং","১টা কুরিয়ার API","ফেসবুক Pixel সেটআপ","অর্ডার ইমেইল নোটিফিকেশন","১৫ দিন সাপোর্ট"], incl:["domain","pixel"], inclQty:{courier:1}},
-      {name:"প্রো", en:"Pro", tag:"Ad চালিয়ে বড় হতে চাইলে", price:17999, products:80, hours:72,
-       feat:["+বিজনেসের সব কিছু","১টা পেমেন্ট গেটওয়ে","Pixel + Conversion API","ফ্রড চেকার","অসম্পূর্ণ অর্ডার ক্যাপচার","স্পিড অপটিমাইজেশন","১টা ল্যান্ডিং পেজ","৩০ দিন সাপোর্ট"], incl:["domain","pixel","capi","gateway","fraud","incomplete"], inclQty:{courier:1, landing:1}}
-    ]
-  },
-  laravel: {
-    name:"Laravel", domainPrice:6000,
-    templates:[
-      {code:"L1", name:"মেগা স্টোর", niche:"মাল্টি-ক্যাটাগরি শপ", demo:"https://demo.techill.top/l1", t:"#0f766e", t2:"#d3eeeb"},
-      {code:"L2", name:"টেক বাজার", niche:"ইলেকট্রনিক্স", demo:"https://demo.techill.top/l2", t:"#3730a3", t2:"#dfdff7"},
-      {code:"L3", name:"ফ্যাশন প্রো", niche:"ব্র্যান্ডেড পোশাক", demo:"https://demo.techill.top/l3", t:"#9f1239", t2:"#f6dbe1"},
-      {code:"L4", name:"সুপারশপ", niche:"দৈনন্দিন বাজার", demo:"https://demo.techill.top/l4", t:"#4d7c0f", t2:"#e3efd1"},
-      {code:"L5", name:"গ্লো বিউটি", niche:"বিউটি ও পার্সোনাল কেয়ার", demo:"https://demo.techill.top/l5", t:"#86198f", t2:"#f2dcf4"}
-    ],
-    packs:[
-      {name:"লাইট", en:"Lite", tag:"কাস্টম প্যানেলে ছোট শুরু", price:12999, products:25, hours:24,
-       feat:["নিজস্ব Laravel স্ক্রিপ্ট","ব্র্যান্ডিং ও অ্যাডমিন প্যানেল","COD ও ম্যানুয়াল বিকাশ","মোবাইল-বান্ধব ডিজাইন","৭ দিন সাপোর্ট"], incl:[], inclQty:{}},
-      {name:"গ্রোথ", en:"Growth", tag:"বাড়ন্ত ব্র্যান্ডের জন্য", price:19999, products:60, hours:48, popular:true,
-       feat:["+লাইটের সব কিছু","১ বছরের ডোমেইন ও VPS হোস্টিং","১টা পেমেন্ট গেটওয়ে","১টা কুরিয়ার API","Pixel + Conversion API","অর্ডার SMS নোটিফিকেশন","১৫ দিন সাপোর্ট"], incl:["domain","gateway","pixel","capi","sms"], inclQty:{courier:1}},
-      {name:"আল্টিমেট", en:"Ultimate", tag:"ওয়েবসাইট + অ্যাপ, পুরো সেটআপ", price:29999, products:120, hours:72,
-       feat:["+গ্রোথের সব কিছু","অ্যান্ড্রয়েড অ্যাপ","ফ্রড চেকার","কুপন ও লয়্যালটি সিস্টেম","স্টাফ রোল ও পারমিশন","৩০ দিন সাপোর্ট"], incl:["domain","gateway","pixel","capi","sms","fraud","app"], inclQty:{courier:1}}
-    ]
-  }
-};
-const GROUPS = ["পেমেন্ট ও অর্ডার","মার্কেটিং","ডিজাইন","হোস্টিং ও অন্যান্য"];
-const ADDONS = [
-  {key:"bkash", g:0, name:"বিকাশ/নগদ মার্চেন্ট API", price:3500, gw:true},
-  {key:"gateway", g:0, name:"SSLCommerz / aamarPay / ShurjoPay", price:3000, gw:true},
-  {key:"courier", g:0, name:"কুরিয়ার API", note:"Steadfast, Pathao বা RedX, প্রতিটা", price:2000, qty:true},
-  {key:"fraud", g:0, name:"ফ্রড চেকার", note:"কাস্টমারের কুরিয়ার সাকসেস রেট দেখায়", price:2000},
-  {key:"incomplete", g:0, name:"অসম্পূর্ণ অর্ডার ক্যাপচার", price:1500},
-  {key:"sms", g:0, name:"অর্ডার SMS ও OTP", note:"SMS খরচ আলাদা", price:2000},
-  {key:"pixel", g:1, name:"ফেসবুক Pixel", price:1000},
-  {key:"capi", g:1, name:"Conversion API", note:"Pixel-এর সাথে সার্ভার-সাইড ট্র্যাকিং", price:2000, requires:"pixel"},
-  {key:"ga4", g:1, name:"GA4 ও Google Tag Manager", price:1500},
-  {key:"catalog", g:1, name:"FB/Instagram ক্যাটালগ সিঙ্ক", price:1500},
-  {key:"landing", g:1, name:"সিঙ্গেল প্রোডাক্ট ল্যান্ডিং পেজ", note:"প্রতি পেজ", price:2500, qty:true},
-  {key:"seo", g:1, name:"বেসিক SEO সেটআপ", price:2000},
-  {key:"logo", g:2, name:"লোগো ডিজাইন", price:1500},
-  {key:"banner", g:2, name:"ব্যানার ও সোশ্যাল কভার সেট", price:1200},
-  {key:"domain", g:3, name:"ডোমেইন ও হোস্টিং (১ বছর)", price:null},
-  {key:"products25", g:3, name:"অতিরিক্ত ২৫টা প্রোডাক্ট আপলোড", price:500, qty:true},
-  {key:"app", g:3, name:"অ্যান্ড্রয়েড অ্যাপ", note:"Play Store পাবলিশ সহ", price:10000, only:"laravel"}
-];
-const GATEWAY_EXTRA_HOURS = 48;
+/* ===== প্যাকেজ, দাম, অ্যাড-অন, পেমেন্ট নম্বর: admin.html → "প্যাকেজ ও দাম" থেকে বদলান =====
+   ডিফল্ট মান assets/catalog.json-এ। পেজ লোড হলে সার্ভার থেকে সর্বশেষ ক্যাটালগ আসে। */
+let CAT = null, WHATSAPP_NUMBER = "", PAY_NUMBERS = {}, STACKS = {}, GROUPS = [], ADDONS = [], GATEWAY_EXTRA_HOURS = 48;
+function applyCatalog(c){
+  CAT = c; WHATSAPP_NUMBER = c.whatsapp || ""; PAY_NUMBERS = c.pay_numbers || {}; STACKS = c.stacks;
+  GROUPS = c.groups; ADDONS = c.addons; GATEWAY_EXTRA_HOURS = c.gateway_extra_hours;
+}
 const DEMO_CSV = "﻿" + [
   "name,category,regular_price,sale_price,sku,stock,sizes,colors,description,image_links",
   '"কটন পাঞ্জাবি","পুরুষ > পাঞ্জাবি",1850,1490,PJ-001,25,"M|L|XL","সাদা|কালো","১০০% কটন, আরামদায়ক কাপড়","https://drive.google.com/your-image-link"',
@@ -826,9 +770,12 @@ const CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
   });
 })();
 addEventListener("scroll", () => $("hdr").classList.toggle("scrolled", scrollY > 8), {passive:true});
-const waBase = WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}` : "https://wa.me/";
-$("ctaWa").href = waBase;
-if (WHATSAPP_NUMBER) $("ftWa").textContent = "+" + BN(WHATSAPP_NUMBER);
+let waBase = "https://wa.me/";
+function applyContact(){
+  waBase = WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}` : "https://wa.me/";
+  $("ctaWa").href = waBase;
+  if (WHATSAPP_NUMBER) $("ftWa").textContent = "+" + BN(WHATSAPP_NUMBER);
+}
 
 /* ---------- packages ---------- */
 let viewStack = "woo";
@@ -865,19 +812,8 @@ const avail = a => !a.only || a.only === st.stack;
 const STEPS = ["টেমপ্লেট","অ্যাড-অন","পেমেন্ট","তথ্য","কাউন্টডাউন"];
 
 function compute(){
-  const p = P();
-  const lines = [{label:`${p.name} প্যাকেজ`, amt:p.price}];
-  let gw = false;
-  for (const a of ADDONS){
-    if (!avail(a)) continue;
-    const v = st.add[a.key]; if (!v) continue;
-    if (a.qty) lines.push({label:`${a.name} × ${BN(v)}`, amt:priceOf(a)*v});
-    else if (!included(a.key)) { lines.push({label:a.name, amt:priceOf(a)}); if (a.gw) gw = true; }
-  }
-  const total = lines.reduce((s,l) => s + l.amt, 0);
-  const hours = p.hours + (gw ? GATEWAY_EXTRA_HOURS : 0);
-  const products = p.products + 25 * (st.add.products25 || 0);
-  return {p, lines, total, hours, gw, products, tpl: st.tpl != null ? S().templates[st.tpl] : null};
+  const p = P(), r = api.compute(CAT, st);
+  return {p, ...r, tpl: st.tpl != null ? S().templates[st.tpl] : null};
 }
 function cleanup(){
   for (const k of Object.keys(st.add)){
@@ -887,6 +823,7 @@ function cleanup(){
 }
 
 function openCheckout(stack, pack){
+  api.track("event", {n: "checkout_open"});
   if (st.step === 5){ $("infoForm").reset(); syncAccount(); $("paySender").value = ""; $("payTrx").value = ""; $("payAgree").checked = false; st.tpl = null; st.add = {}; st.step = 1; st.maxStep = 1; }
   if (st.stack !== stack || st.pack !== pack){ st.tpl = null; st.add = {}; st.step = 1; st.maxStep = 1; }
   st.stack = stack; st.pack = pack;
@@ -1068,8 +1005,8 @@ async function submitOrder(){
   const btn = $("nextBtn"); btn.disabled = true; btn.textContent = "জমা হচ্ছে...";
   const fd = new FormData($("infoForm"));
   if (me){ fd.delete("password"); fd.set("email", me.email); }
-  fd.append("stack", S().name); fd.append("pack", c.p.name); fd.append("template", `${c.tpl.name} · ${c.tpl.code}`);
-  fd.append("lines", JSON.stringify(c.lines)); fd.append("total", c.total); fd.append("hours", c.hours); fd.append("products", c.products);
+  fd.append("stack_key", st.stack); fd.append("pack", st.pack); fd.append("tpl", st.tpl);
+  fd.append("addons", JSON.stringify(st.add)); fd.append("total", c.total);
   fd.append("pay_method", st.method); fd.append("pay_sender", $("paySender").value.trim()); fd.append("pay_trx", $("payTrx").value.trim());
   let res;
   try { res = await api.createOrder(fd); }
@@ -1103,7 +1040,6 @@ function syncAccount(){
     if (!$("i-name").value) $("i-name").value = me.name;
   } else $("i-email").readOnly = false;
 }
-api.init().then(u => { me = u; syncAccount(); });
 
 /* step 5: countdown */
 let timer = null;
@@ -1155,8 +1091,12 @@ function updateChip(){
 }
 $("chip").addEventListener("click", () => { const o = store.get("techill_order"); if (o) showDone(o); });
 
-renderPacks();
 updateChip();
+api.init().then(u => { me = u; syncAccount(); return api.catalog(); })
+  .then(r => { applyCatalog(r.catalog); applyContact(); renderPacks(); })
+  .catch(() => { $("packs").innerHTML = '<p class="pk-note">প্যাকেজ লোড করা যায়নি, পেজ রিফ্রেশ করুন।</p>'; });
+api.init().then(() => api.startTracking());
+document.addEventListener("click", e => { if (e.target.closest('a[href^="https://wa.me"]')) api.track("event", {n: "whatsapp_click"}); });
 </script>
 
 </body>

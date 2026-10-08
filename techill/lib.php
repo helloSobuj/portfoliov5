@@ -61,7 +61,7 @@ function current_user(): ?array {
     if (empty($_SESSION['uid'])) return null;
     static $u = false;
     if ($u === false) {
-        $u = q('SELECT id, name, email, phone, role FROM users WHERE id = ?', [$_SESSION['uid']])->fetch() ?: null;
+        $u = q('SELECT id, name, email, phone, role FROM users WHERE id = ? AND active = 1', [$_SESSION['uid']])->fetch() ?: null;
         if ($u) $u['id'] = (int)$u['id'];
     }
     return $u;
@@ -74,6 +74,13 @@ function require_user(): array {
 }
 
 function is_admin(?array $u): bool { return $u && $u['role'] === 'admin'; }
+function is_staff(?array $u): bool { return $u && in_array($u['role'], ['developer', 'admin'], true); }
+
+function require_admin(): array {
+    $u = require_user();
+    if (!is_admin($u)) fail('শুধু অ্যাডমিন এটা করতে পারবেন।', 403);
+    return $u;
+}
 
 function login_as(int $id): void {
     session_regenerate_id(true);
@@ -93,10 +100,60 @@ function valid_phone(string $v): bool {
 }
 
 // Returns the order row if the user may see it, otherwise stops with 404.
+// Admins see every order, developers the ones assigned to them, customers their own.
 function order_for(array $u, int $id): array {
     $o = q('SELECT * FROM orders WHERE id = ?', [$id])->fetch();
-    if (!$o || (!is_admin($u) && (int)$o['user_id'] !== $u['id'])) fail('অর্ডার পাওয়া যায়নি।', 404);
+    $ok = $o && (is_admin($u)
+        || ($u['role'] === 'developer' && (int)$o['developer_id'] === $u['id'])
+        || ($u['role'] === 'customer' && (int)$o['user_id'] === $u['id']));
+    if (!$ok) fail('অর্ডার পাওয়া যায়নি।', 404);
     return $o;
+}
+
+/* ---------- catalog & pricing ---------- */
+
+// Packages, prices and add-ons: the admin's saved version, or assets/catalog.json.
+function catalog(): array {
+    static $c = null;
+    if ($c === null) {
+        $row = q("SELECT v FROM settings WHERE k = 'catalog'")->fetch();
+        $c = ($row ? json_decode($row['v'], true) : null) ?: json_decode((string)file_get_contents(__DIR__ . '/assets/catalog.json'), true);
+    }
+    return $c;
+}
+
+function bn_digits($n): string { return strtr((string)$n, ['0'=>'০','1'=>'১','2'=>'২','3'=>'৩','4'=>'৪','5'=>'৫','6'=>'৬','7'=>'৭','8'=>'৮','9'=>'৯']); }
+
+// Server-side copy of the checkout's compute(): the browser only says what was picked.
+function price_order(string $stackKey, int $packIdx, int $tplIdx, array $add): array {
+    $cat = catalog();
+    $S = $cat['stacks'][$stackKey] ?? null;
+    $P = $S['packs'][$packIdx] ?? null;
+    $T = $S['templates'][$tplIdx] ?? null;
+    if (!$S || !$P || !$T) fail('প্যাকেজ বা টেমপ্লেট পাওয়া যায়নি, পেজ রিফ্রেশ করে আবার চেষ্টা করুন।');
+    $incl = $P['incl'] ?? [];
+    if (!empty($add['capi']) && !in_array('pixel', $incl, true)) $add['pixel'] = true;
+    $lines = [['label' => $P['name'] . ' প্যাকেজ', 'amt' => (int)$P['price']]];
+    $gw = false;
+    foreach ($cat['addons'] as $a) {
+        if (!empty($a['only']) && $a['only'] !== $stackKey) continue;
+        $v = $add[$a['key']] ?? null;
+        if (!$v) continue;
+        $price = $a['key'] === 'domain' ? (int)$S['domainPrice'] : (int)$a['price'];
+        if (!empty($a['qty'])) {
+            $n = max(0, min(20, (int)$v));
+            if ($n) $lines[] = ['label' => $a['name'] . ' × ' . bn_digits($n), 'amt' => $price * $n];
+        } elseif (!in_array($a['key'], $incl, true)) {
+            $lines[] = ['label' => $a['name'], 'amt' => $price];
+            if (!empty($a['gw'])) $gw = true;
+        }
+    }
+    return [
+        'stack' => $S['name'], 'pack' => $P['name'], 'template' => $T['name'] . ' · ' . $T['code'], 'lines' => $lines,
+        'total' => array_sum(array_column($lines, 'amt')),
+        'hours' => (int)$P['hours'] + ($gw ? (int)$cat['gateway_extra_hours'] : 0),
+        'products' => (int)$P['products'] + 25 * max(0, min(20, (int)($add['products25'] ?? 0))),
+    ];
 }
 
 // Saves one entry of $_FILES and returns the files.id, or null when nothing was sent.

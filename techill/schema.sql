@@ -9,7 +9,8 @@ CREATE TABLE IF NOT EXISTS users (
   email         VARCHAR(190) NOT NULL,
   phone         VARCHAR(20)  NULL,
   password_hash VARCHAR(255) NOT NULL,
-  role          ENUM('customer','admin') NOT NULL DEFAULT 'customer',
+  role          ENUM('customer','developer','admin') NOT NULL DEFAULT 'customer',
+  active        TINYINT(1) NOT NULL DEFAULT 1,
   created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_users_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -30,6 +31,8 @@ CREATE TABLE IF NOT EXISTS orders (
   pay_trx     VARCHAR(20)  NOT NULL,
   pay_status  ENUM('pending','verified','rejected') NOT NULL DEFAULT 'pending',
   info_json   TEXT         NOT NULL,
+  developer_id INT UNSIGNED NULL,
+  cancelled   TINYINT(1) NOT NULL DEFAULT 0,
   stage       TINYINT UNSIGNED NOT NULL DEFAULT 0,
   progress    TINYINT UNSIGNED NOT NULL DEFAULT 5,
   site_url    VARCHAR(255) NULL,
@@ -38,6 +41,7 @@ CREATE TABLE IF NOT EXISTS orders (
   updated_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uq_orders_code (code),
   KEY ix_orders_user (user_id),
+  KEY ix_orders_dev (developer_id),
   CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -85,4 +89,41 @@ CREATE TABLE IF NOT EXISTS login_attempts (
   ip         VARCHAR(45) NOT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   KEY ix_attempts_ip (ip, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Key/value settings; 'catalog' holds the packages, prices, add-ons and payment numbers as JSON.
+CREATE TABLE IF NOT EXISTS settings (
+  k          VARCHAR(40) PRIMARY KEY,
+  v          MEDIUMTEXT NOT NULL,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Visitor analytics. vid is a random id kept in the visitor's browser, never an IP.
+CREATE TABLE IF NOT EXISTS visits (
+  id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  vid        CHAR(32)     NOT NULL,
+  path       VARCHAR(200) NOT NULL,
+  ref_host   VARCHAR(120) NULL,
+  utm        VARCHAR(60)  NULL,
+  device     ENUM('mobile','tablet','desktop') NOT NULL DEFAULT 'desktop',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY ix_visits_time (created_at),
+  KEY ix_visits_vid (vid)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS track_events (
+  id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  vid        CHAR(32)    NOT NULL,
+  name       VARCHAR(40) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY ix_tev_name (name, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS live_visitors (
+  vid       CHAR(32)     PRIMARY KEY,
+  path      VARCHAR(200) NOT NULL,
+  device    ENUM('mobile','tablet','desktop') NOT NULL DEFAULT 'desktop',
+  first_seen DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_seen DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY ix_live_seen (last_seen)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
