@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Techill ড্যাশবোর্ড</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tiro+Bangla:ital@0;1&display=swap">
+<style>
+/* Layout: sticky header; auth card when logged out; otherwise order list (left) + order detail (right) with progress, tabs for chat / timeline / files / info, and a developer-only update panel */
+:root{
+  --bg:#f7f9fc;--surface:#ffffff;--sunk:#eef3f9;--ink:#121822;--muted:#5a6578;--line:#e1e7ef;
+  --blue:#0a84f0;--blue-ink:#0067c7;--blue-soft:#e8f3ff;--on-blue:#ffffff;
+  --ok:#12a150;--ok-soft:#e4f6eb;--warn:#a85800;--warn-soft:#fff3e0;--danger:#d93025;--danger-soft:#fdecea;
+  --shadow:0 1px 2px rgb(16 24 40 / .04),0 18px 40px -18px rgb(16 24 40 / .16);
+  --font:"Tiro Bangla","Noto Serif Bengali",Georgia,serif;
+  --r:18px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0b1018;--surface:#111925;--sunk:#0e1520;--ink:#e9eef5;--muted:#98a4b7;--line:#1f2b3b;
+    --blue:#3aa0ff;--blue-ink:#7cc0ff;--blue-soft:#10223a;--on-blue:#04121f;
+    --ok:#3ccf7f;--ok-soft:#0f2a1c;--warn:#ffb454;--warn-soft:#2c1f0c;--danger:#ff6b60;--danger-soft:#2d1311;
+    --shadow:0 1px 2px rgb(0 0 0 / .3),0 18px 40px -18px rgb(0 0 0 / .6);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0b1018;--surface:#111925;--sunk:#0e1520;--ink:#e9eef5;--muted:#98a4b7;--line:#1f2b3b;
+  --blue:#3aa0ff;--blue-ink:#7cc0ff;--blue-soft:#10223a;--on-blue:#04121f;
+  --ok:#3ccf7f;--ok-soft:#0f2a1c;--warn:#ffb454;--warn-soft:#2c1f0c;--danger:#ff6b60;--danger-soft:#2d1311;
+  --shadow:0 1px 2px rgb(0 0 0 / .3),0 18px 40px -18px rgb(0 0 0 / .6);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.65}
+h1,h2,h3{margin:0;line-height:1.25;font-weight:700}
+p{margin:0}
+a{color:inherit}
+button,input,textarea,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:8px}
+.num{font-variant-numeric:tabular-nums}
+.container{max-width:1240px;margin:0 auto;padding-inline:24px}
+
+.logo{display:block;height:36px;width:auto}
+.logo-d{display:none}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .logo-l{display:none}:root:not([data-theme="light"]) .logo-d{display:block}}
+:root[data-theme="dark"] .logo-l{display:none}
+:root[data-theme="dark"] .logo-d{display:block}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:10px 20px;font-weight:600;text-decoration:none;cursor:pointer;border:1.5px solid transparent;transition:transform .15s,border-color .15s;white-space:nowrap}
+.btn:hover{transform:translateY(-1px)}
+.btn-primary{background:var(--blue);color:var(--on-blue)}
+.btn-ghost{background:transparent;border-color:var(--line)}
+.btn-ghost:hover{border-color:var(--blue)}
+.btn-sm{padding:7px 14px;font-size:.92rem;border-radius:10px}
+.btn[disabled]{opacity:.5;cursor:not-allowed;transform:none}
+.icon-btn{width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer;flex:none}
+.icon-btn svg{width:19px;height:19px}
+
+/* header */
+.hdr{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.hdr .container{display:flex;align-items:center;justify-content:space-between;gap:12px;height:66px}
+.hdr-r{display:flex;align-items:center;gap:10px;min-width:0}
+.who{display:grid;text-align:right;line-height:1.25;min-width:0}
+.who b{font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who small{color:var(--muted);font-size:.8rem}
+.theme-btn .moon{display:none}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .theme-btn .sun{display:none}:root:not([data-theme="light"]) .theme-btn .moon{display:block}}
+:root[data-theme="dark"] .theme-btn .sun{display:none}
+:root[data-theme="dark"] .theme-btn .moon{display:block}
+.demo-bar{background:var(--warn-soft);color:var(--warn);font-size:.9rem;text-align:center;padding:8px 16px}
+.demo-bar b{color:var(--ink)}
+.demo-bar button{all:unset;cursor:pointer;text-decoration:underline;margin-left:6px}
+
+/* auth */
+.auth{display:grid;place-items:center;padding:64px 16px}
+.auth-card{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:32px}
+.auth-card h1{font-size:1.6rem}
+.auth-card > p{color:var(--muted);margin-top:6px;margin-bottom:22px}
+.seg{display:flex;background:var(--sunk);border-radius:12px;padding:4px;gap:4px;margin-bottom:22px}
+.seg button{flex:1;border:0;background:transparent;border-radius:9px;padding:8px;font-weight:600;cursor:pointer;color:var(--muted)}
+.seg button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgb(0 0 0 / .08)}
+.f{display:grid;gap:6px;margin-bottom:16px;min-width:0}
+.f label{font-weight:600;font-size:.93rem}
+.f label small{font-weight:400;color:var(--muted)}
+.f input,.f textarea,.f select{width:100%;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 13px;outline:none;transition:border-color .15s}
+.f textarea{min-height:96px;resize:vertical}
+.f input:focus,.f textarea:focus,.f select:focus{border-color:var(--blue)}
+.err{color:var(--danger);font-size:.88rem;min-height:1.3em;margin-top:4px}
+.ok-msg{color:var(--ok);font-size:.88rem;min-height:1.3em;margin-top:4px}
+
+/* app grid */
+.app{display:grid;grid-template-columns:320px minmax(0,1fr);gap:24px;padding-block:28px 64px;align-items:start}
+.side{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;position:sticky;top:90px;max-height:calc(100vh - 110px);display:flex;flex-direction:column}
+.side-h{padding:16px 18px;border-bottom:1px solid var(--line);display:grid;gap:10px}
+.side-h h2{font-size:1.1rem;display:flex;justify-content:space-between;align-items:center}
+.side-h input{width:100%;border:1.5px solid var(--line);background:var(--bg);border-radius:10px;padding:7px 12px;outline:none}
+.olist{list-style:none;margin:0;padding:6px;overflow-y:auto}
+.oitem{all:unset;box-sizing:border-box;display:grid;gap:6px;width:100%;padding:12px;border-radius:12px;cursor:pointer}
+.oitem:hover{background:var(--sunk)}
+.oitem[aria-current="true"]{background:var(--blue-soft)}
+.oitem .t{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.oitem b{font-size:.98rem}
+.oitem small{color:var(--muted);font-size:.84rem;line-height:1.35}
+.mini{height:5px;background:var(--line);border-radius:999px;overflow:hidden}
+.mini i{display:block;height:100%;background:var(--blue);border-radius:999px}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:.78rem;font-weight:600;border-radius:999px;padding:2px 10px;white-space:nowrap}
+.b-unread{background:var(--danger);color:#fff;min-width:22px;justify-content:center;padding:1px 7px}
+.b-pending{background:var(--warn-soft);color:var(--warn)}
+.b-verified{background:var(--ok-soft);color:var(--ok)}
+.b-rejected{background:var(--danger-soft);color:var(--danger)}
+.b-admin{background:var(--blue-soft);color:var(--blue-ink)}
+.empty{padding:28px 20px;text-align:center;color:var(--muted);display:grid;gap:14px;justify-items:center}
+
+/* detail */
+.detail{display:grid;gap:20px;min-width:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:24px;min-width:0}
+.placeholder{display:grid;place-items:center;min-height:320px;color:var(--muted);text-align:center}
+.d-head{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-start}
+.d-head h2{font-size:1.5rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.d-head p{color:var(--muted);margin-top:4px}
+.back{display:none}
+.clock{text-align:right;line-height:1.2}
+.clock b{display:block;font-size:1.9rem;color:var(--blue-ink);font-variant-numeric:tabular-nums}
+.clock small{color:var(--muted);font-size:.85rem}
+.pbar{margin-top:22px;display:grid;gap:8px}
+.pbar .row{display:flex;justify-content:space-between;font-size:.92rem}
+.pbar .row b{color:var(--blue-ink)}
+.bar{height:10px;background:var(--sunk);border-radius:999px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--blue);border-radius:999px;transition:width .6s}
+.stages{list-style:none;padding:0;margin:22px 0 0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.stages li{display:grid;justify-items:center;text-align:center;gap:6px;font-size:.84rem;color:var(--muted);position:relative}
+.stages li:not(:last-child)::after{content:"";position:absolute;top:14px;left:calc(50% + 18px);right:calc(-50% + 18px);height:2px;background:var(--line)}
+.stages li.d:not(:last-child)::after{background:var(--ok)}
+.stages .n{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-weight:700;font-size:.82rem;background:var(--surface);position:relative;z-index:1}
+.stages li.d .n{background:var(--ok-soft);border-color:transparent;color:var(--ok)}
+.stages li.a{color:var(--ink);font-weight:600}
+.stages li.a .n{background:var(--blue);border-color:var(--blue);color:var(--on-blue)}
+.site-link{margin-top:18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--ok-soft);border-radius:12px;padding:12px 16px}
+.site-link a{font-weight:700;color:var(--ok);word-break:break-all}
+
+/* admin panel */
+.adm h3{font-size:1.1rem;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.adm > p{color:var(--muted);font-size:.9rem;margin-bottom:18px}
+.adm-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 16px}
+.adm-grid .full{grid-column:1/-1}
+.range{display:flex;align-items:center;gap:12px}
+.range input[type=range]{flex:1;padding:0;border:0;accent-color:var(--blue)}
+.range output{min-width:48px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.cust{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:.92rem;color:var(--muted);margin-bottom:18px}
+.cust b{color:var(--ink)}
+
+/* tabs */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:-6px -6px 20px;padding-inline:6px;overflow-x:auto}
+.tabs button{border:0;background:transparent;padding:10px 16px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-1px;white-space:nowrap;display:flex;gap:6px;align-items:center}
+.tabs button[aria-selected="true"]{color:var(--blue-ink);border-bottom-color:var(--blue)}
+
+/* chat */
+.chat{display:flex;flex-direction:column;height:min(560px,70vh)}
+.msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:4px 4px 12px}
+.msg{max-width:78%;display:grid;gap:3px}
+.msg.me{align-self:flex-end;justify-items:end}
+.bub{background:var(--sunk);border-radius:16px 16px 16px 4px;padding:10px 14px;white-space:pre-wrap;word-break:break-word}
+.msg.me .bub{background:var(--blue);color:var(--on-blue);border-radius:16px 16px 4px 16px}
+.msg small{color:var(--muted);font-size:.78rem}
+.fchip{display:inline-flex;align-items:center;gap:8px;margin-top:8px;padding:6px 10px;border-radius:10px;background:color-mix(in srgb,var(--surface) 70%,transparent);color:var(--ink);text-decoration:none;font-size:.88rem;cursor:pointer;border:0}
+.fchip svg{width:16px;height:16px;flex:none}
+.day{align-self:center;font-size:.8rem;color:var(--muted);background:var(--sunk);border-radius:999px;padding:2px 12px}
+.composer{display:flex;gap:10px;align-items:flex-end;border-top:1px solid var(--line);padding-top:14px}
+.composer textarea{display:block;width:100%;min-height:46px;max-height:160px;resize:none;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 13px;outline:none}
+.composer textarea:focus{border-color:var(--blue)}
+.attach-name{font-size:.85rem;color:var(--muted);margin-top:6px}
+
+/* timeline */
+.tl{list-style:none;margin:0;padding:0;display:grid;gap:0}
+.tl li{display:grid;grid-template-columns:18px 1fr;gap:14px;padding-bottom:20px;position:relative}
+.tl li::before{content:"";position:absolute;left:8px;top:18px;bottom:0;width:2px;background:var(--line)}
+.tl li:last-child::before{display:none}
+.tl i{width:18px;height:18px;border-radius:50%;background:var(--blue-soft);border:3px solid var(--blue);margin-top:3px}
+.tl b{display:block}
+.tl p{color:var(--muted);white-space:pre-wrap;font-size:.95rem}
+.tl small{color:var(--muted);font-size:.8rem}
+
+/* files */
+.up{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:12px;align-items:end;background:var(--sunk);border-radius:14px;padding:16px;margin-bottom:20px}
+.up .f{margin:0}
+.up input[type=file]{background:var(--surface);font-size:.88rem;padding:7px}
+.flist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.flist li{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:12px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.flist .ic{width:40px;height:40px;border-radius:10px;background:var(--blue-soft);color:var(--blue);display:grid;place-items:center}
+.flist .ic svg{width:20px;height:20px}
+.flist b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.95rem}
+.flist small{color:var(--muted);font-size:.82rem}
+
+/* info */
+.info-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:28px;align-items:start}
+.lines{list-style:none;padding:0;margin:0 0 14px;display:grid;gap:8px;font-size:.94rem}
+.lines li{display:flex;justify-content:space-between;gap:12px}
+.lines li span:last-child{font-weight:600;white-space:nowrap}
+.tot{display:flex;justify-content:space-between;border-top:1.5px dashed var(--line);padding-top:12px;font-weight:700;font-size:1.15rem}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:.92rem;margin:16px 0 0}
+.facts dt{color:var(--muted)}
+.facts dd{margin:0;text-align:right;font-weight:600;word-break:break-all}
+.fgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}
+.fgrid .full{grid-column:1/-1}
+h3.sm{font-size:1.05rem;margin-bottom:14px}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:12px;font-size:.92rem;z-index:50;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
+
+@media (max-width:960px){
+  .app{grid-template-columns:1fr}
+  .side{position:static;max-height:none}
+  .app.has-detail .side{display:none}
+  .app:not(.has-detail) .detail{display:none}
+  .back{display:inline-flex}
+  .info-grid{grid-template-columns:1fr}
+  .adm-grid{grid-template-columns:1fr 1fr}
+}
+@media (max-width:640px){
+  .container{padding-inline:16px}
+  .card{padding:18px}
+  .who{display:none}
+  .stages li .lb{display:none}
+  .stages li.a .lb{display:block;position:absolute;top:36px;white-space:nowrap}
+  .stages{margin-bottom:22px}
+  .clock{text-align:left}
+  .up{grid-template-columns:1fr}
+  .fgrid,.adm-grid{grid-template-columns:1fr}
+  .msg{max-width:90%}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div class="container">
+    <a href="index.html" aria-label="Techill হোম"><img class="logo logo-l" src="assets/logo-light.png" alt="Techill by RedBolt IT"><img class="logo logo-d" src="assets/logo-dark.png" alt="Techill by RedBolt IT"></a>
+    <div class="hdr-r">
+      <div class="who" id="who" hidden><b id="whoName"></b><small id="whoRole"></small></div>
+      <button class="icon-btn theme-btn" id="themeBtn" type="button" aria-label="দিন/রাত থিম বদলান">
+        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></svg>
+        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+      </button>
+      <button class="btn btn-ghost btn-sm" id="logoutBtn" type="button" hidden>লগআউট</button>
+    </div>
+  </div>
+</header>
+<div class="demo-bar" id="demoBar" hidden>ডেমো মোড: ডেটা শুধু এই ব্রাউজারে থাকে। কাস্টমার <b>demo@techill.top / demo1234</b> · ডেভেলপার <b>admin@techill.top / admin1234</b><button type="button" id="resetDemo">রিসেট</button></div>
+
+<!-- logged out -->
+<main class="auth" id="auth" hidden>
+  <div class="auth-card">
+    <h1 id="authTitle">আপনার অ্যাকাউন্টে লগইন</h1>
+    <p>অর্ডারের অগ্রগতি দেখুন, ডেভেলপারের সাথে চ্যাট করুন, ফাইল পাঠান।</p>
+    <div class="seg" role="tablist">
+      <button type="button" role="tab" id="tabLogin" aria-selected="true">লগইন</button>
+      <button type="button" role="tab" id="tabReg" aria-selected="false">নতুন অ্যাকাউন্ট</button>
+    </div>
+    <form id="loginForm" novalidate>
+      <div class="f"><label for="l-email">ইমেইল</label><input type="email" id="l-email" name="email" autocomplete="email" required></div>
+      <div class="f"><label for="l-pass">পাসওয়ার্ড</label><input type="password" id="l-pass" name="password" autocomplete="current-password" required></div>
+      <button class="btn btn-primary" style="width:100%" type="submit">লগইন</button>
+      <p class="err" id="loginErr" role="alert"></p>
+    </form>
+    <form id="regForm" novalidate hidden>
+      <div class="f"><label for="r-name">নাম</label><input type="text" id="r-name" name="name" autocomplete="name" required></div>
+      <div class="f"><label for="r-email">ইমেইল</label><input type="email" id="r-email" name="email" autocomplete="email" required></div>
+      <div class="f"><label for="r-phone">মোবাইল <small>(ঐচ্ছিক)</small></label><input type="tel" id="r-phone" name="phone" inputmode="tel" placeholder="01XXXXXXXXX" autocomplete="tel"></div>
+      <div class="f"><label for="r-pass">পাসওয়ার্ড <small>(কমপক্ষে ৮ অক্ষর)</small></label><input type="password" id="r-pass" name="password" autocomplete="new-password" minlength="8" required></div>
+      <button class="btn btn-primary" style="width:100%" type="submit">অ্যাকাউন্ট খুলুন</button>
+      <p class="err" id="regErr" role="alert"></p>
+    </form>
+  </div>
+</main>
+
+<!-- logged in -->
+<main class="container app" id="app" hidden>
+  <aside class="side">
+    <div class="side-h">
+      <h2><span id="listTitle">আমার অর্ডার</span><a class="btn btn-ghost btn-sm" href="index.html#packages" id="newOrder">নতুন অর্ডার</a></h2>
+      <input type="search" id="search" placeholder="অর্ডার কোড, নাম বা ইমেইল খুঁজুন" aria-label="অর্ডার খুঁজুন" hidden>
+    </div>
+    <ul class="olist" id="olist"></ul>
+  </aside>
+  <section class="detail" id="detail">
+    <div class="card placeholder"><p>বাঁ পাশ থেকে একটা অর্ডার বাছুন।</p></div>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="assets/api.js"></script>
+<script>
+const api = window.TechillAPI;
+const $ = id => document.getElementById(id);
+const BN = s => String(s).replace(/\d/g, d => "০১২৩৪৫৬৭৮৯"[d]);
+const tk = n => "৳" + BN(Number(n).toLocaleString("en-IN"));
+const pad = n => BN(String(n).padStart(2, "0"));
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const linkify = s => esc(s).replace(/https?:\/\/[^\s<]+/g, u => `<a href="${u}" target="_blank" rel="noopener noreferrer">${u}</a>`);
+const when = t => new Date(t * 1000).toLocaleString("bn-BD", {day: "numeric", month: "short", hour: "numeric", minute: "2-digit"});
+const timeOnly = t => new Date(t * 1000).toLocaleTimeString("bn-BD", {hour: "numeric", minute: "2-digit"});
+const dayOf = t => new Date(t * 1000).toLocaleDateString("bn-BD", {weekday: "long", day: "numeric", month: "long"});
+const size = b => b > 1048576 ? BN((b / 1048576).toFixed(1)) + " MB" : BN(Math.max(1, Math.round(b / 1024))) + " KB";
+const STAGES = ["তথ্য জমা", "পেমেন্ট যাচাই", "সেটআপ চলছে", "রিভিউ", "ডেলিভারি"];
+const PAY = {pending: "পেমেন্ট যাচাই বাকি", verified: "পেমেন্ট যাচাই হয়েছে", rejected: "পেমেন্ট পাওয়া যায়নি"};
+const MNAME = {bKash: "বিকাশ", Nagad: "নগদ", Rocket: "রকেট"};
+const INFO_LABELS = {whatsapp: "হোয়াটসঅ্যাপ নম্বর", phone: "ফোন নম্বর (ওয়েবসাইটে দেখাবে)", fb_page: "ফেসবুক পেজের লিংক", address: "ঠিকানা", business_intro: "ব্যবসার পরিচিতি", additional_info: "অতিরিক্ত তথ্য"};
+const FILE_IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>';
+const CLIP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5l-8.6 8.6a5 5 0 0 1-7.1-7.1l8.6-8.6a3.3 3.3 0 0 1 4.7 4.7l-8.6 8.6a1.7 1.7 0 0 1-2.4-2.4l7.9-7.9"/></svg>';
+
+let me = null, orders = [], cur = null, tab = "chat", lastMsgId = 0, poll = null, tickT = null, pollN = 0;
+
+function toast(msg){ const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(t._t); t._t = setTimeout(() => t.hidden = true, 3200); }
+const isAdmin = () => me && me.role === "admin";
+
+/* ---------- theme ---------- */
+(function(){
+  try { const s = JSON.parse(localStorage.getItem("techill_theme")); if (s === "light" || s === "dark") document.documentElement.dataset.theme = s; } catch(e){}
+  $("themeBtn").addEventListener("click", () => {
+    const c = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    const n = c === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = n;
+    try { localStorage.setItem("techill_theme", JSON.stringify(n)); } catch(e){}
+  });
+})();
+
+/* ---------- auth ---------- */
+function showAuthTab(reg){
+  $("tabLogin").setAttribute("aria-selected", String(!reg)); $("tabReg").setAttribute("aria-selected", String(reg));
+  $("loginForm").hidden = reg; $("regForm").hidden = !reg;
+  $("authTitle").textContent = reg ? "নতুন অ্যাকাউন্ট খুলুন" : "আপনার অ্যাকাউন্টে লগইন";
+}
+$("tabLogin").addEventListener("click", () => showAuthTab(false));
+$("tabReg").addEventListener("click", () => showAuthTab(true));
+async function authSubmit(e, fn, errEl){
+  e.preventDefault();
+  const f = e.target, btn = f.querySelector("button[type=submit]");
+  $(errEl).textContent = ""; btn.disabled = true;
+  try { const r = await fn(Object.fromEntries(new FormData(f))); me = r.user; f.reset(); await enterApp(); }
+  catch(err){ $(errEl).textContent = err.message; }
+  finally { btn.disabled = false; }
+}
+$("loginForm").addEventListener("submit", e => authSubmit(e, api.login, "loginErr"));
+$("regForm").addEventListener("submit", e => authSubmit(e, api.register, "regErr"));
+$("logoutBtn").addEventListener("click", async () => { await api.logout().catch(() => {}); me = null; cur = null; stopPoll(); showAuth(); });
+$("resetDemo").addEventListener("click", () => { api.resetDemo(); location.reload(); });
+
+function showAuth(){
+  $("auth").hidden = false; $("app").hidden = true; $("who").hidden = true; $("logoutBtn").hidden = true;
+  setTimeout(() => $("l-email").focus(), 0);
+}
+
+/* ---------- list ---------- */
+async function enterApp(){
+  $("auth").hidden = true; $("app").hidden = false; $("who").hidden = false; $("logoutBtn").hidden = false;
+  $("whoName").textContent = me.name; $("whoRole").textContent = isAdmin() ? "ডেভেলপার" : me.email;
+  $("listTitle").textContent = isAdmin() ? "সব অর্ডার" : "আমার অর্ডার";
+  $("search").hidden = !isAdmin(); $("newOrder").hidden = isAdmin();
+  await loadList();
+  const m = location.hash.match(/o=(\d+)/);
+  const pick = m ? +m[1] : (!isAdmin() && orders.length === 1 ? orders[0].id : null);
+  if (pick && orders.some(o => o.id === pick)) openOrder(pick);
+  else { cur = null; renderEmptyDetail(); }
+  startPoll();
+}
+async function loadList(){
+  try { orders = (await api.orders()).orders; } catch(e){ if (e.status === 401) { me = null; return showAuth(); } toast(e.message); }
+  renderList();
+}
+function renderList(){
+  const q = $("search").value.trim().toLowerCase();
+  const list = orders.filter(o => !q || [o.code, o.pack, o.customer?.name, o.customer?.email, o.customer?.phone].some(v => String(v || "").toLowerCase().includes(q)));
+  if (!orders.length){
+    $("olist").innerHTML = `<li class="empty"><p>${isAdmin() ? "এখনো কোনো অর্ডার আসেনি।" : "আপনার এখনো কোনো অর্ডার নেই।"}</p>${isAdmin() ? "" : '<a class="btn btn-primary btn-sm" href="index.html#packages">প্যাকেজ দেখুন</a>'}</li>`;
+    return;
+  }
+  $("olist").innerHTML = list.map(o => `<li><button class="oitem" type="button" data-id="${o.id}" aria-current="${cur && cur.order.id === o.id}">
+    <span class="t"><b>${esc(o.code)}</b>${o.unread ? `<span class="badge b-unread" aria-label="${BN(o.unread)}টা নতুন মেসেজ">${BN(o.unread)}</span>` : `<span class="badge b-${o.pay_status}">${o.stage === 4 ? "সম্পন্ন" : STAGES[o.stage]}</span>`}</span>
+    <small>${esc(o.pack)} · ${esc(o.stack)}${o.customer ? " · " + esc(o.customer.name) : ""}</small>
+    <span class="mini"><i style="width:${o.progress}%"></i></span>
+  </button></li>`).join("") || '<li class="empty"><p>কিছু পাওয়া যায়নি।</p></li>';
+}
+$("search").addEventListener("input", renderList);
+$("olist").addEventListener("click", e => { const b = e.target.closest(".oitem"); if (b) openOrder(+b.dataset.id); });
+
+function renderEmptyDetail(){
+  $("app").classList.remove("has-detail");
+  $("detail").innerHTML = `<div class="card placeholder"><p>${orders.length ? "বাঁ পাশ থেকে একটা অর্ডার বাছুন।" : "অর্ডার করার পর এখানে প্রোজেক্টের অগ্রগতি দেখা যাবে।"}</p></div>`;
+}
+
+/* ---------- detail ---------- */
+async function openOrder(id, keepTab){
+  try {
+    cur = await api.order(id);
+    if (!keepTab) tab = "chat";
+    lastMsgId = cur.messages.length ? cur.messages[cur.messages.length - 1].id : 0;
+    history.replaceState(null, "", "#o=" + id);
+    const li = orders.find(o => o.id === id); if (li) li.unread = 0;
+    renderList(); renderDetail();
+    $("app").classList.add("has-detail");
+  } catch(e){ toast(e.message); }
+}
+
+function renderDetail(){
+  const o = cur.order;
+  $("detail").innerHTML = `
+    <div class="card">
+      <div class="d-head">
+        <div>
+          <button class="btn btn-ghost btn-sm back" type="button" id="backBtn" style="margin-bottom:12px">← সব অর্ডার</button>
+          <h2>${esc(o.code)} <span class="badge b-${o.pay_status}">${PAY[o.pay_status]}</span></h2>
+          <p>${esc(o.pack)} প্যাকেজ · ${esc(o.stack)} · ${esc(o.template)}</p>
+        </div>
+        <div class="clock" id="clock"></div>
+      </div>
+      <div class="pbar"><div class="row"><span>${o.stage === 4 ? "প্রোজেক্ট সম্পন্ন" : "বর্তমান ধাপ: " + STAGES[o.stage]}</span><b>${BN(o.progress)}%</b></div><div class="bar"><i style="width:${o.progress}%"></i></div></div>
+      <ol class="stages">${STAGES.map((s, i) => `<li class="${i < o.stage || o.stage === 4 ? "d" : i === o.stage ? "a" : ""}"><span class="n">${i < o.stage || o.stage === 4 ? "✓" : BN(i + 1)}</span><span class="lb">${s}</span></li>`).join("")}</ol>
+      ${o.site_url ? `<div class="site-link"><span>আপনার ওয়েবসাইট তৈরি</span><a href="${esc(o.site_url)}" target="_blank" rel="noopener noreferrer">${esc(o.site_url)} ↗</a></div>` : ""}
+    </div>
+    ${isAdmin() ? adminPanel(o) : ""}
+    <div class="card">
+      <div class="tabs" role="tablist">
+        ${[["chat", "চ্যাট"], ["timeline", "অগ্রগতি"], ["files", `ফাইল (${BN(cur.files.length)})`], ["info", "তথ্য"]].map(([k, l]) => `<button type="button" role="tab" data-tab="${k}" aria-selected="${tab === k}">${l}</button>`).join("")}
+      </div>
+      <div id="tabBody"></div>
+    </div>`;
+  $("backBtn").addEventListener("click", () => { cur = null; history.replaceState(null, "", location.pathname + location.search); renderList(); renderEmptyDetail(); });
+  document.querySelector(".tabs").addEventListener("click", e => { const b = e.target.closest("button[data-tab]"); if (b){ tab = b.dataset.tab; renderDetail(); } });
+  if (isAdmin()) bindAdmin();
+  renderTab(); tickClock(); clearInterval(tickT); tickT = setInterval(tickClock, 1000);
+}
+
+function tickClock(){
+  const el = $("clock"); if (!el || !cur) return;
+  const o = cur.order;
+  if (o.stage === 4){ el.innerHTML = `<b>✓</b><small>ডেলিভারি সম্পন্ন</small>`; return; }
+  const s = Math.max(0, o.deadline - Math.floor(Date.now() / 1000));
+  el.innerHTML = s ? `<b>${pad(Math.floor(s / 3600))}:${pad(Math.floor(s % 3600 / 60))}:${pad(s % 60)}</b><small>ডেলিভারির বাকি · ${when(o.deadline)}</small>` : `<b>০০:০০:০০</b><small>সময় শেষ, শিগগিরই ডেলিভারি</small>`;
+}
+
+function adminPanel(o){
+  const c = o.customer || {};
+  return `<form class="card adm" id="admForm">
+    <h3>ডেভেলপার আপডেট <span class="badge b-admin">শুধু আপনি দেখছেন</span></h3>
+    <p>এখানে যা আপডেট দেবেন, কাস্টমার তার ড্যাশবোর্ডে সাথে সাথে দেখবে।</p>
+    <div class="cust"><span>কাস্টমার: <b>${esc(c.name)}</b></span><span>${esc(c.email)}</span>${c.phone ? `<span>${esc(c.phone)}</span>` : ""}<span>পেমেন্ট: <b>${MNAME[o.pay_method] || esc(o.pay_method)} · ${esc(o.pay_sender)} · ${esc(o.pay_trx)} · ${tk(o.total)}</b></span></div>
+    <div class="adm-grid">
+      <div class="f"><label for="a-stage">ধাপ</label><select id="a-stage" name="stage">${STAGES.map((s, i) => `<option value="${i}" ${i === o.stage ? "selected" : ""}>${BN(i + 1)}. ${s}</option>`).join("")}</select></div>
+      <div class="f"><label for="a-pay">পেমেন্ট</label><select id="a-pay" name="pay_status">${Object.entries(PAY).map(([k, l]) => `<option value="${k}" ${k === o.pay_status ? "selected" : ""}>${l}</option>`).join("")}</select></div>
+      <div class="f"><label for="a-prog">অগ্রগতি</label><div class="range"><input type="range" id="a-prog" name="progress" min="0" max="100" step="5" value="${o.progress}"><output id="a-progOut">${BN(o.progress)}%</output></div></div>
+      <div class="f full"><label for="a-site">ওয়েবসাইটের লিংক <small>(তৈরি হলে দিন)</small></label><input type="url" id="a-site" name="site_url" value="${esc(o.site_url || "")}" placeholder="https://"></div>
+      <div class="f full"><label for="a-note">কাস্টমারের জন্য নোট <small>(অগ্রগতি ট্যাবে দেখাবে)</small></label><textarea id="a-note" name="note" placeholder="যেমন: প্রোডাক্ট আপলোড শেষ, এখন পেমেন্ট টেস্ট চলছে।"></textarea></div>
+    </div>
+    <button class="btn btn-primary" type="submit">আপডেট সেভ করুন</button>
+    <p class="err" id="admErr" role="alert"></p>
+  </form>`;
+}
+function bindAdmin(){
+  const stage = $("a-stage"), prog = $("a-prog");
+  prog.addEventListener("input", () => $("a-progOut").textContent = BN(prog.value) + "%");
+  stage.addEventListener("change", () => { const min = [5, 15, 25, 80, 100][+stage.value]; if (+prog.value < min){ prog.value = min; prog.dispatchEvent(new Event("input")); } });
+  $("admForm").addEventListener("submit", async e => {
+    e.preventDefault(); const btn = e.target.querySelector("button[type=submit]"); btn.disabled = true; $("admErr").textContent = "";
+    try {
+      await api.adminUpdate({order_id: cur.order.id, ...Object.fromEntries(new FormData(e.target))});
+      toast("আপডেট সেভ হয়েছে।"); await refresh(true);
+    } catch(err){ $("admErr").textContent = err.message; }
+    finally { btn.disabled = false; }
+  });
+}
+
+function renderTab(){
+  const body = $("tabBody");
+  if (tab === "chat") body.innerHTML = chatHTML();
+  if (tab === "timeline") body.innerHTML = timelineHTML();
+  if (tab === "files") body.innerHTML = filesHTML();
+  if (tab === "info") body.innerHTML = infoHTML();
+  if (tab === "chat") bindChat();
+  if (tab === "files") bindFiles();
+  if (tab === "info") bindInfo();
+}
+
+/* chat */
+function msgHTML(m, prevDay){
+  const mine = isAdmin() ? m.from_admin && !m.system : !m.from_admin;
+  const day = dayOf(m.created);
+  const sep = day !== prevDay ? `<span class="day">${day}</span>` : "";
+  const file = m.file ? `<button type="button" class="fchip" data-file="${m.file.id}" data-name="${esc(m.file.name)}">${CLIP}<span>${esc(m.file.name)} · ${size(m.file.size)}</span></button>` : "";
+  return `${sep}<div class="msg ${mine ? "me" : ""}"><div class="bub">${linkify(m.body)}${file ? "<br>" + file : ""}</div><small>${mine ? "আপনি" : m.system ? "Techill টিম" : m.from_admin ? esc(m.by) + " · ডেভেলপার" : esc(m.by)} · ${timeOnly(m.created)}</small></div>`;
+}
+function msgsHTML(list){ let prev = null; return list.map(m => { const h = msgHTML(m, prev); prev = dayOf(m.created); return h; }).join(""); }
+function chatHTML(){
+  return `<div class="chat">
+    <div class="msgs" id="msgs" aria-live="polite">${msgsHTML(cur.messages) || '<p class="empty">এখনো কোনো মেসেজ নেই।</p>'}</div>
+    <form class="composer" id="composer">
+      <label class="icon-btn" title="ফাইল যোগ করুন" aria-label="ফাইল যোগ করুন">${CLIP}<input type="file" id="chatFile" hidden></label>
+      <div style="flex:1;min-width:0"><textarea id="chatText" rows="1" placeholder="${isAdmin() ? "কাস্টমারকে লিখুন..." : "ডেভেলপারকে লিখুন..."}" aria-label="মেসেজ"></textarea><div class="attach-name" id="attachName" hidden></div></div>
+      <button class="btn btn-primary" type="submit" id="sendBtn">পাঠান</button>
+    </form>
+  </div>`;
+}
+function scrollMsgs(){ const m = $("msgs"); if (m) m.scrollTop = m.scrollHeight; }
+function bindChat(){
+  scrollMsgs();
+  const ta = $("chatText"), file = $("chatFile");
+  ta.addEventListener("input", () => { ta.style.height = "auto"; ta.style.height = Math.min(160, ta.scrollHeight) + "px"; });
+  ta.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing){ e.preventDefault(); $("composer").requestSubmit(); } });
+  file.addEventListener("change", () => { const f = file.files[0]; $("attachName").hidden = !f; $("attachName").textContent = f ? `সংযুক্ত: ${f.name} (${size(f.size)}) — মেসেজটা ফাইলের নোট হিসেবে যাবে` : ""; });
+  $("composer").addEventListener("submit", async e => {
+    e.preventDefault();
+    const text = ta.value.trim(), f = file.files[0];
+    if (!text && !f) return;
+    $("sendBtn").disabled = true;
+    try {
+      if (f){ await api.upload(cur.order.id, f, text); await refresh(true); }
+      else { const r = await api.send(cur.order.id, text, lastMsgId); appendMsgs(r.messages); }
+      ta.value = ""; ta.style.height = ""; file.value = ""; $("attachName").hidden = true;
+      $("chatText")?.focus();
+    } catch(err){ toast(err.message); }
+    finally { if ($("sendBtn")) $("sendBtn").disabled = false; }
+  });
+}
+function appendMsgs(list){
+  list = list.filter(m => m.id > lastMsgId); if (!list.length) return;
+  cur.messages.push(...list); lastMsgId = list[list.length - 1].id;
+  const box = $("msgs");
+  if (box && tab === "chat"){
+    const near = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
+    box.innerHTML = msgsHTML(cur.messages);
+    if (near || list.some(m => isAdmin() ? m.from_admin : !m.from_admin)) scrollMsgs();
+  }
+}
+
+/* timeline */
+function timelineHTML(){
+  if (!cur.events.length) return '<p class="empty">এখনো কোনো আপডেট নেই।</p>';
+  return `<ol class="tl">${cur.events.map(e => `<li><i></i><div><b>${STAGES[e.stage]} · ${BN(e.progress)}%</b>${e.note ? `<p>${linkify(e.note)}</p>` : ""}<small>${when(e.created)}</small></div></li>`).join("")}</ol>`;
+}
+
+/* files */
+const KIND = {logo: "লোগো", csv: "প্রোডাক্ট CSV", attachment: "সংযুক্তি"};
+function filesHTML(){
+  return `<form class="up" id="upForm">
+      <div class="f"><label for="u-file">ফাইল <small>(সর্বোচ্চ 10MB)</small></label><input type="file" id="u-file" name="file" required></div>
+      <div class="f"><label for="u-note">নোট <small>(ঐচ্ছিক)</small></label><input type="text" id="u-note" name="note" placeholder="যেমন: নতুন ব্যানারের ছবি"></div>
+      <button class="btn btn-primary" type="submit">আপলোড</button>
+    </form>
+    ${cur.files.length ? `<ul class="flist">${cur.files.map(f => `<li><span class="ic">${FILE_IC}</span><div style="min-width:0"><b>${esc(f.name)}</b><small>${KIND[f.kind]} · ${size(f.size)} · ${f.by_admin ? "ডেভেলপার" : "কাস্টমার"} · ${when(f.created)}</small></div><button type="button" class="btn btn-ghost btn-sm" data-file="${f.id}" data-name="${esc(f.name)}">খুলুন</button></li>`).join("")}</ul>` : '<p class="empty">এখনো কোনো ফাইল নেই।</p>'}`;
+}
+function bindFiles(){
+  $("upForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const f = $("u-file").files[0]; if (!f) return toast("একটা ফাইল বাছাই করুন।");
+    const btn = e.target.querySelector("button"); btn.disabled = true;
+    try { await api.upload(cur.order.id, f, $("u-note").value); toast("ফাইল আপলোড হয়েছে।"); await refresh(true); }
+    catch(err){ toast(err.message); btn.disabled = false; }
+  });
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-file]"); if (!b) return;
+  const url = api.fileUrl(b.dataset.file);
+  if (!url) return toast("ডেমো মোডে বড় ফাইল সেভ হয় না। আসল সার্ভারে ঠিকমতো খুলবে।");
+  if (url.startsWith("data:")){ const a = document.createElement("a"); a.href = url; a.download = b.dataset.name || "file"; a.click(); return; }
+  window.open(url, "_blank", "noopener");
+});
+
+/* info */
+function infoHTML(){
+  const o = cur.order, i = o.info || {};
+  return `<div class="info-grid">
+    <div>
+      <h3 class="sm">অর্ডার সারাংশ</h3>
+      <ul class="lines">${o.lines.map(l => `<li><span>${esc(l.label)}</span><span>${tk(l.amt)}</span></li>`).join("")}</ul>
+      <div class="tot"><span>মোট</span><span>${tk(o.total)}</span></div>
+      <dl class="facts">
+        <dt>প্ল্যাটফর্ম</dt><dd>${esc(o.stack)}</dd><dt>টেমপ্লেট</dt><dd>${esc(o.template)}</dd>
+        <dt>প্রোডাক্ট আপলোড</dt><dd>${BN(o.products)}টা</dd><dt>ডেলিভারি</dt><dd>${BN(o.hours)} ঘণ্টা</dd>
+        <dt>পেমেন্ট</dt><dd>${MNAME[o.pay_method] || esc(o.pay_method)} · ${esc(o.pay_trx)}</dd><dt>অর্ডারের সময়</dt><dd>${when(o.created)}</dd>
+      </dl>
+    </div>
+    <form id="infoForm">
+      <h3 class="sm">ব্যবসার তথ্য <small style="font-weight:400;color:var(--muted);font-size:.85rem">· কিছু বদলাতে বা যোগ করতে চাইলে এখানে লিখে সেভ করুন</small></h3>
+      <div class="fgrid">
+        ${["whatsapp", "phone", "fb_page", "address"].map(k => `<div class="f"><label for="in-${k}">${INFO_LABELS[k]}</label><input id="in-${k}" name="${k}" type="${k === "fb_page" ? "url" : k === "address" ? "text" : "tel"}" value="${esc(i[k])}"></div>`).join("")}
+        ${["business_intro", "additional_info"].map(k => `<div class="f full"><label for="in-${k}">${INFO_LABELS[k]}</label><textarea id="in-${k}" name="${k}">${esc(i[k])}</textarea></div>`).join("")}
+      </div>
+      <button class="btn btn-primary" type="submit">তথ্য সেভ করুন</button>
+      <p class="err" id="infoErr" role="alert"></p>
+    </form>
+  </div>`;
+}
+function bindInfo(){
+  $("infoForm").addEventListener("submit", async e => {
+    e.preventDefault(); const btn = e.target.querySelector("button"); btn.disabled = true; $("infoErr").textContent = "";
+    try { const r = await api.updateInfo({order_id: cur.order.id, ...Object.fromEntries(new FormData(e.target))}); cur.order.info = r.info; toast("তথ্য সেভ হয়েছে। ডেভেলপার দেখতে পাবেন।"); refresh(true); }
+    catch(err){ $("infoErr").textContent = err.message; }
+    finally { btn.disabled = false; }
+  });
+}
+
+/* ---------- refresh & polling ---------- */
+async function refresh(full){
+  if (!cur) return;
+  const id = cur.order.id;
+  if (full){
+    const draft = $("chatText")?.value;
+    await openOrder(id, true);
+    if (draft && $("chatText")) $("chatText").value = draft;
+    loadList();
+  }
+}
+async function pollOnce(){
+  if (document.hidden || !me) return;
+  pollN++;
+  try {
+    if (cur){
+      const r = await api.messages(cur.order.id, lastMsgId);
+      appendMsgs(r.messages);
+    }
+    if (pollN % 6 === 0){
+      await loadList();
+      if (cur){
+        const fresh = orders.find(o => o.id === cur.order.id);
+        const busy = document.activeElement && document.activeElement.closest("#admForm,#infoForm,#upForm");
+        if (fresh && !busy && (fresh.stage !== cur.order.stage || fresh.progress !== cur.order.progress || fresh.pay_status !== cur.order.pay_status || fresh.site_url !== cur.order.site_url)) refresh(true);
+      }
+    }
+  } catch(e){ if (e.status === 401){ me = null; stopPoll(); showAuth(); } }
+}
+function startPoll(){ stopPoll(); poll = setInterval(pollOnce, 5000); }
+function stopPoll(){ clearInterval(poll); clearInterval(tickT); }
+document.addEventListener("visibilitychange", () => { if (!document.hidden) pollOnce(); });
+
+/* ---------- boot ---------- */
+(async () => {
+  me = await api.init();
+  $("demoBar").hidden = !api.demo;
+  if (me) enterApp(); else showAuth();
+})();
+</script>
+</body>
+</html>

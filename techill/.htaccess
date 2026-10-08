@@ -1,0 +1,5 @@
+# Block direct access to config, helpers and the schema.
+<FilesMatch "^(config\.php|lib\.php|schema\.sql|README\.md)$">
+  Require all denied
+</FilesMatch>
+Options -Indexes

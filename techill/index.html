@@ -1,0 +1,1163 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="২৪ ঘণ্টায় আপনার নিজের অনলাইন দোকান। WooCommerce ও Laravel ই-কমার্স ওয়েবসাইট, COD, বিকাশ, কুরিয়ার সেটআপ সহ।">
+<style>body{margin:0}img{max-width:100%}</style>
+<title>Techill</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tiro+Bangla:ital@0;1&display=swap">
+<style>
+/* Layout: airy single-column landing (hero with store mock, problem, money flow, features, how, packages, CTA, footer) + a full-screen 5-step checkout overlay */
+:root{
+  --bg:#f7f9fc;
+  --surface:#ffffff;
+  --sunk:#eef3f9;
+  --ink:#121822;
+  --muted:#5a6578;
+  --line:#e1e7ef;
+  --blue:#0a84f0;
+  --blue-ink:#0067c7;
+  --blue-soft:#e8f3ff;
+  --on-blue:#ffffff;
+  --ok:#12a150;
+  --ok-soft:#e4f6eb;
+  --warn:#a85800;
+  --warn-soft:#fff3e0;
+  --danger:#d93025;
+  --shadow:0 1px 2px rgb(16 24 40 / .04),0 18px 40px -18px rgb(16 24 40 / .16);
+  --display:"Tiro Bangla","Noto Serif Bengali",Georgia,serif;
+  --body:"Tiro Bangla","Noto Serif Bengali",Georgia,serif;
+  --r:18px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0b1018;--surface:#111925;--sunk:#0e1520;--ink:#e9eef5;--muted:#98a4b7;--line:#1f2b3b;
+    --blue:#3aa0ff;--blue-ink:#7cc0ff;--blue-soft:#10223a;--on-blue:#04121f;
+    --ok:#3ccf7f;--ok-soft:#0f2a1c;--warn:#ffb454;--warn-soft:#2c1f0c;--danger:#ff6b60;
+    --shadow:0 1px 2px rgb(0 0 0 / .3),0 18px 40px -18px rgb(0 0 0 / .6);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0b1018;--surface:#111925;--sunk:#0e1520;--ink:#e9eef5;--muted:#98a4b7;--line:#1f2b3b;
+  --blue:#3aa0ff;--blue-ink:#7cc0ff;--blue-soft:#10223a;--on-blue:#04121f;
+  --ok:#3ccf7f;--ok-soft:#0f2a1c;--warn:#ffb454;--warn-soft:#2c1f0c;--danger:#ff6b60;
+  --shadow:0 1px 2px rgb(0 0 0 / .3),0 18px 40px -18px rgb(0 0 0 / .6);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.7}
+h1,h2,h3,h4{font-family:var(--display);line-height:1.2;margin:0;text-wrap:balance;font-weight:700}
+p{margin:0}
+a{color:inherit}
+button,input,textarea,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:8px}
+.num{font-variant-numeric:tabular-nums}
+.container{max-width:1140px;margin:0 auto;padding-inline:24px}
+
+/* logo per theme */
+.logo{display:block;height:40px;width:auto}
+.logo-d{display:none}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .logo-l{display:none}:root:not([data-theme="light"]) .logo-d{display:block}}
+:root[data-theme="dark"] .logo-l{display:none}
+:root[data-theme="dark"] .logo-d{display:block}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:12px 22px;font-weight:600;text-decoration:none;cursor:pointer;border:1.5px solid transparent;transition:transform .15s,background .15s,border-color .15s;white-space:nowrap}
+.btn:hover{transform:translateY(-1px)}
+.btn-primary{background:var(--blue);color:var(--on-blue)}
+.btn-ghost{background:transparent;border-color:var(--line)}
+.btn-ghost:hover{border-color:var(--blue)}
+.btn-sm{padding:8px 16px;font-size:.95rem;border-radius:10px}
+.btn[disabled]{opacity:.5;cursor:not-allowed;transform:none}
+
+/* header */
+.hdr{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);border-bottom:1px solid transparent;transition:border-color .2s}
+.hdr.scrolled{border-bottom-color:var(--line)}
+.hdr .container{display:flex;align-items:center;justify-content:space-between;gap:16px;height:72px}
+.nav{display:flex;gap:32px;font-weight:500;font-size:.98rem}
+.nav a{text-decoration:none;color:var(--muted)}
+.nav a:hover{color:var(--ink)}
+.hdr-actions{display:flex;align-items:center;gap:10px}
+.theme-btn{width:42px;height:42px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer}
+.theme-btn svg{width:20px;height:20px}
+.theme-btn .moon{display:none}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .theme-btn .sun{display:none}:root:not([data-theme="light"]) .theme-btn .moon{display:block}}
+:root[data-theme="dark"] .theme-btn .sun{display:none}
+:root[data-theme="dark"] .theme-btn .moon{display:block}
+
+/* sections */
+section{padding-block:104px}
+.sec-head{max-width:640px;margin-bottom:56px}
+.sec-head.center{margin-inline:auto;text-align:center}
+.eyebrow{display:inline-block;font-size:.85rem;font-weight:600;color:var(--blue-ink);background:var(--blue-soft);padding:4px 14px;border-radius:999px;margin-bottom:18px}
+.sec-head h2{font-size:clamp(1.9rem,3.6vw,2.6rem)}
+.sec-head p{color:var(--muted);margin-top:14px;font-size:1.08rem}
+
+/* hero */
+.hero{padding-block:72px 96px}
+.hero .container{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:64px;align-items:center}
+.hero h1{font-size:clamp(2.4rem,5.4vw,3.9rem);font-weight:800;letter-spacing:-.01em}
+.hero h1 span{color:var(--blue)}
+.hero .lead{color:var(--muted);font-size:1.15rem;margin-top:22px;max-width:52ch}
+.hero-cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:34px}
+.trust{display:flex;flex-wrap:wrap;gap:10px 28px;margin-top:36px;padding:0;list-style:none;color:var(--muted);font-size:.95rem}
+.trust li{display:flex;align-items:center;gap:8px}
+.trust svg{width:18px;height:18px;color:var(--ok);flex:none}
+
+.mock{position:relative;padding:24px 8px 40px}
+.browser{background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);overflow:hidden}
+.b-bar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--sunk)}
+.b-bar i{width:10px;height:10px;border-radius:50%;background:var(--line);display:block}
+.b-url{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:8px;font-size:.78rem;color:var(--muted);padding:2px 10px;margin-left:8px}
+.b-body{padding:18px;display:grid;gap:14px}
+.s-nav{display:flex;justify-content:space-between;align-items:center}
+.s-logo{width:72px;height:12px;border-radius:6px;background:var(--ink);opacity:.85}
+.s-links{display:flex;gap:8px}
+.s-links i{display:block;width:30px;height:8px;border-radius:4px;background:var(--line)}
+.s-banner{border-radius:14px;background:var(--blue-soft);padding:20px;display:grid;gap:8px}
+.s-banner b{font-family:var(--display);font-size:1.25rem;color:var(--blue-ink);line-height:1.2}
+.s-banner span{font-size:.8rem;color:var(--muted)}
+.s-banner em{font-style:normal;justify-self:start;background:var(--blue);color:var(--on-blue);font-size:.75rem;font-weight:600;padding:3px 12px;border-radius:999px}
+.s-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.s-card{display:grid;gap:6px}
+.s-card i{display:block;aspect-ratio:1;border-radius:10px;background:var(--sunk)}
+.s-card:nth-child(2) i{background:var(--warn-soft)}
+.s-card:nth-child(3) i{background:var(--ok-soft)}
+.s-card small{font-size:.75rem;font-weight:600}
+.toast{position:absolute;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:10px 14px;display:flex;align-items:center;gap:10px;font-size:.85rem;line-height:1.35}
+.toast b{display:block;font-weight:600}
+.toast small{color:var(--muted)}
+.toast .dot{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:none}
+.toast .dot svg{width:18px;height:18px}
+.t1{right:-8px;top:96px}
+.t1 .dot{background:var(--ok-soft);color:var(--ok)}
+.t2{left:-12px;bottom:4px}
+.t2 .dot{background:var(--blue-soft);color:var(--blue)}
+@media (prefers-reduced-motion:no-preference){
+  .t1{animation:float 6s ease-in-out infinite}
+  .t2{animation:float 6s ease-in-out -3s infinite}
+  @keyframes float{50%{transform:translateY(-6px)}}
+}
+
+/* problem */
+.grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.prob{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:32px;display:grid;gap:10px}
+.prob .ic{width:44px;height:44px;border-radius:12px;background:var(--warn-soft);color:var(--warn);display:grid;place-items:center;margin-bottom:6px}
+.prob .ic svg{width:22px;height:22px}
+.prob h3{font-size:1.3rem}
+.prob p{color:var(--muted)}
+
+/* money */
+.money{background:var(--surface);border-block:1px solid var(--line)}
+.flow{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px;position:relative}
+.flow li{display:grid;gap:12px;align-content:start;position:relative}
+.flow .n{width:44px;height:44px;border-radius:50%;background:var(--blue-soft);color:var(--blue-ink);font-family:var(--display);font-weight:700;font-size:1.15rem;display:grid;place-items:center;position:relative;z-index:1}
+.flow li:not(:last-child)::after{content:"";position:absolute;top:22px;left:52px;right:-12px;height:2px;background:repeating-linear-gradient(90deg,var(--line) 0 8px,transparent 8px 14px)}
+.flow h3{font-size:1.12rem}
+.flow p{color:var(--muted);font-size:.95rem}
+.calc{margin-top:64px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:32px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:var(--r);padding:36px 40px}
+.calc .lbl{font-size:.85rem;color:var(--muted);font-weight:600}
+.calc h3{font-size:1.5rem;margin-top:6px}
+.calc p{color:var(--muted);margin-top:8px}
+.eq{display:flex;align-items:center;flex-wrap:wrap;gap:10px;font-family:var(--display);font-weight:700;font-size:1.15rem}
+.eq span{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 14px;line-height:1.3;text-align:center}
+.eq span small{display:block;font-family:var(--body);font-weight:500;font-size:.75rem;color:var(--muted)}
+.eq .res{background:var(--blue);color:var(--on-blue);border-color:transparent}
+.eq .res small{color:inherit;opacity:.85}
+
+/* features */
+.feats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
+.feat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:28px 24px;display:grid;gap:10px;align-content:start;transition:border-color .2s,transform .2s}
+.feat:hover{border-color:var(--blue);transform:translateY(-2px)}
+.feat .ic{width:46px;height:46px;border-radius:12px;background:var(--blue-soft);color:var(--blue);display:grid;place-items:center;margin-bottom:8px}
+.feat .ic svg{width:22px;height:22px}
+.feat h3{font-size:1.12rem}
+.feat p{color:var(--muted);font-size:.94rem}
+
+/* how */
+.how{padding-block:0 32px}
+.steps{list-style:none;margin:0;padding:28px 32px;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.steps li{display:grid;justify-items:center;text-align:center;gap:8px;font-size:.92rem;font-weight:500}
+.steps .n{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-weight:700;font-size:.9rem;background:var(--bg)}
+.steps li:last-child .n{background:var(--blue);color:var(--on-blue);border-color:transparent}
+
+/* packages */
+.pk{padding-top:72px}
+.seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:5px;gap:4px;margin-bottom:40px}
+.seg button{border:0;background:transparent;border-radius:10px;padding:9px 22px;font-weight:600;cursor:pointer;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--blue);color:var(--on-blue)}
+.seg-wrap{text-align:center}
+.packs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;align-items:stretch}
+.pack{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:36px 30px 30px;display:flex;flex-direction:column;gap:22px;min-width:0}
+.pack.pop{border:2px solid var(--blue);box-shadow:var(--shadow)}
+.pop-badge{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--blue);color:var(--on-blue);font-size:.82rem;font-weight:600;padding:3px 16px;border-radius:999px;white-space:nowrap}
+.pack-name{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.pack-name h3{font-size:1.6rem}
+.pack-name small{color:var(--muted);font-size:.85rem;font-weight:500}
+.pack .tag{color:var(--muted);font-size:.96rem;margin-top:4px}
+.price{font-family:var(--display);font-weight:800;font-size:2.6rem;line-height:1;font-variant-numeric:tabular-nums}
+.price small{font-family:var(--body);font-size:.9rem;font-weight:500;color:var(--muted);margin-left:6px}
+.meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.meta div{background:var(--sunk);border-radius:12px;padding:12px 14px;line-height:1.3}
+.meta b{display:block;font-family:var(--display);font-size:1.35rem;font-weight:700;color:var(--blue-ink)}
+.meta span{font-size:.82rem;color:var(--muted)}
+.flist{list-style:none;padding:0;margin:0;display:grid;gap:10px;font-size:.96rem;flex:1}
+.flist li{display:grid;grid-template-columns:20px 1fr;gap:10px;align-items:start}
+.flist svg{width:18px;height:18px;color:var(--ok);margin-top:5px}
+.flist li.inh{font-weight:600}
+.flist li.inh svg{color:var(--blue)}
+.pk-note{margin-top:32px;display:flex;gap:12px;align-items:flex-start;justify-content:center;color:var(--muted);font-size:.95rem;text-align:left}
+.pk-note svg{width:20px;height:20px;color:var(--warn);flex:none;margin-top:4px}
+
+/* cta */
+.cta{padding-block:40px 104px}
+.cta-box{background:var(--blue);color:var(--on-blue);border-radius:28px;padding:64px 48px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:32px;align-items:center}
+.cta-box h2{font-size:clamp(1.8rem,3.4vw,2.5rem)}
+.cta-box p{opacity:.9;margin-top:10px;font-size:1.08rem}
+.cta-box .acts{display:flex;flex-wrap:wrap;gap:12px}
+.btn-light{background:var(--on-blue);color:var(--blue)}
+.btn-outline-light{border-color:color-mix(in srgb,var(--on-blue) 50%,transparent);color:var(--on-blue)}
+
+/* footer */
+footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(--surface)}
+.f-grid{display:grid;grid-template-columns:minmax(0,1.6fr) repeat(2,minmax(0,1fr));gap:40px}
+.f-grid p{color:var(--muted);font-size:.95rem;margin-top:16px;max-width:40ch}
+.f-grid h4{font-size:1rem;margin-bottom:14px}
+.f-grid ul{list-style:none;padding:0;margin:0;display:grid;gap:8px;font-size:.95rem;color:var(--muted)}
+.f-grid ul a{text-decoration:none}
+.f-grid ul a:hover{color:var(--ink)}
+.f-bottom{margin-top:48px;padding-top:24px;border-top:1px solid var(--line);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;color:var(--muted);font-size:.88rem}
+
+/* order chip */
+.chip{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:25;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:10px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;font-size:.9rem}
+.chip .pulse{width:10px;height:10px;border-radius:50%;background:var(--ok);flex:none}
+.chip b{font-variant-numeric:tabular-nums}
+
+/* ===== checkout overlay ===== */
+.co{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+.co-top{border-bottom:1px solid var(--line);background:var(--surface)}
+.co-top .container{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:68px}
+.co-title{font-family:var(--display);font-weight:700;font-size:1.15rem;line-height:1.3}
+.co-title small{display:block;font-family:var(--body);font-weight:500;font-size:.85rem;color:var(--muted)}
+.x{width:40px;height:40px;border-radius:10px;border:1.5px solid var(--line);background:transparent;cursor:pointer;display:grid;place-items:center;flex:none}
+.x svg{width:18px;height:18px}
+.stepper{list-style:none;padding:0;margin:0 auto;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;max-width:1140px;padding-inline:24px;padding-block:18px}
+.stepper li{display:flex;align-items:center;gap:8px;font-size:.9rem;font-weight:500;color:var(--muted);min-width:0}
+.stepper li span.n{flex:none;width:28px;height:28px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:.8rem;font-weight:700;background:var(--surface)}
+.stepper li.on{color:var(--ink)}
+.stepper li.on span.n{background:var(--blue);border-color:var(--blue);color:var(--on-blue)}
+.stepper li.done span.n{background:var(--ok-soft);border-color:transparent;color:var(--ok)}
+.stepper li button{all:unset;cursor:pointer;display:flex;align-items:center;gap:8px;min-width:0}
+.stepper li button[disabled]{cursor:default}
+.stepper li button:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:8px}
+.stepper .lb{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.co-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.co-body .container{padding-block:24px 48px}
+.panel h2{font-size:1.7rem}
+.panel > p.sub{color:var(--muted);margin-top:6px;margin-bottom:32px}
+.co-bar{border-top:1px solid var(--line);background:var(--surface);padding-bottom:env(safe-area-inset-bottom,0px)}
+.co-bar .container{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:76px;padding-block:10px}
+.co-sum{line-height:1.35}
+.co-sum b{font-family:var(--display);font-size:1.5rem;font-variant-numeric:tabular-nums}
+.co-sum small{display:block;color:var(--muted);font-size:.85rem}
+.co-sum .hrs{color:var(--blue-ink);font-weight:600}
+.co-acts{display:flex;gap:10px}
+.err{color:var(--danger);font-size:.88rem;min-height:1.3em;margin-top:12px}
+
+/* templates */
+.tpls{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:18px}
+.tpl{background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:12px;display:grid;gap:12px;align-content:start;cursor:pointer;transition:border-color .15s}
+.tpl.sel{border-color:var(--blue);box-shadow:var(--shadow)}
+.thumb{aspect-ratio:4/5;max-width:100%;border-radius:10px;background:#fbfbfc;border:1px solid #e6e8ec;padding:9px;display:grid;grid-template-rows:7px 38% 1fr;gap:8px;overflow:hidden}
+.thumb i{display:block;border-radius:4px}
+.thumb .a{background:#e6e8ec}
+.thumb .b{background:var(--t)}
+.thumb .c{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.thumb .c i{background:var(--t2)}
+.tpl-info{padding-inline:4px;display:grid;gap:2px}
+.tpl-info b{font-size:1rem}
+.tpl-info small{color:var(--muted);font-size:.84rem}
+.tpl-acts{display:flex;justify-content:space-between;align-items:center;gap:8px;padding-inline:4px;font-size:.86rem}
+.tpl-acts a{color:var(--blue-ink);font-weight:600;text-decoration:none}
+.tpl-acts a:hover{text-decoration:underline}
+.radio-dot{width:20px;height:20px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;flex:none}
+.tpl.sel .radio-dot{border-color:var(--blue)}
+.tpl.sel .radio-dot::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--blue)}
+
+/* addons */
+.groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.group{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;min-width:0}
+.group h3{font-size:1.05rem;padding:16px 20px;border-bottom:1px solid var(--line)}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 20px;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row .nm{font-weight:600;font-size:.96rem;line-height:1.4}
+.row .nt{display:block;color:var(--muted);font-size:.82rem;font-weight:400;margin-top:2px}
+.row .nt.w{color:var(--warn);font-weight:600}
+.ctl{display:flex;align-items:center;gap:12px}
+.pr{font-weight:700;font-size:.94rem;white-space:nowrap;font-variant-numeric:tabular-nums}
+.incl{font-size:.8rem;font-weight:600;color:var(--ok);background:var(--ok-soft);border-radius:999px;padding:3px 12px;white-space:nowrap}
+.sw{appearance:none;-webkit-appearance:none;width:42px;height:24px;border-radius:999px;background:var(--line);position:relative;cursor:pointer;margin:0;flex:none;transition:background .15s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--surface);transition:transform .15s;box-shadow:0 1px 2px rgb(0 0 0 / .2)}
+.sw:checked{background:var(--blue)}
+.sw:checked::after{transform:translateX(18px)}
+.stp{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:10px;overflow:hidden}
+.stp button{border:0;background:var(--sunk);width:32px;height:32px;cursor:pointer;font-weight:700;font-size:1.05rem}
+.stp output{min-width:30px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* payment */
+.pay{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:28px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:28px}
+.card h3{font-size:1.2rem;margin-bottom:18px}
+.lines{list-style:none;padding:0;margin:0;display:grid;gap:10px;font-size:.95rem}
+.lines li{display:flex;justify-content:space-between;gap:12px}
+.lines li span:last-child{font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
+.tot{display:flex;justify-content:space-between;align-items:baseline;border-top:1.5px dashed var(--line);margin-top:16px;padding-top:16px}
+.tot b{font-family:var(--display);font-size:1.9rem;font-variant-numeric:tabular-nums}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:.92rem;margin:0 0 18px}
+.facts dt{color:var(--muted)}
+.facts dd{margin:0;text-align:right;font-weight:600}
+.methods{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:20px}
+.method{border:2px solid var(--line);border-radius:12px;padding:12px;text-align:center;cursor:pointer;font-weight:700;background:var(--bg)}
+.method[aria-pressed="true"]{border-color:var(--blue);background:var(--blue-soft);color:var(--blue-ink)}
+.paybox{background:var(--sunk);border-radius:12px;padding:16px 18px;display:grid;gap:10px;margin-bottom:22px;font-size:.95rem}
+.paybox ol{margin:0;padding-left:20px;display:grid;gap:4px}
+.copyrow{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 8px 8px 14px}
+.copyrow b{font-family:var(--display);font-size:1.25rem;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+
+/* forms */
+.fgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 24px}
+.f{display:grid;gap:6px;min-width:0}
+.f.full{grid-column:1/-1}
+.f label{font-weight:600;font-size:.94rem}
+.f label .req{color:var(--danger)}
+.f label small{font-weight:400;color:var(--muted)}
+.f input[type=text],.f input[type=email],.f input[type=tel],.f input[type=url],.f textarea{width:100%;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 14px;outline:none;transition:border-color .15s}
+.f textarea{min-height:110px;resize:vertical}
+.f input:focus,.f textarea:focus{border-color:var(--blue)}
+.f .hint{font-size:.82rem;color:var(--muted)}
+.f.bad input,.f.bad textarea,.f.bad .drop{border-color:var(--danger)}
+.f .msg{font-size:.82rem;color:var(--danger);min-height:0}
+.drop{display:flex;align-items:center;gap:14px;border:1.5px dashed var(--line);border-radius:12px;padding:14px;background:var(--surface);flex-wrap:wrap}
+.drop input[type=file]{flex:1;min-width:0;font-size:.88rem}
+.drop input[type=file]::file-selector-button{border:0;background:var(--blue-soft);color:var(--blue-ink);font-weight:600;border-radius:8px;padding:8px 14px;margin-right:12px;cursor:pointer}
+.csvbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.check{display:flex;align-items:flex-start;gap:10px;font-size:.92rem;color:var(--muted)}
+.check input{margin-top:6px;width:18px;height:18px;accent-color:var(--blue);flex:none}
+.form-head{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:end;margin-bottom:28px}
+
+/* countdown */
+.done-wrap{max-width:760px;margin:0 auto;text-align:center;display:grid;gap:28px;justify-items:center}
+.ok-ic{width:64px;height:64px;border-radius:50%;background:var(--ok-soft);color:var(--ok);display:grid;place-items:center}
+.ok-ic svg{width:30px;height:30px}
+.done-wrap h2{font-size:clamp(1.7rem,3.4vw,2.3rem)}
+.done-wrap > p{color:var(--muted);max-width:52ch}
+.clock{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.clock div{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px 10px 12px;min-width:110px;display:grid;gap:2px}
+.clock b{font-family:var(--display);font-size:clamp(2.4rem,7vw,3.6rem);font-weight:800;line-height:1;font-variant-numeric:tabular-nums;color:var(--blue-ink)}
+.clock span{font-size:.85rem;color:var(--muted)}
+.bar{width:100%;height:8px;background:var(--sunk);border-radius:999px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--blue);border-radius:999px;width:0}
+.deadline{font-size:.95rem;color:var(--muted)}
+.deadline b{color:var(--ink)}
+.timeline{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;width:100%}
+.timeline li{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:.88rem;display:grid;gap:4px;justify-items:center}
+.timeline li i{width:12px;height:12px;border-radius:50%;background:var(--line);display:block}
+.timeline li.d i{background:var(--ok)}
+.timeline li.a i{background:var(--blue);box-shadow:0 0 0 4px var(--blue-soft)}
+.done-card{width:100%;text-align:left}
+
+@media (max-width:1040px){
+  .feats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .flow{grid-template-columns:1fr;gap:28px}
+  .flow li{grid-template-columns:44px 1fr;column-gap:18px}
+  .flow li .n{grid-row:span 2}
+  .flow li:not(:last-child)::after{top:52px;bottom:-24px;left:21px;right:auto;width:2px;height:auto;background:repeating-linear-gradient(180deg,var(--line) 0 8px,transparent 8px 14px)}
+  .tpls{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:8px}
+  .tpl{flex:0 0 210px;scroll-snap-align:start}
+  .groups{grid-template-columns:1fr}
+}
+@media (max-width:880px){
+  .nav{display:none}
+  .hero .container{grid-template-columns:1fr;gap:48px}
+  .packs{grid-template-columns:1fr;max-width:480px;margin-inline:auto}
+  .steps{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:22px}
+  .calc{grid-template-columns:1fr}
+  .cta-box{grid-template-columns:1fr;padding:48px 28px}
+  .f-grid{grid-template-columns:1fr 1fr}
+  .f-grid > div:first-child{grid-column:1/-1}
+  .pay{grid-template-columns:1fr}
+  .stepper .lb{display:none}
+  .stepper li.on .lb{display:inline}
+  .stepper{grid-template-columns:repeat(5,auto);justify-content:space-between}
+}
+@media (max-width:640px){
+  body{font-size:16px}
+  section{padding-block:72px}
+  .container{padding-inline:16px}
+  .grid-2,.feats{grid-template-columns:1fr}
+  .prob{padding:26px}
+  .fgrid{grid-template-columns:1fr}
+  .hdr-cta{display:none}
+  .timeline{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .clock div{min-width:88px}
+  .co-sum b{font-size:1.25rem}
+  .co-acts .btn{padding:10px 14px}
+  .t1{right:0}.t2{left:0}
+  .calc{padding:28px 22px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+</style>
+
+</head>
+<body>
+<header class="hdr" id="hdr">
+  <div class="container">
+    <a href="#top" aria-label="Techill হোম"><img class="logo logo-l" src="assets/logo-light.png" alt="Techill by RedBolt IT"><img class="logo logo-d" src="assets/logo-dark.png" alt="Techill by RedBolt IT"></a>
+    <nav class="nav" aria-label="প্রধান মেনু">
+      <a href="#problem">সমস্যা</a>
+      <a href="#features">ফিচার</a>
+      <a href="#how">কীভাবে কাজ করে</a>
+      <a href="#packages">প্যাকেজ</a>
+    </nav>
+    <div class="hdr-actions">
+      <button class="theme-btn" id="themeBtn" type="button" aria-label="দিন/রাত থিম বদলান">
+        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></svg>
+        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+      </button>
+      <a href="dashboard.html" class="btn btn-ghost btn-sm" id="dashLink">লগইন</a>
+      <a href="#packages" class="btn btn-primary btn-sm hdr-cta">অর্ডার করুন</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="container">
+      <div>
+        <span class="eyebrow">বাংলাদেশের অনলাইন ব্যবসার জন্য</span>
+        <h1>মাত্র ২৪ ঘণ্টায় আপনার নিজের <span>অনলাইন দোকান</span></h1>
+        <p class="lead">ফেসবুক ইনবক্সে অর্ডার নেওয়ার ঝামেলা শেষ। টেমপ্লেট বাছুন, তথ্য দিন, বাকিটা আমাদের। COD, বিকাশ আর কুরিয়ার সেটআপ করা অবস্থায় ওয়েবসাইট হাতে পাবেন।</p>
+        <div class="hero-cta">
+          <a href="#packages" class="btn btn-primary">প্যাকেজ দেখুন</a>
+          <a href="#how" class="btn btn-ghost">কীভাবে কাজ করে</a>
+        </div>
+        <ul class="trust">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>৳৬,৯৯৯ থেকে শুরু</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>কোনো মাসিক চার্জ নেই</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>হোয়াটসঅ্যাপে সাপোর্ট</li>
+        </ul>
+      </div>
+      <div class="mock" aria-hidden="true">
+        <div class="browser">
+          <div class="b-bar"><i></i><i></i><i></i><span class="b-url">yourshop.com.bd</span></div>
+          <div class="b-body">
+            <div class="s-nav"><span class="s-logo"></span><span class="s-links"><i></i><i></i><i></i></span></div>
+            <div class="s-banner"><b>ঈদ কালেকশন ২০২৬</b><span>সারা দেশে ক্যাশ অন ডেলিভারি</span><em>এখনই কিনুন</em></div>
+            <div class="s-grid">
+              <div class="s-card"><i></i><small>৳১,৪৯০</small></div>
+              <div class="s-card"><i></i><small>৳৮৫০</small></div>
+              <div class="s-card"><i></i><small>৳২,২০০</small></div>
+            </div>
+          </div>
+        </div>
+        <div class="toast t1"><span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.2 11h11l2-8H6.5"/><circle cx="9" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></svg></span><span><b>নতুন অর্ডার #১০২৪</b><small>৳১,৪৯০ · ক্যাশ অন ডেলিভারি</small></span></div>
+        <div class="toast t2"><span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7h11v9H2zM13 10h4l3 3v3h-7z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17" cy="17.5" r="1.6"/></svg></span><span><b>কুরিয়ারে পাঠানো হয়েছে</b><small>Steadfast · ট্র্যাকিং কোড তৈরি</small></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="problem" style="padding-top:40px">
+    <div class="container">
+      <div class="sec-head">
+        <span class="eyebrow">সমস্যা</span>
+        <h2>ব্যবসা যেখানে আটকে যাচ্ছে</h2>
+        <p>বেশিরভাগ অনলাইন ব্যবসা পণ্যের জন্য না, সিস্টেমের অভাবে বিক্রি হারায়।</p>
+      </div>
+      <div class="grid-2">
+        <article class="prob"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4z"/><path d="M9 10h6"/></svg></span><h3>ইনবক্সে অর্ডার হারিয়ে যায়</h3><p>রাত ২টায় আসা মেসেজের উত্তর সকালে দিলে কাস্টমার ততক্ষণে অন্য পেজ থেকে কিনে ফেলে।</p></article>
+        <article class="prob"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v4h4"/></svg></span><h3>ফেক অর্ডার আর রিটার্নে লোকসান</h3><p>যে কাস্টমার আগে পাঁচবার পার্সেল ফেরত দিয়েছে, তাকে চেনার উপায় নেই। কুরিয়ার চার্জ গুনতে হয় আপনাকেই।</p></article>
+        <article class="prob"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><h3>ওয়েবসাইট মানেই মাসের পর মাস</h3><p>এজেন্সি দেরি করে, বাজেট বাড়ায়। শেষে যা হাতে আসে, সেটা চালাতে আবার আলাদা লোক লাগে।</p></article>
+        <article class="prob"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 5.1A9.8 9.8 0 0 1 12 5c5 0 9 5 9 7a10 10 0 0 1-2.4 3.4M6.6 6.6C4.4 8 3 10.3 3 12c0 2 4 7 9 7 1.6 0 3-.4 4.3-1.1"/></svg></span><h3>Ad-এর টাকা অন্ধকারে খরচ হয়</h3><p>Pixel ছাড়া ফেসবুক জানে না কে আসলে কিনছে। তাই একই বাজেটে অর্ডার আসে কম।</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="money" id="money">
+    <div class="container">
+      <div class="sec-head">
+        <span class="eyebrow">আয়ের হিসাব</span>
+        <h2>এই ওয়েবসাইট কীভাবে আপনার আয় বাড়াবে</h2>
+        <p>কাস্টমার আসা থেকে পার্সেল পৌঁছানো পর্যন্ত পুরো পথটা স্বয়ংক্রিয়।</p>
+      </div>
+      <ol class="flow">
+        <li><span class="n">১</span><h3>Ad দেখে কাস্টমার আসে</h3><p>ফেসবুক Ad থেকে সরাসরি পণ্যের পেজে।</p></li>
+        <li><span class="n">২</span><h3>নিজেই অর্ডার করে</h3><p>দিনরাত ২৪ ঘণ্টা, আপনি ঘুমালেও।</p></li>
+        <li><span class="n">৩</span><h3>ফ্রড চেক হয়</h3><p>কাস্টমারের কুরিয়ার রেকর্ড দেখে আসল অর্ডার আলাদা।</p></li>
+        <li><span class="n">৪</span><h3>এক ক্লিকে কুরিয়ার</h3><p>Steadfast, Pathao বা RedX-এ অর্ডার চলে যায়।</p></li>
+        <li><span class="n">৫</span><h3>পরের Ad আরও সস্তা</h3><p>Pixel ডেটা শিখে ঠিক ক্রেতার কাছে Ad দেখায়।</p></li>
+      </ol>
+      <div class="calc">
+        <div>
+          <span class="lbl">একটা সহজ হিসাব (উদাহরণ)</span>
+          <h3>দিনে মাত্র ৩টা বাড়তি অর্ডারই যথেষ্ট</h3>
+          <p>এই হারে স্টার্টার প্যাকেজের পুরো খরচ উঠে যায় প্রথম ৮ দিনে।</p>
+        </div>
+        <div class="eq num" aria-label="৩ অর্ডার গুণ ৩০০ টাকা গুণ ৩০ দিন সমান ২৭ হাজার টাকা">
+          <span>৩<small>অর্ডার/দিন</small></span>×<span>৳৩০০<small>গড় লাভ</small></span>×<span>৩০<small>দিন</small></span>=<span class="res">৳২৭,০০০<small>মাসে</small></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="container">
+      <div class="sec-head center">
+        <span class="eyebrow">ফিচার</span>
+        <h2>বিক্রির জন্য যা যা লাগে, সব এক জায়গায়</h2>
+        <p>বাংলাদেশের ক্রেতা আর কুরিয়ার সিস্টেম মাথায় রেখে সাজানো।</p>
+      </div>
+      <div class="feats">
+        <article class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg></span><h3>COD ও বিকাশ/নগদ</h3><p>ক্যাশ অন ডেলিভারি থেকে মোবাইল পেমেন্ট, সব চালু।</p></article>
+        <article class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7h11v9H2zM13 10h4l3 3v3h-7z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17" cy="17.5" r="1.6"/></svg></span><h3>কুরিয়ার ইন্টিগ্রেশন</h3><p>Steadfast, Pathao, RedX-এ সরাসরি অর্ডার পাঠান।</p></article>
+        <article class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 3v6c0 4.4-3.2 7.6-7.5 9-4.3-1.4-7.5-4.6-7.5-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></span><h3>ফ্রড চেকার</h3><p>অর্ডার কনফার্মের আগেই কাস্টমারের রিটার্ন রেকর্ড দেখুন।</p></article>
+        <article class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></span><h3>Pixel ও Conversion API</h3><p>Ad-এর প্রতিটা টাকার হিসাব, আরও ভালো টার্গেটিং।</p></article>
+        <article class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span><h3>মোবাইল-ফার্স্ট ডিজাইন</h3><p>৯০% ক্রেতা ফোন থেকে কেনে, তাই ফোনেই সবচেয়ে সুন্দর।</p></article>
+        <article class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg></span><h3>বাংলা ও ইংরেজি</h3><p>ক্রেতা যে ভাষায় স্বচ্ছন্দ, সেভাবেই দোকান দেখবে।</p></article>
+        <article class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg></span><h3>সহজ অ্যাডমিন প্যানেল</h3><p>পণ্য যোগ, দাম বদল, অর্ডার দেখা, সব নিজেই পারবেন।</p></article>
+        <article class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.2 11h11l2-8H6.5"/><circle cx="9" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/><path d="M12 8.5v3M12 13.5v.01"/></svg></span><h3>অসম্পূর্ণ অর্ডার ক্যাপচার</h3><p>চেকআউট ছেড়ে যাওয়া ক্রেতার নম্বর রেখে দেয়, ফোন দিয়ে বিক্রি করুন।</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="how" id="how">
+    <div class="container">
+      <div class="sec-head center">
+        <span class="eyebrow">কীভাবে কাজ করে</span>
+        <h2>৬ ধাপে অর্ডার, তারপর শুধু অপেক্ষা</h2>
+      </div>
+      <ol class="steps">
+        <li><span class="n">১</span>প্যাকেজ বাছাই</li>
+        <li><span class="n">২</span>টেমপ্লেট বাছাই</li>
+        <li><span class="n">৩</span>অ্যাড-অন যোগ</li>
+        <li><span class="n">৪</span>পেমেন্ট</li>
+        <li><span class="n">৫</span>তথ্য জমা</li>
+        <li><span class="n">৬</span>কাউন্টডাউন শুরু</li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="pk" id="packages">
+    <div class="container">
+      <div class="sec-head center">
+        <span class="eyebrow">প্যাকেজ</span>
+        <h2>আপনার ব্যবসার মাপে প্যাকেজ</h2>
+        <p>একবার পেমেন্ট। ডোমেইন-হোস্টিং ছাড়া কোনো মাসিক চার্জ নেই।</p>
+      </div>
+      <div class="seg-wrap">
+        <div class="seg" role="group" aria-label="প্ল্যাটফর্ম">
+          <button type="button" id="seg-woo" data-stack="woo" aria-pressed="true">WooCommerce</button>
+          <button type="button" id="seg-laravel" data-stack="laravel" aria-pressed="false">Laravel</button>
+        </div>
+      </div>
+      <div class="packs" id="packs"></div>
+      <p class="pk-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4.5M12 16v.01"/></svg><span>পেমেন্ট গেটওয়ে অ্যাড-অন নিলে ডেলিভারিতে অতিরিক্ত ৪৮ ঘণ্টা যোগ হবে, কারণ গেটওয়ে প্রোভাইডার ডকুমেন্ট যাচাই করতে সাধারণত ৪৮ ঘণ্টা নেয়।</span></p>
+    </div>
+  </section>
+
+  <section class="cta">
+    <div class="container">
+      <div class="cta-box">
+        <div>
+          <h2>আজ অর্ডার করুন, কাল থেকে বিক্রি শুরু</h2>
+          <p>প্রশ্ন থাকলে হোয়াটসঅ্যাপে সরাসরি কথা বলুন।</p>
+        </div>
+        <div class="acts">
+          <a href="#packages" class="btn btn-light">প্যাকেজ বাছুন</a>
+          <a href="https://wa.me/" id="ctaWa" class="btn btn-ghost btn-outline-light" target="_blank" rel="noopener">হোয়াটসঅ্যাপে কথা বলুন</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="f-grid">
+      <div>
+        <img class="logo logo-l" src="assets/logo-light.png" alt="Techill by RedBolt IT"><img class="logo logo-d" src="assets/logo-dark.png" alt="Techill by RedBolt IT">
+        <p>বাংলাদেশের ছোট ও মাঝারি অনলাইন ব্যবসার জন্য দ্রুত, সাশ্রয়ী ই-কমার্স ওয়েবসাইট।</p>
+      </div>
+      <div>
+        <h4>লিংক</h4>
+        <ul><li><a href="#features">ফিচার</a></li><li><a href="#how">কীভাবে কাজ করে</a></li><li><a href="#packages">প্যাকেজ</a></li></ul>
+      </div>
+      <div>
+        <h4>যোগাযোগ</h4>
+        <ul><li>হোয়াটসঅ্যাপ: <span id="ftWa">+৮৮০ ১XXX-XXXXXX</span></li><li>ইমেইল: hello@techill.top</li><li>সকাল ১০টা থেকে রাত ১০টা</li></ul>
+      </div>
+    </div>
+    <div class="f-bottom"><span>© ২০২৬ Techill.top</span><span>সব দাম বাংলাদেশি টাকায়</span></div>
+  </div>
+</footer>
+
+<button class="chip" id="chip" type="button" hidden><span class="pulse"></span><span>অর্ডার <span id="chipId"></span> · বাকি <b id="chipTime">০০:০০:০০</b></span></button>
+
+<!-- ===== Checkout ===== -->
+<div class="co" id="co" role="dialog" aria-modal="true" aria-labelledby="coTitle" hidden>
+  <div class="co-top">
+    <div class="container">
+      <div class="co-title" id="coTitle" tabindex="-1">অর্ডার<small id="coSub"></small></div>
+      <button class="x" id="coClose" type="button" aria-label="বন্ধ করুন"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <ol class="stepper" id="stepper"></ol>
+  </div>
+  <div class="co-body" id="coBody">
+    <div class="container">
+      <!-- 1 template -->
+      <div class="panel" data-step="1">
+        <h2>টেমপ্লেট বেছে নিন</h2>
+        <p class="sub">লাইভ ডেমো খুলে দেখে নিন, তারপর পছন্দেরটা সিলেক্ট করুন।</p>
+        <div class="tpls" id="tpls"></div>
+      </div>
+      <!-- 2 addons -->
+      <div class="panel" data-step="2" hidden>
+        <h2>দরকারি অ্যাড-অন যোগ করুন</h2>
+        <p class="sub">প্যাকেজে যা আগে থেকেই আছে, সেগুলো "প্যাকেজে আছে" লেখা। সবই ঐচ্ছিক।</p>
+        <div class="groups" id="groups"></div>
+      </div>
+      <!-- 3 payment -->
+      <div class="panel" data-step="3" hidden>
+        <h2>পেমেন্ট করুন</h2>
+        <p class="sub">পেমেন্ট আমাদের টিম ম্যানুয়ালি যাচাই করবে।</p>
+        <div class="pay">
+          <div class="card">
+            <h3>অর্ডার সারাংশ</h3>
+            <dl class="facts" id="payFacts"></dl>
+            <ul class="lines" id="payLines"></ul>
+            <div class="tot"><span>মোট</span><b id="payTotal">৳০</b></div>
+          </div>
+          <div class="card">
+            <h3>পেমেন্ট মাধ্যম</h3>
+            <div class="methods" id="methods">
+              <button type="button" class="method" data-m="bKash" aria-pressed="true">বিকাশ</button>
+              <button type="button" class="method" data-m="Nagad" aria-pressed="false">নগদ</button>
+              <button type="button" class="method" data-m="Rocket" aria-pressed="false">রকেট</button>
+            </div>
+            <div class="paybox">
+              <ol>
+                <li>আপনার <b id="mName">বিকাশ</b> অ্যাপ থেকে নিচের নম্বরে <b>Send Money</b> করুন</li>
+                <li>পরিমাণ: <b class="num" id="mAmt">৳০</b></li>
+                <li>Transaction ID নিচে লিখুন</li>
+              </ol>
+              <div class="copyrow"><b id="mNum">01XXXXXXXXX</b><button type="button" class="btn btn-ghost btn-sm" id="copyNum">কপি</button></div>
+            </div>
+            <div class="fgrid" style="grid-template-columns:1fr">
+              <div class="f" id="f-sender"><label for="paySender">যে নম্বর থেকে পাঠিয়েছেন <span class="req">*</span></label><input type="tel" id="paySender" inputmode="tel" placeholder="01XXXXXXXXX" autocomplete="tel"><span class="msg"></span></div>
+              <div class="f" id="f-trx"><label for="payTrx">Transaction ID <span class="req">*</span></label><input type="text" id="payTrx" placeholder="যেমন: 9JK7XQ2LMP" autocomplete="off"><span class="msg"></span></div>
+              <label class="check" id="f-agree"><input type="checkbox" id="payAgree"><span>আমি বুঝেছি, সব তথ্য জমা দেওয়ার পর থেকে ডেলিভারি সময় গোনা শুরু হবে।</span></label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- 4 info -->
+      <div class="panel" data-step="4" hidden>
+        <div class="form-head">
+          <div><h2>আপনার ব্যবসার তথ্য দিন</h2><p class="sub" style="margin:6px 0 0">এই ফর্ম জমা দিলেই কাউন্টডাউন শুরু হবে।</p></div>
+        </div>
+        <form id="infoForm" novalidate>
+          <div class="fgrid">
+            <div class="f" data-req><label for="i-name">অ্যাডমিনের নাম <span class="req">*</span></label><input type="text" id="i-name" name="admin_name" autocomplete="name"><span class="msg"></span></div>
+            <div class="f" data-req data-type="email"><label for="i-email">ইমেইল <span class="req">*</span> <small>(অ্যাডমিন লগইন যাবে)</small></label><input type="email" id="i-email" name="email" autocomplete="email"><span class="msg"></span></div>
+            <div class="f" id="f-pass" data-type="pass"><label for="i-pass">পাসওয়ার্ড <span class="req">*</span> <small>(ড্যাশবোর্ডে লগইনের জন্য, ৮+ অক্ষর)</small></label><input type="password" id="i-pass" name="password" autocomplete="new-password" minlength="8"><span class="hint">আগে অ্যাকাউন্ট থাকলে সেই পাসওয়ার্ডটাই দিন।</span><span class="msg"></span></div>
+            <p class="f full hint" id="acctNote" hidden></p>
+            <div class="f" data-req data-type="phone"><label for="i-wa">হোয়াটসঅ্যাপ নম্বর <span class="req">*</span></label><input type="tel" id="i-wa" name="whatsapp" inputmode="tel" placeholder="01XXXXXXXXX"><span class="msg"></span></div>
+            <div class="f" data-req data-type="phone"><label for="i-phone">ফোন নম্বর <span class="req">*</span> <small>(ওয়েবসাইটে দেখাবে)</small></label><input type="tel" id="i-phone" name="phone" inputmode="tel" placeholder="01XXXXXXXXX"><span class="msg"></span></div>
+            <div class="f" data-type="url"><label for="i-fb">ফেসবুক পেজের লিংক</label><input type="url" id="i-fb" name="fb_page" placeholder="https://facebook.com/yourpage"><span class="msg"></span></div>
+            <div class="f"><label for="i-addr">ঠিকানা <small>(ওয়েবসাইটে দেখাবে)</small></label><input type="text" id="i-addr" name="address" autocomplete="street-address"><span class="msg"></span></div>
+            <div class="f full"><label for="i-logo">লোগো <small>(PNG/JPG/SVG, না থাকলে খালি রাখুন)</small></label><div class="drop"><input type="file" id="i-logo" name="logo" accept="image/png,image/jpeg,image/svg+xml,image/webp"></div><span class="msg"></span></div>
+            <div class="f full" data-req><label for="i-intro">ব্যবসার পরিচিতি <span class="req">*</span></label><textarea id="i-intro" name="business_intro" placeholder="কী বিক্রি করেন, কাদের জন্য, ডেলিভারি চার্জ কত, রিটার্ন পলিসি কী"></textarea><span class="msg"></span></div>
+            <div class="f full" data-req data-type="file"><div class="csvbar"><label for="i-csv">প্রোডাক্ট CSV ফাইল <span class="req">*</span></label><button type="button" class="btn btn-ghost btn-sm" id="demoCsv">ডেমো CSV ডাউনলোড</button></div><div class="drop"><input type="file" id="i-csv" name="product_csv" accept=".csv,text/csv"></div><span class="hint" id="csvHint">ডেমো ফাইলের কলাম ঠিক রেখে আপনার প্রোডাক্ট বসান। ছবি Google Drive-এ রেখে লিংক দিন।</span><span class="msg"></span></div>
+            <div class="f full"><label for="i-more">অতিরিক্ত তথ্য</label><textarea id="i-more" name="additional_info" placeholder="রং, ফন্ট, পছন্দের কোনো ওয়েবসাইট, বিশেষ কোনো চাহিদা"></textarea></div>
+          </div>
+          <p class="err" id="formErr" role="alert"></p>
+        </form>
+      </div>
+      <!-- 5 countdown -->
+      <div class="panel" data-step="5" hidden>
+        <div class="done-wrap">
+          <span class="ok-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span>
+          <h2>তথ্য জমা হয়েছে, কাউন্টডাউন শুরু</h2>
+          <p>অর্ডার <b id="dId"></b>। আমরা কাজ শুরু করে দিয়েছি। ড্যাশবোর্ডে প্রোজেক্টের অগ্রগতি দেখতে, ডেভেলপারের সাথে চ্যাট করতে আর নতুন ফাইল পাঠাতে পারবেন।</p>
+          <div class="clock" aria-live="off">
+            <div><b id="cH">০০</b><span>ঘণ্টা</span></div>
+            <div><b id="cM">০০</b><span>মিনিট</span></div>
+            <div><b id="cS">০০</b><span>সেকেন্ড</span></div>
+          </div>
+          <div class="bar" aria-hidden="true"><i id="cBar"></i></div>
+          <p class="deadline">ডেলিভারি সময়: <b id="dWhen"></b></p>
+          <ol class="timeline" id="timeline">
+            <li class="d"><i></i>তথ্য জমা</li>
+            <li class="a"><i></i>সেটআপ চলছে</li>
+            <li><i></i>রিভিউ</li>
+            <li><i></i>ডেলিভারি</li>
+          </ol>
+          <div class="card done-card"><dl class="facts" id="dFacts" style="margin:0"></dl></div>
+          <div class="hero-cta" style="margin:0;justify-content:center">
+            <a class="btn btn-primary" id="dDash" href="dashboard.html">ড্যাশবোর্ডে প্রোজেক্ট দেখুন</a>
+            <a class="btn btn-ghost" id="dWa" href="https://wa.me/" target="_blank" rel="noopener">হোয়াটসঅ্যাপে জানান</a>
+            <button class="btn btn-ghost" type="button" id="dHome">হোম পেজে ফিরুন</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="co-bar" id="coBar">
+    <div class="container">
+      <div class="co-sum"><b id="barTotal">৳০</b><small>ডেলিভারি <span class="hrs" id="barHrs">২৪ ঘণ্টা</span></small></div>
+      <div class="co-acts">
+        <button class="btn btn-ghost" type="button" id="backBtn">পেছনে</button>
+        <button class="btn btn-primary" type="button" id="nextBtn">পরের ধাপ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/api.js"></script>
+<script>
+/* ================= CONFIG: এখানে বদলান ================= */
+const WHATSAPP_NUMBER = "";           // যেমন "8801XXXXXXXXX"
+const PAY_NUMBERS = { bKash:"01XXXXXXXXX", Nagad:"01XXXXXXXXX", Rocket:"01XXXXXXXXX" };
+
+const STACKS = {
+  woo: {
+    name:"WooCommerce", domainPrice:3500,
+    templates:[
+      {code:"W1", name:"ফ্যাশন হাউস", niche:"পোশাক, জুতা, ব্যাগ", demo:"https://demo.techill.top/w1", t:"#c2410c", t2:"#fde3d3"},
+      {code:"W2", name:"গ্যাজেট জোন", niche:"মোবাইল এক্সেসরিজ, গ্যাজেট", demo:"https://demo.techill.top/w2", t:"#1d4ed8", t2:"#dbe5fb"},
+      {code:"W3", name:"বিউটি কর্নার", niche:"কসমেটিকস, স্কিনকেয়ার", demo:"https://demo.techill.top/w3", t:"#be185d", t2:"#f9dce9"},
+      {code:"W4", name:"ফ্রেশ বাজার", niche:"গ্রোসারি, অর্গানিক ফুড", demo:"https://demo.techill.top/w4", t:"#15803d", t2:"#d9f0e0"},
+      {code:"W5", name:"হোম ডেকর", niche:"ঘর সাজানো, লাইফস্টাইল", demo:"https://demo.techill.top/w5", t:"#7c5a2e", t2:"#efe4d3"}
+    ],
+    packs:[
+      {name:"স্টার্টার", en:"Starter", tag:"প্রথম অনলাইন দোকানের জন্য", price:6999, products:15, hours:24,
+       feat:["রেডি টেমপ্লেট সেটআপ ও ব্র্যান্ডিং","ক্যাশ অন ডেলিভারি (COD)","ম্যানুয়াল বিকাশ/নগদ পেমেন্ট","বাংলা ও ইংরেজি, মোবাইল-বান্ধব","হোয়াটসঅ্যাপ অর্ডার বাটন","৭ দিন সাপোর্ট"], incl:[], inclQty:{}},
+      {name:"বিজনেস", en:"Business", tag:"নিয়মিত অর্ডার আসা পেজের জন্য", price:11999, products:40, hours:48, popular:true,
+       feat:["+স্টার্টারের সব কিছু","১ বছরের .com ডোমেইন ও হোস্টিং","১টা কুরিয়ার API","ফেসবুক Pixel সেটআপ","অর্ডার ইমেইল নোটিফিকেশন","১৫ দিন সাপোর্ট"], incl:["domain","pixel"], inclQty:{courier:1}},
+      {name:"প্রো", en:"Pro", tag:"Ad চালিয়ে বড় হতে চাইলে", price:17999, products:80, hours:72,
+       feat:["+বিজনেসের সব কিছু","১টা পেমেন্ট গেটওয়ে","Pixel + Conversion API","ফ্রড চেকার","অসম্পূর্ণ অর্ডার ক্যাপচার","স্পিড অপটিমাইজেশন","১টা ল্যান্ডিং পেজ","৩০ দিন সাপোর্ট"], incl:["domain","pixel","capi","gateway","fraud","incomplete"], inclQty:{courier:1, landing:1}}
+    ]
+  },
+  laravel: {
+    name:"Laravel", domainPrice:6000,
+    templates:[
+      {code:"L1", name:"মেগা স্টোর", niche:"মাল্টি-ক্যাটাগরি শপ", demo:"https://demo.techill.top/l1", t:"#0f766e", t2:"#d3eeeb"},
+      {code:"L2", name:"টেক বাজার", niche:"ইলেকট্রনিক্স", demo:"https://demo.techill.top/l2", t:"#3730a3", t2:"#dfdff7"},
+      {code:"L3", name:"ফ্যাশন প্রো", niche:"ব্র্যান্ডেড পোশাক", demo:"https://demo.techill.top/l3", t:"#9f1239", t2:"#f6dbe1"},
+      {code:"L4", name:"সুপারশপ", niche:"দৈনন্দিন বাজার", demo:"https://demo.techill.top/l4", t:"#4d7c0f", t2:"#e3efd1"},
+      {code:"L5", name:"গ্লো বিউটি", niche:"বিউটি ও পার্সোনাল কেয়ার", demo:"https://demo.techill.top/l5", t:"#86198f", t2:"#f2dcf4"}
+    ],
+    packs:[
+      {name:"লাইট", en:"Lite", tag:"কাস্টম প্যানেলে ছোট শুরু", price:12999, products:25, hours:24,
+       feat:["নিজস্ব Laravel স্ক্রিপ্ট","ব্র্যান্ডিং ও অ্যাডমিন প্যানেল","COD ও ম্যানুয়াল বিকাশ","মোবাইল-বান্ধব ডিজাইন","৭ দিন সাপোর্ট"], incl:[], inclQty:{}},
+      {name:"গ্রোথ", en:"Growth", tag:"বাড়ন্ত ব্র্যান্ডের জন্য", price:19999, products:60, hours:48, popular:true,
+       feat:["+লাইটের সব কিছু","১ বছরের ডোমেইন ও VPS হোস্টিং","১টা পেমেন্ট গেটওয়ে","১টা কুরিয়ার API","Pixel + Conversion API","অর্ডার SMS নোটিফিকেশন","১৫ দিন সাপোর্ট"], incl:["domain","gateway","pixel","capi","sms"], inclQty:{courier:1}},
+      {name:"আল্টিমেট", en:"Ultimate", tag:"ওয়েবসাইট + অ্যাপ, পুরো সেটআপ", price:29999, products:120, hours:72,
+       feat:["+গ্রোথের সব কিছু","অ্যান্ড্রয়েড অ্যাপ","ফ্রড চেকার","কুপন ও লয়্যালটি সিস্টেম","স্টাফ রোল ও পারমিশন","৩০ দিন সাপোর্ট"], incl:["domain","gateway","pixel","capi","sms","fraud","app"], inclQty:{courier:1}}
+    ]
+  }
+};
+const GROUPS = ["পেমেন্ট ও অর্ডার","মার্কেটিং","ডিজাইন","হোস্টিং ও অন্যান্য"];
+const ADDONS = [
+  {key:"bkash", g:0, name:"বিকাশ/নগদ মার্চেন্ট API", price:3500, gw:true},
+  {key:"gateway", g:0, name:"SSLCommerz / aamarPay / ShurjoPay", price:3000, gw:true},
+  {key:"courier", g:0, name:"কুরিয়ার API", note:"Steadfast, Pathao বা RedX, প্রতিটা", price:2000, qty:true},
+  {key:"fraud", g:0, name:"ফ্রড চেকার", note:"কাস্টমারের কুরিয়ার সাকসেস রেট দেখায়", price:2000},
+  {key:"incomplete", g:0, name:"অসম্পূর্ণ অর্ডার ক্যাপচার", price:1500},
+  {key:"sms", g:0, name:"অর্ডার SMS ও OTP", note:"SMS খরচ আলাদা", price:2000},
+  {key:"pixel", g:1, name:"ফেসবুক Pixel", price:1000},
+  {key:"capi", g:1, name:"Conversion API", note:"Pixel-এর সাথে সার্ভার-সাইড ট্র্যাকিং", price:2000, requires:"pixel"},
+  {key:"ga4", g:1, name:"GA4 ও Google Tag Manager", price:1500},
+  {key:"catalog", g:1, name:"FB/Instagram ক্যাটালগ সিঙ্ক", price:1500},
+  {key:"landing", g:1, name:"সিঙ্গেল প্রোডাক্ট ল্যান্ডিং পেজ", note:"প্রতি পেজ", price:2500, qty:true},
+  {key:"seo", g:1, name:"বেসিক SEO সেটআপ", price:2000},
+  {key:"logo", g:2, name:"লোগো ডিজাইন", price:1500},
+  {key:"banner", g:2, name:"ব্যানার ও সোশ্যাল কভার সেট", price:1200},
+  {key:"domain", g:3, name:"ডোমেইন ও হোস্টিং (১ বছর)", price:null},
+  {key:"products25", g:3, name:"অতিরিক্ত ২৫টা প্রোডাক্ট আপলোড", price:500, qty:true},
+  {key:"app", g:3, name:"অ্যান্ড্রয়েড অ্যাপ", note:"Play Store পাবলিশ সহ", price:10000, only:"laravel"}
+];
+const GATEWAY_EXTRA_HOURS = 48;
+const DEMO_CSV = "﻿" + [
+  "name,category,regular_price,sale_price,sku,stock,sizes,colors,description,image_links",
+  '"কটন পাঞ্জাবি","পুরুষ > পাঞ্জাবি",1850,1490,PJ-001,25,"M|L|XL","সাদা|কালো","১০০% কটন, আরামদায়ক কাপড়","https://drive.google.com/your-image-link"',
+  '"লেদার ওয়ালেট","এক্সেসরিজ > ওয়ালেট",950,790,WL-002,40,"","ব্রাউন|কালো","খাঁটি চামড়া, ৬টা কার্ড স্লট","https://drive.google.com/your-image-link"',
+  '"ভিটামিন সি সিরাম","বিউটি > স্কিনকেয়ার",1200,,SR-003,60,"30ml","","উজ্জ্বল ত্বকের জন্য","https://drive.google.com/your-image-link"'
+].join("\r\n");
+/* ======================================================== */
+
+const BN = s => String(s).replace(/\d/g, d => "০১২৩৪৫৬৭৮৯"[d]);
+const tk = n => "৳" + BN(Number(n).toLocaleString("en-IN"));
+const pad = n => BN(String(n).padStart(2,"0"));
+const $ = id => document.getElementById(id);
+const api = window.TechillAPI;
+const store = {
+  get(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
+const PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+const CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+
+/* ---------- theme ---------- */
+(function(){
+  const saved = store.get("techill_theme");
+  if (saved === "light" || saved === "dark") document.documentElement.dataset.theme = saved;
+  $("themeBtn").addEventListener("click", () => {
+    const cur = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    const next = cur === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = next; store.set("techill_theme", next);
+  });
+})();
+addEventListener("scroll", () => $("hdr").classList.toggle("scrolled", scrollY > 8), {passive:true});
+const waBase = WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}` : "https://wa.me/";
+$("ctaWa").href = waBase;
+if (WHATSAPP_NUMBER) $("ftWa").textContent = "+" + BN(WHATSAPP_NUMBER);
+
+/* ---------- packages ---------- */
+let viewStack = "woo";
+function renderPacks(){
+  document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.stack === viewStack)));
+  $("packs").innerHTML = STACKS[viewStack].packs.map((p,i) => `
+    <article class="pack ${p.popular?"pop":""}">
+      ${p.popular ? '<span class="pop-badge">সবচেয়ে জনপ্রিয়</span>' : ""}
+      <div><div class="pack-name"><h3>${p.name}</h3><small>${p.en}</small></div><p class="tag">${p.tag}</p></div>
+      <div class="price">${tk(p.price)}<small>একবার</small></div>
+      <div class="meta">
+        <div><b>${BN(p.hours)} ঘণ্টা</b><span>ডেলিভারি</span></div>
+        <div><b>${BN(p.products)}টা</b><span>প্রোডাক্ট আপলোড</span></div>
+      </div>
+      <ul class="flist">${p.feat.map(f => f.startsWith("+") ? `<li class="inh">${PLUS}<span>${f.slice(1)}</span></li>` : `<li>${CHECK}<span>${f}</span></li>`).join("")}</ul>
+      <button class="btn ${p.popular?"btn-primary":"btn-ghost"}" type="button" id="buy-${viewStack}-${i}" data-i="${i}">এই প্যাকেজ নিন</button>
+    </article>`).join("");
+}
+document.querySelector(".seg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return; viewStack = b.dataset.stack; renderPacks();
+});
+$("packs").addEventListener("click", e => {
+  const b = e.target.closest("button[data-i]"); if (!b) return; openCheckout(viewStack, +b.dataset.i);
+});
+
+/* ---------- checkout state ---------- */
+const st = {stack:"woo", pack:1, tpl:null, add:{}, method:"bKash", step:1, maxStep:1};
+const S = () => STACKS[st.stack];
+const P = () => S().packs[st.pack];
+const included = k => P().incl.includes(k);
+const inclQty = k => P().inclQty[k] || 0;
+const priceOf = a => a.key === "domain" ? S().domainPrice : a.price;
+const avail = a => !a.only || a.only === st.stack;
+const STEPS = ["টেমপ্লেট","অ্যাড-অন","পেমেন্ট","তথ্য","কাউন্টডাউন"];
+
+function compute(){
+  const p = P();
+  const lines = [{label:`${p.name} প্যাকেজ`, amt:p.price}];
+  let gw = false;
+  for (const a of ADDONS){
+    if (!avail(a)) continue;
+    const v = st.add[a.key]; if (!v) continue;
+    if (a.qty) lines.push({label:`${a.name} × ${BN(v)}`, amt:priceOf(a)*v});
+    else if (!included(a.key)) { lines.push({label:a.name, amt:priceOf(a)}); if (a.gw) gw = true; }
+  }
+  const total = lines.reduce((s,l) => s + l.amt, 0);
+  const hours = p.hours + (gw ? GATEWAY_EXTRA_HOURS : 0);
+  const products = p.products + 25 * (st.add.products25 || 0);
+  return {p, lines, total, hours, gw, products, tpl: st.tpl != null ? S().templates[st.tpl] : null};
+}
+function cleanup(){
+  for (const k of Object.keys(st.add)){
+    const a = ADDONS.find(x => x.key === k);
+    if (!a || !avail(a) || (!a.qty && included(k)) || !st.add[k]) delete st.add[k];
+  }
+}
+
+function openCheckout(stack, pack){
+  if (st.step === 5){ $("infoForm").reset(); syncAccount(); $("paySender").value = ""; $("payTrx").value = ""; $("payAgree").checked = false; st.tpl = null; st.add = {}; st.step = 1; st.maxStep = 1; }
+  if (st.stack !== stack || st.pack !== pack){ st.tpl = null; st.add = {}; st.step = 1; st.maxStep = 1; }
+  st.stack = stack; st.pack = pack;
+  $("co").hidden = false; document.body.style.overflow = "hidden";
+  go(st.step);
+  $("coTitle").focus();
+}
+function closeCheckout(){ $("co").hidden = true; document.body.style.overflow = ""; }
+$("coClose").addEventListener("click", closeCheckout);
+addEventListener("keydown", e => { if (e.key === "Escape" && !$("co").hidden) closeCheckout(); });
+
+function renderHead(){
+  const c = compute();
+  $("coTitle").firstChild.textContent = `${c.p.name} প্যাকেজ`;
+  $("coSub").textContent = `${S().name} · ${tk(c.p.price)}`;
+  $("stepper").innerHTML = STEPS.map((s,i) => {
+    const n = i+1, cls = n === st.step ? "on" : (n < st.maxStep || n < st.step ? "done" : "");
+    const can = n <= st.maxStep && st.step !== 5 && n < 5;
+    return `<li class="${cls}"><button type="button" data-go="${n}" ${can?"":"disabled"} aria-current="${n===st.step?"step":"false"}"><span class="n">${cls==="done"?"✓":BN(n)}</span><span class="lb">${s}</span></button></li>`;
+  }).join("");
+  $("barTotal").textContent = tk(c.total);
+  $("barHrs").textContent = `${BN(c.hours)} ঘণ্টা` + (c.gw ? " (গেটওয়ে যাচাই সহ)" : "");
+  $("backBtn").hidden = st.step === 1;
+  $("nextBtn").textContent = st.step === 3 ? "পেমেন্ট করেছি, এগিয়ে যান" : st.step === 4 ? "জমা দিন ও কাউন্টডাউন শুরু" : "পরের ধাপ";
+  $("coBar").hidden = st.step === 5;
+}
+$("stepper").addEventListener("click", e => { const b = e.target.closest("button[data-go]"); if (b && !b.disabled) go(+b.dataset.go); });
+
+function go(n){
+  st.step = n; st.maxStep = Math.max(st.maxStep, n);
+  document.querySelectorAll(".panel").forEach(p => p.hidden = +p.dataset.step !== n);
+  if (n === 1) renderTemplates();
+  if (n === 2) renderAddons();
+  if (n === 3) renderPayment();
+  renderHead();
+  $("coBody").scrollTop = 0;
+}
+
+/* step 1 */
+function renderTemplates(){
+  $("tpls").innerHTML = S().templates.map((t,i) => `
+    <div class="tpl ${st.tpl===i?"sel":""}" data-i="${i}" role="radio" aria-checked="${st.tpl===i}" tabindex="0" id="tpl-${t.code}">
+      <div class="thumb" style="--t:${t.t};--t2:${t.t2}" aria-hidden="true"><i class="a"></i><i class="b"></i><span class="c"><i></i><i></i><i></i><i></i></span></div>
+      <div class="tpl-info"><b>${t.name}</b><small>${t.niche}</small></div>
+      <div class="tpl-acts"><a href="${t.demo}" target="_blank" rel="noopener">লাইভ ডেমো ↗</a><span class="radio-dot"></span></div>
+    </div>`).join("");
+}
+function pickTpl(el){ st.tpl = +el.dataset.i; renderTemplates(); renderHead(); }
+$("tpls").addEventListener("click", e => { if (e.target.closest("a")) return; const el = e.target.closest(".tpl"); if (el) pickTpl(el); });
+$("tpls").addEventListener("keydown", e => { const el = e.target.closest(".tpl"); if (el && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); pickTpl(el); $("tpl-"+S().templates[st.tpl].code).focus(); } });
+
+/* step 2 */
+function renderAddons(){
+  $("groups").innerHTML = GROUPS.map((g,gi) => {
+    const rows = ADDONS.filter(a => a.g === gi && avail(a)).map(a => {
+      const inc = !a.qty && included(a.key);
+      const iq = a.qty ? inclQty(a.key) : 0;
+      let note = a.note ? `<span class="nt">${a.note}</span>` : "";
+      if (iq) note = `<span class="nt">${BN(iq)}টা প্যাকেজে আছে, এখানে অতিরিক্ত</span>`;
+      if (a.key === "domain" && st.stack === "laravel") note = `<span class="nt">VPS হোস্টিং</span>`;
+      if (a.gw && !inc) note = `<span class="nt w">+${BN(GATEWAY_EXTRA_HOURS)} ঘণ্টা (প্রোভাইডারের ডকুমেন্ট যাচাই)</span>`;
+      const id = "add-" + a.key;
+      let right;
+      if (inc) right = `<span class="incl">প্যাকেজে আছে</span>`;
+      else if (a.qty){ const v = st.add[a.key] || 0;
+        right = `<span class="pr">${tk(priceOf(a))}</span><span class="stp"><button type="button" data-k="${a.key}" data-d="-1" aria-label="${a.name} কমান">−</button><output id="${id}">${BN(v)}</output><button type="button" data-k="${a.key}" data-d="1" aria-label="${a.name} বাড়ান">+</button></span>`; }
+      else right = `<span class="pr">${tk(priceOf(a))}${a.key==="domain"?"/বছর":""}</span><input type="checkbox" class="sw" id="${id}" data-k="${a.key}" ${st.add[a.key]?"checked":""}>`;
+      return `<div class="row"><label class="nm" ${inc||a.qty?"":`for="${id}"`}>${a.name}${note}</label><div class="ctl">${right}</div></div>`;
+    }).join("");
+    return `<div class="group"><h3>${g}</h3>${rows}</div>`;
+  }).join("");
+}
+$("groups").addEventListener("change", e => {
+  const k = e.target.dataset.k; if (!k) return;
+  st.add[k] = e.target.checked;
+  if (k === "capi" && e.target.checked && !included("pixel")) st.add.pixel = true;
+  if (k === "pixel" && !e.target.checked && !included("capi")) delete st.add.capi;
+  cleanup(); renderAddons(); renderHead();
+  $("add-"+k)?.focus();
+});
+$("groups").addEventListener("click", e => {
+  const b = e.target.closest("button[data-d]"); if (!b) return;
+  const k = b.dataset.k; st.add[k] = Math.max(0, Math.min(20, (st.add[k] || 0) + +b.dataset.d));
+  cleanup(); renderAddons(); renderHead();
+  document.querySelector(`button[data-k="${k}"][data-d="${b.dataset.d}"]`)?.focus();
+});
+
+/* step 3 */
+const MNAME = {bKash:"বিকাশ", Nagad:"নগদ", Rocket:"রকেট"};
+function factsHTML(c){
+  return `<dt>প্ল্যাটফর্ম</dt><dd>${S().name}</dd><dt>টেমপ্লেট</dt><dd>${c.tpl ? c.tpl.name + " · " + c.tpl.code : "-"}</dd><dt>প্রোডাক্ট আপলোড</dt><dd>${BN(c.products)}টা</dd><dt>ডেলিভারি</dt><dd>${BN(c.hours)} ঘণ্টা</dd>`;
+}
+function renderPayment(){
+  const c = compute();
+  $("payFacts").innerHTML = factsHTML(c);
+  $("payLines").innerHTML = c.lines.map(l => `<li><span>${l.label}</span><span>${tk(l.amt)}</span></li>`).join("");
+  $("payTotal").textContent = tk(c.total);
+  $("mAmt").textContent = tk(c.total);
+  document.querySelectorAll(".method").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.m === st.method)));
+  $("mName").textContent = MNAME[st.method];
+  $("mNum").textContent = PAY_NUMBERS[st.method];
+}
+$("methods").addEventListener("click", e => { const b = e.target.closest(".method"); if (b){ st.method = b.dataset.m; renderPayment(); } });
+$("copyNum").addEventListener("click", async () => {
+  const t = PAY_NUMBERS[st.method];
+  try { await navigator.clipboard.writeText(t); $("copyNum").textContent = "কপি হয়েছে"; }
+  catch(e){ const r = document.createRange(); r.selectNodeContents($("mNum")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); $("copyNum").textContent = "সিলেক্ট করা হয়েছে"; }
+  setTimeout(() => $("copyNum").textContent = "কপি", 1800);
+});
+
+/* validation helpers */
+const phoneOK = v => /^(?:\+?88)?01[3-9]\d{8}$/.test(v.replace(/[\s-]/g,"").replace(/[০-৯]/g, d => "০১২৩৪৫৬৭৮৯".indexOf(d)));
+function setErr(wrap, msg){ wrap.classList.toggle("bad", !!msg); const m = wrap.querySelector(".msg"); if (m) m.textContent = msg || ""; }
+
+function validStep(n){
+  if (n === 1){
+    if (st.tpl == null){ toastErr("একটা টেমপ্লেট সিলেক্ট করুন।"); return false; }
+  }
+  if (n === 3){
+    let ok = true;
+    const s = $("paySender").value.trim(), t = $("payTrx").value.trim();
+    if (!phoneOK(s)){ setErr($("f-sender"), "সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন।"); ok = false; } else setErr($("f-sender"));
+    if (!/^[A-Za-z0-9]{8,12}$/.test(t)){ setErr($("f-trx"), "Transaction ID ৮ থেকে ১২ অক্ষরের হয়, আবার দেখে লিখুন।"); ok = false; } else setErr($("f-trx"));
+    if (!$("payAgree").checked){ toastErr("শর্তে টিক দিন।"); ok = false; }
+    if (!ok){ document.querySelector("#f-sender.bad input, #f-trx.bad input")?.focus(); }
+    return ok;
+  }
+  if (n === 4){
+    let first = null;
+    document.querySelectorAll("#infoForm .f").forEach(w => {
+      const inp = w.querySelector("input,textarea"); if (!inp || w.hidden) return;
+      const type = w.dataset.type, req = w.hasAttribute("data-req");
+      const v = inp.type === "file" ? (inp.files[0] ? "1" : "") : inp.value.trim();
+      let msg = "";
+      if (req && !v) msg = "এই ঘরটা পূরণ করুন।";
+      else if (v && type === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) msg = "সঠিক ইমেইল দিন।";
+      else if (v && type === "phone" && !phoneOK(v)) msg = "সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন।";
+      else if (v && type === "url" && !/^https?:\/\/\S+\.\S+/.test(v)) msg = "https:// দিয়ে শুরু হওয়া পুরো লিংক দিন।";
+      else if (type === "pass" && v.length < 8) msg = "পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের দিন।";
+      else if (inp.id === "i-csv" && inp.files[0] && !/\.csv$/i.test(inp.files[0].name)) msg = "শুধু .csv ফাইল দিন।";
+      setErr(w, msg); if (msg && !first) first = inp;
+    });
+    if (first){ first.focus(); $("formErr").textContent = "লাল চিহ্নিত ঘরগুলো ঠিক করুন।"; return false; }
+    $("formErr").textContent = ""; return true;
+  }
+  return true;
+}
+function toastErr(msg){
+  let el = $("stepErr");
+  if (!el){ el = document.createElement("p"); el.id = "stepErr"; el.className = "err"; el.setAttribute("role","alert"); document.querySelector(".co-sum").appendChild(el); }
+  el.textContent = msg; el.style.margin = "2px 0 0"; clearTimeout(el._t); el._t = setTimeout(() => el.textContent = "", 3500);
+}
+
+$("backBtn").addEventListener("click", () => go(Math.max(1, st.step - 1)));
+$("nextBtn").addEventListener("click", async () => {
+  if (!validStep(st.step)) return;
+  if (st.step < 4){ go(st.step + 1); return; }
+  await submitOrder();
+});
+
+/* demo csv */
+$("demoCsv").addEventListener("click", async () => {
+  const filename = "techill-product-demo.csv";
+  let ns = null;
+  if (window.claude && typeof window.claude.use === "function"){ try { ns = await window.claude.use("downloads"); } catch(e){ ns = null; } }
+  if (ns){
+    try { await ns.save({filename, data: DEMO_CSV}); $("csvHint").textContent = "ডেমো ফাইল ডাউনলোড হয়েছে। কলাম ঠিক রেখে প্রোডাক্ট বসান।"; }
+    catch(e){ $("csvHint").textContent = e && e.code === "declined" ? "ডাউনলোড বাতিল করা হয়েছে।" : "এখানে ডাউনলোড করা যাচ্ছে না, হোয়াটসঅ্যাপে ডেমো ফাইল চেয়ে নিন।"; }
+    return;
+  }
+  const url = URL.createObjectURL(new Blob([DEMO_CSV], {type:"text/csv;charset=utf-8"}));
+  const a = document.createElement("a"); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+});
+
+/* submit */
+async function submitOrder(){
+  const c = compute();
+  const btn = $("nextBtn"); btn.disabled = true; btn.textContent = "জমা হচ্ছে...";
+  const fd = new FormData($("infoForm"));
+  if (me){ fd.delete("password"); fd.set("email", me.email); }
+  fd.append("stack", S().name); fd.append("pack", c.p.name); fd.append("template", `${c.tpl.name} · ${c.tpl.code}`);
+  fd.append("lines", JSON.stringify(c.lines)); fd.append("total", c.total); fd.append("hours", c.hours); fd.append("products", c.products);
+  fd.append("pay_method", st.method); fd.append("pay_sender", $("paySender").value.trim()); fd.append("pay_trx", $("payTrx").value.trim());
+  let res;
+  try { res = await api.createOrder(fd); }
+  catch(e){
+    btn.disabled = false; renderHead();
+    if (e.status === 409) setErr($("f-pass"), e.message);
+    $("formErr").textContent = e.message || "জমা দেওয়া যায়নি। ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।";
+    return;
+  }
+  me = res.user; syncAccount();
+  const o = res.order;
+  const order = {
+    id: o.code, oid: o.id, start: o.created * 1000, deadline: o.deadline * 1000, hours: o.hours,
+    stack: o.stack, pack: o.pack, tpl: o.template, total: o.total, products: o.products,
+    lines: o.lines, name: o.info.admin_name, method: o.pay_method, trx: o.pay_trx
+  };
+  store.set("techill_order", order);
+  btn.disabled = false;
+  showDone(order);
+}
+
+/* account: header link + checkout form adapt to the logged-in user */
+let me = null;
+function syncAccount(){
+  $("dashLink").textContent = me ? "ড্যাশবোর্ড" : "লগইন";
+  $("f-pass").hidden = !!me;
+  $("acctNote").hidden = !me;
+  if (me){
+    $("acctNote").textContent = `আপনি ${me.email} দিয়ে লগইন করা আছেন। অর্ডারটা এই অ্যাকাউন্টে যোগ হবে।`;
+    $("i-email").value = me.email; $("i-email").readOnly = true;
+    if (!$("i-name").value) $("i-name").value = me.name;
+  } else $("i-email").readOnly = false;
+}
+api.init().then(u => { me = u; syncAccount(); });
+
+/* step 5: countdown */
+let timer = null;
+function orderText(o){
+  return `আসসালামু আলাইকুম, আমি Techill-এ অর্ডার করেছি।\n\nঅর্ডার: ${o.id}\nনাম: ${o.name}\nপ্ল্যাটফর্ম: ${o.stack}\nপ্যাকেজ: ${o.pack}\nটেমপ্লেট: ${o.tpl}\n` +
+    (o.lines.length > 1 ? "অ্যাড-অন:\n" + o.lines.slice(1).map(l => `- ${l.label}: ${tk(l.amt)}`).join("\n") + "\n" : "") +
+    `মোট: ${tk(o.total)}\nপেমেন্ট: ${MNAME[o.method]} · TrxID ${o.trx}\nডেলিভারি: ${BN(o.hours)} ঘণ্টা`;
+}
+function showDone(o){
+  $("co").hidden = false; document.body.style.overflow = "hidden";
+  st.step = 5; st.maxStep = 5;
+  document.querySelectorAll(".panel").forEach(p => p.hidden = +p.dataset.step !== 5);
+  $("coTitle").firstChild.textContent = `অর্ডার ${o.id}`;
+  $("coSub").textContent = `${o.stack} · ${o.pack}`;
+  $("stepper").innerHTML = STEPS.map((s,i) => `<li class="${i<4?"done":"on"}"><button type="button" disabled><span class="n">${i<4?"✓":BN(5)}</span><span class="lb">${s}</span></button></li>`).join("");
+  $("coBar").hidden = true;
+  $("dId").textContent = o.id;
+  $("dWhen").textContent = new Date(o.deadline).toLocaleString("bn-BD", {weekday:"long", day:"numeric", month:"long", hour:"numeric", minute:"2-digit"});
+  $("dFacts").innerHTML = `<dt>প্ল্যাটফর্ম</dt><dd>${o.stack}</dd><dt>প্যাকেজ</dt><dd>${o.pack}</dd><dt>টেমপ্লেট</dt><dd>${o.tpl}</dd><dt>প্রোডাক্ট আপলোড</dt><dd>${BN(o.products)}টা</dd><dt>মোট পেমেন্ট</dt><dd>${tk(o.total)}</dd>`;
+  $("dWa").href = `${waBase}?text=${encodeURIComponent(orderText(o))}`;
+  $("dDash").href = o.oid ? `dashboard.html#o=${o.oid}` : "dashboard.html";
+  tick(o); clearInterval(timer); timer = setInterval(() => tick(o), 1000);
+  $("coBody").scrollTop = 0; $("coTitle").focus();
+}
+function remain(o){
+  const ms = Math.max(0, o.deadline - Date.now()), s = Math.floor(ms/1000);
+  return {ms, h:Math.floor(s/3600), m:Math.floor(s%3600/60), s:s%60};
+}
+function tick(o){
+  const r = remain(o);
+  $("cH").textContent = pad(r.h); $("cM").textContent = pad(r.m); $("cS").textContent = pad(r.s);
+  const frac = 1 - r.ms / (o.hours * 3600e3);
+  $("cBar").style.width = (Math.min(1, Math.max(0, frac)) * 100).toFixed(2) + "%";
+  const stage = r.ms === 0 ? 3 : frac > .85 ? 2 : 1;
+  [...$("timeline").children].forEach((li,i) => li.className = i < stage ? "d" : i === stage ? "a" : "");
+  if (r.ms === 0) { $("timeline").lastElementChild.className = "d"; }
+}
+$("dHome").addEventListener("click", () => { closeCheckout(); clearInterval(timer); updateChip(); });
+
+/* floating chip for an active order */
+let chipTimer = null;
+function updateChip(){
+  const o = store.get("techill_order");
+  clearInterval(chipTimer);
+  if (!o || o.deadline <= Date.now()){ $("chip").hidden = true; return; }
+  $("chip").hidden = false; $("chipId").textContent = o.id;
+  const f = () => { const r = remain(o); $("chipTime").textContent = `${pad(r.h)}:${pad(r.m)}:${pad(r.s)}`; if (!r.ms){ clearInterval(chipTimer); $("chip").hidden = true; } };
+  f(); chipTimer = setInterval(f, 1000);
+}
+$("chip").addEventListener("click", () => { const o = store.get("techill_order"); if (o) showDone(o); });
+
+renderPacks();
+updateChip();
+</script>
+
+</body>
+</html>
