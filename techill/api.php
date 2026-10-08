@@ -22,7 +22,7 @@ const TZ_COUNTRY = ['Asia/Dhaka' => ['BD', 'Bangladesh'], 'Asia/Kolkata' => ['IN
     'Asia/Dubai' => ['AE', 'United Arab Emirates'], 'Asia/Riyadh' => ['SA', 'Saudi Arabia'], 'Asia/Qatar' => ['QA', 'Qatar'],
     'Asia/Kuwait' => ['KW', 'Kuwait'], 'Asia/Muscat' => ['OM', 'Oman'], 'Asia/Kuala_Lumpur' => ['MY', 'Malaysia'],
     'Asia/Singapore' => ['SG', 'Singapore'], 'Europe/London' => ['GB', 'United Kingdom'], 'Europe/Rome' => ['IT', 'Italy']];
-const ORDER_SELECT = 'SELECT o.*, c.name c_name, c.email c_email, c.phone c_phone, d.name d_name FROM orders o JOIN users c ON c.id = o.user_id LEFT JOIN users d ON d.id = o.developer_id';
+const ORDER_SELECT = 'SELECT o.*, c.name c_name, c.email c_email, c.phone c_phone, c.avatar c_avatar, d.name d_name, d.avatar d_avatar FROM orders o JOIN users c ON c.id = o.user_id LEFT JOIN users d ON d.id = o.developer_id';
 
 try {
     switch ($action) {
@@ -40,7 +40,7 @@ try {
         case 'info_update':  $isPost || fail('POST only', 405); info_update();
         case 'admin_update': $isPost || fail('POST only', 405); staff_update();
         case 'track':        $isPost || fail('POST only', 405); track();
-        case 'catalog':      out(['catalog' => catalog(), 'payments' => public_payments()]);
+        case 'catalog':      out(['catalog' => catalog(), 'payments' => public_payments(), 'pixel' => public_pixel()]);
         case 'catalog_save': $isPost || fail('POST only', 405); catalog_save();
         case 'admin_stats':  admin_stats();
         case 'assign':       $isPost || fail('POST only', 405); assign();
@@ -57,6 +57,12 @@ try {
         case 'payment_settings_save': $isPost || fail('POST only', 405); payment_settings_save();
         case 'payment_test': $isPost || fail('POST only', 405); payment_test();
         case 'payments':     payments_list();
+        case 'avatar_upload': $isPost || fail('POST only', 405); avatar_upload();
+        case 'avatar_remove': $isPost || fail('POST only', 405); avatar_remove();
+        case 'media_upload': $isPost || fail('POST only', 405); media_upload();
+        case 'marketing_settings': marketing_get();
+        case 'marketing_save': $isPost || fail('POST only', 405); marketing_save();
+        case 'capi_test':    $isPost || fail('POST only', 405); capi_test();
         case 'export_orders': export_orders();
         default:             fail('Unknown action', 404);
     }
@@ -129,18 +135,18 @@ function order_out(array $o, ?array $viewer = null): array {
     $r['cancelled'] = (bool)($o['cancelled'] ?? false);
     if (isset($o['unread'])) $r['unread'] = (int)$o['unread'];
     if (is_staff($viewer)) {
-        if (isset($o['c_name'])) $r['customer'] = ['name' => $o['c_name'], 'email' => $o['c_email'], 'phone' => $o['c_phone']];
-        $r['developer'] = $o['developer_id'] ? ['id' => (int)$o['developer_id'], 'name' => $o['d_name'] ?? null] : null;
+        if (isset($o['c_name'])) $r['customer'] = ['name' => $o['c_name'], 'email' => $o['c_email'], 'phone' => $o['c_phone'], 'avatar' => $o['c_avatar'] ?? null];
+        $r['developer'] = $o['developer_id'] ? ['id' => (int)$o['developer_id'], 'name' => $o['d_name'] ?? null, 'avatar' => $o['d_avatar'] ?? null] : null;
     }
     return $r;
 }
 
 function message_rows(int $orderId, int $after = 0): array {
-    $rows = q('SELECT m.id, m.user_id, m.from_admin, m.body, m.created_at, u.name AS by_name, f.id AS f_id, f.original_name AS f_name, f.size AS f_size
+    $rows = q('SELECT m.id, m.user_id, m.from_admin, m.body, m.created_at, u.name AS by_name, u.avatar AS by_avatar, f.id AS f_id, f.original_name AS f_name, f.size AS f_size
                FROM messages m LEFT JOIN users u ON u.id = m.user_id LEFT JOIN files f ON f.id = m.file_id
                WHERE m.order_id = ? AND m.id > ? ORDER BY m.id', [$orderId, $after])->fetchAll();
     return array_map(fn($m) => [
-        'id' => (int)$m['id'], 'from_admin' => (bool)$m['from_admin'], 'system' => $m['user_id'] === null, 'body' => $m['body'], 'by' => $m['by_name'] ?? 'Techill',
+        'id' => (int)$m['id'], 'from_admin' => (bool)$m['from_admin'], 'system' => $m['user_id'] === null, 'body' => $m['body'], 'by' => $m['by_name'] ?? 'Techill', 'avatar' => $m['by_avatar'] ?? null,
         'file' => $m['f_id'] ? ['id' => (int)$m['f_id'], 'name' => $m['f_name'], 'size' => (int)$m['f_size']] : null,
         'created' => strtotime($m['created_at'] . ' UTC'),
     ], $rows);
@@ -211,6 +217,7 @@ function order_create(): void {
 
     $row = q('SELECT * FROM orders WHERE id = ?', [$oid])->fetch();
     $res = ['order' => order_out($row), 'user' => $u, 'csrf' => $_SESSION['csrf']];
+    if (!$online) fb_capi('Purchase', $row, fb_context());
     if ($online) {
         // The order is saved either way; if PayStation is unreachable the customer can retry from the dashboard.
         try { $res['payment_url'] = paystation_start($row); }
@@ -530,7 +537,7 @@ function export_orders(): void {
 /* ---------- admin: people ---------- */
 
 function team_rows(): array {
-    return array_map(fn($r) => ['id' => (int)$r['id'], 'name' => $r['name'], 'email' => $r['email'], 'role' => $r['role'], 'active' => (bool)$r['active'],
+    return array_map(fn($r) => ['id' => (int)$r['id'], 'name' => $r['name'], 'email' => $r['email'], 'role' => $r['role'], 'active' => (bool)$r['active'], 'avatar' => $r['avatar'],
         'running' => (int)$r['running'], 'overdue' => (int)$r['overdue'], 'done' => (int)$r['done'], 'created' => strtotime($r['created_at'] . ' UTC')],
         q("SELECT u.*,
              (SELECT COUNT(*) FROM orders o WHERE o.developer_id = u.id AND o.cancelled = 0 AND o.stage < 4) running,
@@ -583,11 +590,11 @@ function team_save(): void {
 
 function customers_list(): void {
     require_admin();
-    $rows = q("SELECT u.id, u.name, u.email, u.phone, u.active, u.created_at,
+    $rows = q("SELECT u.id, u.name, u.email, u.phone, u.active, u.avatar, u.created_at,
                  COUNT(o.id) orders, SUM(CASE WHEN o.cancelled = 0 AND o.pay_status = 'verified' THEN o.total ELSE 0 END) spent,
                  SUM(o.cancelled = 0 AND o.stage < 4) running, MAX(o.created_at) last_order
                FROM users u LEFT JOIN orders o ON o.user_id = u.id WHERE u.role = 'customer' GROUP BY u.id ORDER BY last_order DESC, u.id DESC LIMIT 2000")->fetchAll();
-    out(['customers' => array_map(fn($r) => ['id' => (int)$r['id'], 'name' => $r['name'], 'email' => $r['email'], 'phone' => $r['phone'], 'active' => (bool)$r['active'],
+    out(['customers' => array_map(fn($r) => ['id' => (int)$r['id'], 'name' => $r['name'], 'email' => $r['email'], 'phone' => $r['phone'], 'active' => (bool)$r['active'], 'avatar' => $r['avatar'],
         'orders' => (int)$r['orders'], 'spent' => (int)$r['spent'], 'running' => (int)$r['running'],
         'last_order' => $r['last_order'] ? strtotime($r['last_order'] . ' UTC') : null, 'created' => strtotime($r['created_at'] . ' UTC')], $rows)]);
 }
@@ -625,7 +632,8 @@ function catalog_save(): void {
             $hex = fn($c) => preg_match('/^#[0-9a-f]{6}$/i', (string)$c) ? $c : '#888888';
             $demo = $str($t['demo'] ?? '', 255);
             $tpls[] = ['code' => $str($t['code'] ?? '', 10) ?: fail('টেমপ্লেট কোড দিন।'), 'name' => $str($t['name'] ?? '', 80) ?: fail('টেমপ্লেটের নাম দিন।'),
-                       'niche' => $str($t['niche'] ?? '', 120), 'demo' => preg_match('#^https?://#', $demo) ? $demo : '#', 't' => $hex($t['t'] ?? ''), 't2' => $hex($t['t2'] ?? '')];
+                       'niche' => $str($t['niche'] ?? '', 120), 'demo' => preg_match('#^https?://#', $demo) ? $demo : '#', 't' => $hex($t['t'] ?? ''), 't2' => $hex($t['t2'] ?? '')]
+                    + (is_media_path($t['image'] ?? null) ? ['image' => $t['image']] : []);
         }
         $packs = [];
         foreach ((array)($S['packs'] ?? []) as $p) {
@@ -841,7 +849,7 @@ function pay_start(): void {
     if ($o['pay_status'] === 'verified') fail('এই অর্ডারের পেমেন্ট আগেই হয়ে গেছে।', 409);
     // A payment may have gone through without the customer coming back; check before charging again.
     foreach (q("SELECT * FROM payments WHERE order_id = ? AND status IN ('initiated','processing') AND created_at > UTC_TIMESTAMP() - INTERVAL 2 DAY ORDER BY id DESC LIMIT 3", [$o['id']])->fetchAll() as $prev) {
-        if (paystation_verify($prev) === 'success') out(['paid' => true]);
+        if (paystation_verify($prev, '', fb_context()) === 'success') out(['paid' => true]);
     }
     if ($o['pay_method'] !== 'PayStation') q("UPDATE orders SET pay_method = 'PayStation', pay_status = 'pending' WHERE id = ?", [$o['id']]);
     try { out(['payment_url' => paystation_start(q('SELECT * FROM orders WHERE id = ?', [$o['id']])->fetch())]); }
@@ -867,7 +875,7 @@ function paystation_callback(): void {
         if ($isIpn) out(['status' => 'error', 'message' => 'unknown invoice'], 404);
         header('Location: ' . site_url('dashboard.html#pay=unknown')); exit;
     }
-    $status = paystation_verify($pay, $trx);
+    $status = paystation_verify($pay, $trx, $isIpn ? [] : fb_context());
     if ($isIpn) out(['status' => 'success', 'result' => $status]);
     $flag = ['success' => 'success', 'canceled' => 'cancel', 'processing' => 'pending'][$status] ?? 'failed';
     header('Cache-Control: no-store');
@@ -927,4 +935,84 @@ function payments_list(): void {
     out(['payments' => array_map(fn($r) => ['id' => (int)$r['id'], 'order_id' => (int)$r['order_id'], 'code' => $r['code'], 'customer' => $r['c_name'], 'invoice' => $r['invoice_number'],
         'amount' => (int)$r['amount'], 'status' => $r['status'], 'trx_id' => $r['trx_id'], 'method' => $r['method'], 'payer' => $r['payer'], 'sandbox' => (bool)$r['sandbox'], 'note' => $r['note'],
         'created' => strtotime($r['created_at'] . ' UTC')], $rows), 'month' => ['count' => (int)$sum['n'], 'total' => (int)$sum['t']]]);
+}
+
+/* ---------- photos ---------- */
+
+// Profile photo for yourself, or (admin) for anyone via user_id.
+function avatar_target(): array {
+    $u = require_user();
+    $id = (int)($_POST['user_id'] ?? 0);
+    if ($id && $id !== $u['id']) {
+        if (!is_admin($u)) fail('অন্যের ছবি বদলানো যায় না।', 403);
+        $t = q('SELECT id, avatar FROM users WHERE id = ?', [$id])->fetch() ?: fail('অ্যাকাউন্ট পাওয়া যায়নি।', 404);
+        return $t;
+    }
+    return q('SELECT id, avatar FROM users WHERE id = ?', [$u['id']])->fetch();
+}
+
+function avatar_upload(): void {
+    $t = avatar_target();
+    $path = save_image('photo', 320, true);
+    q('UPDATE users SET avatar = ? WHERE id = ?', [$path, $t['id']]);
+    delete_media($t['avatar']);
+    out(['avatar' => $path, 'user_id' => (int)$t['id']]);
+}
+
+function avatar_remove(): void {
+    $t = avatar_target();
+    q('UPDATE users SET avatar = NULL WHERE id = ?', [$t['id']]);
+    delete_media($t['avatar']);
+    out(['avatar' => null, 'user_id' => (int)$t['id']]);
+}
+
+// Admin: an image for the catalog (template photos). Saved into the catalog when the editor saves.
+function media_upload(): void {
+    require_admin();
+    out(['url' => save_image('photo', 1200, false)]);
+}
+
+/* ---------- Facebook Pixel ---------- */
+
+function public_pixel(): ?array {
+    $m = marketing_settings();
+    return $m['pixel_enabled'] && $m['pixel_id'] !== '' ? ['id' => $m['pixel_id']] : null;
+}
+
+function marketing_out(): array {
+    $m = marketing_settings();
+    return ['pixel_enabled' => (bool)$m['pixel_enabled'], 'pixel_id' => $m['pixel_id'], 'capi_set' => $m['capi_token'] !== '', 'test_code' => $m['test_code'], 'capi_last' => $m['capi_last']];
+}
+function marketing_get(): void { require_admin(); out(['settings' => marketing_out()]); }
+
+function marketing_save(): void {
+    require_admin();
+    $m = marketing_settings();
+    $id = preg_replace('/\D/', '', str_in('pixel_id', 40));
+    $enabled = !empty($_POST['pixel_enabled']);
+    if ($enabled && !preg_match('/^\d{10,20}$/', $id)) fail('সঠিক Pixel ID দিন (শুধু সংখ্যা, সাধারণত ১৫-১৬ ডিজিট)।');
+    $m['pixel_enabled'] = $enabled;
+    $m['pixel_id'] = $id;
+    $token = trim((string)($_POST['capi_token'] ?? ''));
+    if ($token !== '') {
+        if (!preg_match('/^[A-Za-z0-9_\-]{20,600}$/', $token)) fail('Access token সঠিক মনে হচ্ছে না, Events Manager থেকে আবার কপি করুন।');
+        $m['capi_token'] = $token;
+    }
+    if (!empty($_POST['capi_clear'])) $m['capi_token'] = '';
+    $m['test_code'] = preg_replace('/[^A-Za-z0-9]/', '', str_in('test_code', 40));
+    q("INSERT INTO settings (k, v) VALUES ('marketing', ?) ON DUPLICATE KEY UPDATE v = VALUES(v)", [json_encode($m, JSON_UNESCAPED_UNICODE)]);
+    marketing_settings(true);
+    out(['settings' => marketing_out()]);
+}
+
+// Sends one server-side test event; it shows under "Test events" in Meta Events Manager when a test code is set.
+function capi_test(): void {
+    require_admin();
+    $m = marketing_settings();
+    if ($m['pixel_id'] === '' || $m['capi_token'] === '') fail('আগে Pixel ID আর Access token দিয়ে সেভ করুন।');
+    if (!function_exists('curl_init')) fail('সার্ভারে PHP cURL চালু নেই।');
+    $body = ['data' => [['event_name' => 'PageView', 'event_time' => time(), 'event_id' => 'techill-test-' . bin2hex(random_bytes(4)), 'action_source' => 'website',
+        'event_source_url' => site_url('index.html'), 'user_data' => ['client_ip_address' => client_ip(), 'client_user_agent' => mb_substr((string)($_SERVER['HTTP_USER_AGENT'] ?? 'Techill'), 0, 400)]]]];
+    if ($m['test_code'] !== '') $body['test_event_code'] = $m['test_code'];
+    out(fb_post($m, $body));
 }

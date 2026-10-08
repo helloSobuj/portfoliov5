@@ -30,6 +30,21 @@ window.TechillAPI = (() => {
     catch (e) { return [...Array(32)].map(() => "0123456789abcdef"[Math.random() * 16 | 0]).join(""); }
   })();
 
+  /* ---------- photos: scale down in the browser before upload (the server re-checks and re-encodes) ---------- */
+  async function shrink(file, max, square) {
+    if (!file || !/^image\/(jpeg|png|webp)$/.test(file.type)) { const e = new Error("শুধু JPG, PNG বা WebP ছবি দিন।"); throw e; }
+    if (file.size > 15 * 1024 * 1024) throw new Error("ছবি অনেক বড় (১৫MB-এর বেশি)।");
+    let img;
+    try { img = await createImageBitmap(file); } catch (e) { return file; }
+    let sx = 0, sy = 0, sw = img.width, sh = img.height;
+    if (square) { sw = sh = Math.min(img.width, img.height); sx = (img.width - sw) / 2; sy = (img.height - sh) / 2; }
+    const k = Math.min(1, max / Math.max(sw, sh)), c = document.createElement("canvas");
+    c.width = Math.round(sw * k); c.height = Math.round(sh * k);
+    c.getContext("2d").drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
+    const out = await new Promise(r => c.toBlob(r, "image/webp", .85)) || await new Promise(r => c.toBlob(r, "image/jpeg", .85));
+    return out && out.size < file.size ? out : file;
+  }
+
   /* ---------- real backend ---------- */
   async function http(action, {method = "GET", params = {}, form = null} = {}) {
     const qs = new URLSearchParams({action, ...params}).toString();
@@ -48,7 +63,9 @@ window.TechillAPI = (() => {
   const post = (action, obj) => http(action, {method: "POST", form: toForm(obj)});
 
   /* ---------- demo backend (browser only) ---------- */
-  const KEY = "techill_demo_db_v3", SKEY = "techill_demo_uid", CKEY = "techill_demo_catalog", PKEY = "techill_demo_payments";
+  const KEY = "techill_demo_db_v3", SKEY = "techill_demo_uid", CKEY = "techill_demo_catalog", PKEY = "techill_demo_payments", MKEY = "techill_demo_marketing";
+  const demoMarketing = () => ls.get(MKEY) || {pixel_enabled: false, pixel_id: "", capi_token: "", test_code: "", capi_last: null};
+  const marketingOut = m => ({pixel_enabled: !!m.pixel_enabled, pixel_id: m.pixel_id, capi_set: !!m.capi_token, test_code: m.test_code, capi_last: m.capi_last});
   const demoPaySettings = () => ls.get(PKEY) || {manual_enabled: true, paystation: {enabled: true, sandbox: true, merchant_id: "DEMO-MERCHANT", password: "demo", pay_with_charge: 0}};
   const publicPay = () => { const s = demoPaySettings(), p = s.paystation; return {online: !!(p.enabled && p.merchant_id && p.password), manual: !!s.manual_enabled, pay_with_charge: +p.pay_with_charge, sandbox: !!p.sandbox}; };
   const payOut = s => ({manual_enabled: !!s.manual_enabled, paystation: {enabled: !!s.paystation.enabled, sandbox: !!s.paystation.sandbox, merchant_id: s.paystation.merchant_id,
@@ -147,7 +164,7 @@ window.TechillAPI = (() => {
   const load = () => ls.get(KEY) || (ls.set(KEY, seed()), ls.get(KEY));
   const save = d => ls.set(KEY, d);
   const nextId = d => ++d.seq;
-  const pubUser = u => u ? {id: u.id, name: u.name, email: u.email, phone: u.phone, role: u.role} : null;
+  const pubUser = u => u ? {id: u.id, name: u.name, email: u.email, phone: u.phone, role: u.role, avatar: u.avatar || null} : null;
   const meUser = d => pubUser(d.users.find(x => x.id === ls.get(SKEY) && x.active));
   const bad = (msg, status) => { const e = new Error(msg); e.status = status; throw e; };
   const needUser = d => meUser(d) || bad("আগে লগইন করুন।", 401);
@@ -161,18 +178,19 @@ window.TechillAPI = (() => {
     const r = {...o}; delete r.user_id; delete r.developer_id; r.unread = unreadFor(d, u, o);
     if (isStaff(u)) {
       const c = d.users.find(x => x.id === o.user_id), dv = d.users.find(x => x.id === o.developer_id);
-      r.customer = {name: c.name, email: c.email, phone: c.phone};
-      r.developer = dv ? {id: dv.id, name: dv.name} : null;
+      r.customer = {name: c.name, email: c.email, phone: c.phone, avatar: c.avatar || null};
+      r.developer = dv ? {id: dv.id, name: dv.name, avatar: dv.avatar || null} : null;
     }
     return r;
   }
   const msgOut = (d, m) => {
     const f = m.file_id ? d.files.find(x => x.id === m.file_id) : null, by = d.users.find(x => x.id === m.user_id);
-    return {id: m.id, from_admin: m.from_admin, system: m.user_id == null, body: m.body, by: by ? by.name : "Techill", file: f ? {id: f.id, name: f.name, size: f.size} : null, created: m.created};
+    return {id: m.id, from_admin: m.from_admin, system: m.user_id == null, body: m.body, by: by ? by.name : "Techill", avatar: by?.avatar || null, file: f ? {id: f.id, name: f.name, size: f.size} : null, created: m.created};
   };
   const markSeen = (d, u, oid) => d.messages.forEach(m => { if (m.order_id === oid && m.from_admin === !isStaff(u)) m.seen = true; });
   const addEvent = (d, o, note, by) => d.events.push({id: nextId(d), order_id: o.id, stage: o.stage, progress: o.progress, note, by, created: now()});
   const phoneOK = v => /^(?:\+?88)?01[3-9]\d{8}$/.test(String(v).replace(/[\s-]/g, "").replace(/[০-৯]/g, c => "০১২৩৪৫৬৭৮৯".indexOf(c)));
+  const blobToData = b => new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(b); });
   const fileToData = f => new Promise(r => { if (!f || f.size > 1.5e6) return r(null); const fr = new FileReader(); fr.onload = () => r(fr.result); fr.onerror = () => r(null); fr.readAsDataURL(f); });
   async function addFile(d, oid, uid, kind, f) {
     if (!f || !f.name) return null;
@@ -193,7 +211,7 @@ window.TechillAPI = (() => {
     const t = now();
     return d.users.filter(u => isStaff(u)).map(u => {
       const mine = d.orders.filter(o => o.developer_id === u.id && !o.cancelled);
-      return {id: u.id, name: u.name, email: u.email, role: u.role, active: u.active, created: u.created,
+      return {id: u.id, name: u.name, email: u.email, role: u.role, active: u.active, avatar: u.avatar || null, created: u.created,
         running: mine.filter(o => o.stage < 4).length, overdue: mine.filter(o => o.stage < 4 && o.deadline < t).length, done: mine.filter(o => o.stage === 4).length};
     }).sort((a, b) => b.active - a.active || a.role.localeCompare(b.role));
   }
@@ -233,7 +251,29 @@ window.TechillAPI = (() => {
       ls.set(SKEY, u.id); return {user: meUser(d)};
     },
     async logout() { ls.del(SKEY); return {}; },
-    async catalog() { return {catalog: await demoCatalog(), payments: publicPay()}; },
+    async catalog() { const m = demoMarketing(); return {catalog: await demoCatalog(), payments: publicPay(), pixel: m.pixel_enabled && m.pixel_id ? {id: m.pixel_id} : null}; },
+    async avatar_upload({file, user_id}) {
+      const d = load(), u = needUser(d), id = +user_id || u.id;
+      if (id !== u.id && !isAdmin(u)) bad("অন্যের ছবি বদলানো যায় না।", 403);
+      const t = d.users.find(x => x.id === id) || bad("অ্যাকাউন্ট পাওয়া যায়নি।", 404);
+      t.avatar = await blobToData(file); save(d); return {avatar: t.avatar, user_id: id};
+    },
+    async avatar_remove({user_id}) {
+      const d = load(), u = needUser(d), id = +user_id || u.id;
+      if (id !== u.id && !isAdmin(u)) bad("অন্যের ছবি বদলানো যায় না।", 403);
+      const t = d.users.find(x => x.id === id); if (t) t.avatar = null; save(d); return {avatar: null, user_id: id};
+    },
+    async media_upload({file}) { const d = load(); needAdmin(d); return {url: await blobToData(file)}; },
+    async marketing_settings() { const d = load(); needAdmin(d); return {settings: marketingOut(demoMarketing())}; },
+    async marketing_save(f) {
+      const d = load(); needAdmin(d);
+      const m = demoMarketing(), id = String(f.pixel_id || "").replace(/\D/g, "");
+      if (f.pixel_enabled && !/^\d{10,20}$/.test(id)) bad("সঠিক Pixel ID দিন (শুধু সংখ্যা, সাধারণত ১৫-১৬ ডিজিট)।");
+      Object.assign(m, {pixel_enabled: !!f.pixel_enabled, pixel_id: id, test_code: String(f.test_code || "").replace(/[^A-Za-z0-9]/g, "")});
+      if (f.capi_token) m.capi_token = f.capi_token; if (f.capi_clear) m.capi_token = "";
+      ls.set(MKEY, m); return {settings: marketingOut(m)};
+    },
+    async capi_test() { const d = load(); needAdmin(d); const m = demoMarketing(); if (!m.pixel_id || !m.capi_token) bad("আগে Pixel ID আর Access token দিয়ে সেভ করুন।"); return {ok: true, message: "(ডেমো) Meta 1টা ইভেন্ট পেয়েছে"}; },
     // Demo stand-in for PayStation: the "payment" succeeds at once, so the preview shows the paid state.
     demoPay(d, o) {
       d.payments = d.payments || [];
@@ -422,7 +462,7 @@ window.TechillAPI = (() => {
       const d = load(); needAdmin(d);
       return {customers: d.users.filter(u => u.role === "customer").map(u => {
         const os = d.orders.filter(o => o.user_id === u.id);
-        return {id: u.id, name: u.name, email: u.email, phone: u.phone, active: u.active, orders: os.length, created: u.created,
+        return {id: u.id, name: u.name, email: u.email, phone: u.phone, active: u.active, avatar: u.avatar || null, orders: os.length, created: u.created,
           spent: os.filter(o => !o.cancelled && o.pay_status === "verified").reduce((s, o) => s + o.total, 0),
           running: os.filter(o => !o.cancelled && o.stage < 4).length, last_order: os.length ? Math.max(...os.map(o => o.created)) : null};
       }).sort((a, b) => (b.last_order || 0) - (a.last_order || 0))};
@@ -604,6 +644,22 @@ window.TechillAPI = (() => {
     savePaymentSettings: data => run("payment_settings_save", data, () => post("payment_settings_save", data)),
     paymentTest: () => run("payment_test", {}, () => post("payment_test", {})),
     payments: () => run("payments", {}, () => http("payments")),
+    async avatarUpload(file, user_id) { const photo = await shrink(file, 320, true); return run("avatar_upload", {file: photo, user_id}, () => post("avatar_upload", {photo: new File([photo], "photo.jpg", {type: photo.type}), user_id})); },
+    avatarRemove: user_id => run("avatar_remove", {user_id}, () => post("avatar_remove", {user_id: user_id || ""})),
+    async mediaUpload(file) { const photo = await shrink(file, 1200, false); return run("media_upload", {file: photo}, () => post("media_upload", {photo: new File([photo], "photo.jpg", {type: photo.type})})); },
+    marketingSettings: () => run("marketing_settings", {}, () => http("marketing_settings")),
+    saveMarketing: data => run("marketing_save", data, () => post("marketing_save", data)),
+    capiTest: () => run("capi_test", {}, () => post("capi_test", {})),
+    /* Facebook Pixel: load once with the admin's Pixel ID, then fb("Purchase", {...}, eventId) */
+    initPixel(id) {
+      if (!id || window.fbq) return;
+      const n = window.fbq = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
+      if (!window._fbq) window._fbq = n;
+      n.push = n; n.loaded = true; n.version = "2.0"; n.queue = [];
+      const sc = document.createElement("script"); sc.async = true; sc.src = "https://connect.facebook.net/en_US/fbevents.js"; document.head.appendChild(sc);
+      window.fbq("init", String(id)); window.fbq("track", "PageView");
+    },
+    fb(event, data = {}, eventID) { try { if (window.fbq) window.fbq("track", event, {currency: "BDT", ...data}, eventID ? {eventID} : undefined); } catch (e) {} },
     async exportUrl() { await ready; return demo ? mock.exportCSV() : "api.php?action=export_orders"; },
     fileUrl: id => demo ? mock.fileUrl(id) : "api.php?action=file&id=" + encodeURIComponent(id),
     /* analytics beacon: page view now, a heartbeat every 30s while the tab is visible */
@@ -620,6 +676,6 @@ window.TechillAPI = (() => {
       this.track("view", {r: document.referrer, u, tz});
       setInterval(() => { if (!document.hidden) this.track("ping"); }, 30000);
     },
-    resetDemo() { ls.del(KEY); ls.del(SKEY); ls.del(CKEY); ls.del(PKEY); }
+    resetDemo() { ls.del(KEY); ls.del(SKEY); ls.del(CKEY); ls.del(PKEY); ls.del(MKEY); }
   };
 })();

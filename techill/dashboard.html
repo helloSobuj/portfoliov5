@@ -55,7 +55,15 @@ button,input,textarea,select{font:inherit;color:inherit}
 .hdr{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
 .hdr .container{display:flex;align-items:center;justify-content:space-between;gap:12px;height:66px}
 .hdr-r{display:flex;align-items:center;gap:10px;min-width:0}
-.who{display:grid;text-align:right;line-height:1.25;min-width:0}
+.who{display:flex;align-items:center;gap:10px;text-align:right;line-height:1.25;min-width:0;border:0;background:transparent;cursor:pointer;padding:4px 6px;border-radius:12px}
+.who:hover{background:var(--sunk)}
+.who span{display:grid;min-width:0}
+.av{flex:none;border-radius:50%;background:var(--blue-soft);color:var(--blue-ink);display:grid;place-items:center;font-weight:700;overflow:hidden;width:36px;height:36px;font-size:.95rem}
+.av img{width:100%;height:100%;object-fit:cover;display:block}
+.av.sm{width:28px;height:28px;font-size:.78rem}
+.av.lg{width:96px;height:96px;font-size:2rem}
+.prof{background:var(--surface);color:var(--ink);border-radius:18px;padding:28px;width:100%;max-width:400px;display:grid;gap:14px;justify-items:center;text-align:center;margin-top:8vh}
+.prof .row-btns{justify-content:center}
 .who b{font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .who small{color:var(--muted);font-size:.8rem}
 .theme-btn .moon{display:none}
@@ -151,8 +159,11 @@ button,input,textarea,select{font:inherit;color:inherit}
 /* chat */
 .chat{display:flex;flex-direction:column;height:min(560px,70vh)}
 .msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:4px 4px 12px}
-.msg{max-width:78%;display:grid;gap:3px}
-.msg.me{align-self:flex-end;justify-items:end}
+.msg{max-width:82%;display:flex;gap:8px;align-items:flex-end}
+.msg.me{align-self:flex-end}
+.mcol{display:grid;gap:3px;min-width:0}
+.msg.me .mcol{justify-items:end}
+.msg > .av{margin-bottom:20px}
 .bub{background:var(--sunk);border-radius:16px 16px 16px 4px;padding:10px 14px;white-space:pre-wrap;word-break:break-word}
 .msg.me .bub{background:var(--blue);color:var(--on-blue);border-radius:16px 16px 4px 16px}
 .msg small{color:var(--muted);font-size:.78rem}
@@ -274,7 +285,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:.92rem;min-width:720px}
   .inv-meta{grid-template-columns:1fr}
   .container{padding-inline:16px}
   .card{padding:18px}
-  .who{display:none}
+  .who > span:first-child{display:none}
   .stages li .lb{display:none}
   .stages li.a .lb{display:block;position:absolute;top:36px;white-space:nowrap}
   .stages{margin-bottom:22px}
@@ -291,7 +302,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:.92rem;min-width:720px}
   <div class="container">
     <a href="index.html" aria-label="Techill হোম"><img class="logo logo-l" src="assets/logo-light.png" alt="Techill by RedBolt IT"><img class="logo logo-d" src="assets/logo-dark.png" alt="Techill by RedBolt IT"></a>
     <div class="hdr-r">
-      <div class="who" id="who" hidden><b id="whoName"></b><small id="whoRole"></small></div>
+      <button class="who" id="who" type="button" hidden title="প্রোফাইল ছবি"><span><b id="whoName"></b><small id="whoRole"></small></span><span class="av" id="whoAv"></span></button>
       <button class="icon-btn theme-btn" id="themeBtn" type="button" aria-label="দিন/রাত থিম বদলান">
         <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></svg>
         <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
@@ -350,6 +361,16 @@ table.tbl{width:100%;border-collapse:collapse;font-size:.92rem;min-width:720px}
   </section>
 </main>
 
+<div class="modal" id="profModal" role="dialog" aria-modal="true" aria-labelledby="profName" hidden>
+  <div class="prof">
+    <span class="av lg" id="profAv"></span>
+    <div><h2 id="profName" style="font-size:1.25rem"></h2><p class="muted" id="profMeta" style="font-size:.9rem;color:var(--muted)"></p></div>
+    <p style="font-size:.9rem;color:var(--muted)">প্রোফাইল ছবি চ্যাটে আর টিমের কাছে দেখাবে। JPG, PNG বা WebP।</p>
+    <input type="file" id="profFile" accept="image/jpeg,image/png,image/webp" hidden>
+    <div class="row-btns"><button class="btn btn-primary btn-sm" type="button" id="profPick">নতুন ছবি দিন</button><button class="btn btn-ghost btn-sm" type="button" id="profDel">ছবি সরান</button><button class="btn btn-ghost btn-sm" type="button" id="profClose">বন্ধ করুন</button></div>
+    <p class="err" id="profErr" role="alert"></p>
+  </div>
+</div>
 <div class="modal" id="invModal" role="dialog" aria-modal="true" aria-label="ইনভয়েস" hidden>
   <div class="inv-wrap">
     <div class="inv-acts"><button class="btn btn-primary btn-sm" type="button" id="invPrint">প্রিন্ট / PDF</button><button class="btn btn-ghost btn-sm" type="button" id="invClose">বন্ধ করুন</button></div>
@@ -374,6 +395,9 @@ const size = b => b > 1048576 ? BN((b / 1048576).toFixed(1)) + " MB" : BN(Math.m
 const STAGES = ["তথ্য জমা", "পেমেন্ট যাচাই", "সেটআপ চলছে", "রিভিউ", "ডেলিভারি"];
 const PAY = {pending: "পেমেন্ট যাচাই বাকি", verified: "পেমেন্ট যাচাই হয়েছে", rejected: "পেমেন্ট পাওয়া যায়নি"};
 const MNAME = {bKash: "বিকাশ", Nagad: "নগদ", Rocket: "রকেট", PayStation: "অনলাইন (PayStation)"};
+// Avatar circle: the photo when there is one (server media path, or a data URL in demo mode), else the initial.
+const safeImg = u => /^media\/[a-f0-9]{32}\.(jpg|png|webp)$/.test(u || "") || /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(u || "") ? u : null;
+const avatarHTML = (name, url, cls = "") => `<span class="av ${cls}">${safeImg(url) ? `<img src="${safeImg(url)}" alt="">` : esc(String(name || "?").trim().slice(0, 1) || "?")}</span>`;
 const awaitingOnline = o => o.pay_method === "PayStation" && o.pay_status !== "verified" && !o.cancelled;
 const INFO_LABELS = {whatsapp: "হোয়াটসঅ্যাপ নম্বর", phone: "ফোন নম্বর (ওয়েবসাইটে দেখাবে)", fb_page: "ফেসবুক পেজের লিংক", address: "ঠিকানা", business_intro: "ব্যবসার পরিচিতি", additional_info: "অতিরিক্ত তথ্য"};
 const FILE_IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>';
@@ -435,6 +459,7 @@ function showAuth(){
 async function enterApp(){
   $("auth").hidden = true; $("who").hidden = false; $("logoutBtn").hidden = false; $("viewbar").hidden = false;
   $("whoName").textContent = me.name; $("whoRole").textContent = ROLE[me.role] || me.email;
+  $("whoAv").outerHTML = avatarHTML(me.name, me.avatar).replace('class="av ', 'id="whoAv" class="av ');
   $("listTitle").textContent = isAdmin() ? "সব প্রোজেক্ট" : isStaff() ? "আমার প্রোজেক্ট" : "আমার অর্ডার";
   $("adminLink").hidden = !isAdmin();
   $("search").hidden = !isStaff(); $("newOrder").hidden = isStaff();
@@ -523,7 +548,7 @@ function showInvoice(o){
 $("invClose").addEventListener("click", () => $("invModal").hidden = true);
 $("invPrint").addEventListener("click", () => print());
 $("invModal").addEventListener("click", e => { if (e.target.id === "invModal") $("invModal").hidden = true; });
-addEventListener("keydown", e => { if (e.key === "Escape") $("invModal").hidden = true; });
+addEventListener("keydown", e => { if (e.key === "Escape"){ $("invModal").hidden = true; $("profModal").hidden = true; } });
 
 function renderList(){
   const q = $("search").value.trim().toLowerCase();
@@ -653,7 +678,7 @@ function msgHTML(m, prevDay){
   const day = dayOf(m.created);
   const sep = day !== prevDay ? `<span class="day">${day}</span>` : "";
   const file = m.file ? `<button type="button" class="fchip" data-file="${m.file.id}" data-name="${esc(m.file.name)}">${CLIP}<span>${esc(m.file.name)} · ${size(m.file.size)}</span></button>` : "";
-  return `${sep}<div class="msg ${mine ? "me" : ""}"><div class="bub">${linkify(m.body)}${file ? "<br>" + file : ""}</div><small>${mine ? "আপনি" : m.system ? "Techill টিম" : m.from_admin ? esc(m.by) + " · ডেভেলপার" : esc(m.by)} · ${timeOnly(m.created)}</small></div>`;
+  return `${sep}<div class="msg ${mine ? "me" : ""}">${mine ? "" : avatarHTML(m.system ? "T" : m.by, m.system ? null : m.avatar, "sm")}<div class="mcol"><div class="bub">${linkify(m.body)}${file ? "<br>" + file : ""}</div><small>${mine ? "আপনি" : m.system ? "Techill টিম" : m.from_admin ? esc(m.by) + " · ডেভেলপার" : esc(m.by)} · ${timeOnly(m.created)}</small></div></div>`;
 }
 function msgsHTML(list){ let prev = null; return list.map(m => { const h = msgHTML(m, prev); prev = dayOf(m.created); return h; }).join(""); }
 function chatHTML(){
@@ -765,6 +790,33 @@ function bindInfo(){
   });
 }
 
+/* ---------- profile photo ---------- */
+function openProfile(){
+  $("profAv").outerHTML = avatarHTML(me.name, me.avatar, "lg").replace('class="av ', 'id="profAv" class="av ');
+  $("profName").textContent = me.name; $("profMeta").textContent = `${me.email} · ${ROLE[me.role] || "কাস্টমার"}`;
+  $("profDel").hidden = !me.avatar; $("profErr").textContent = "";
+  $("profModal").hidden = false; $("profPick").focus();
+}
+$("who").addEventListener("click", openProfile);
+$("profClose").addEventListener("click", () => $("profModal").hidden = true);
+$("profModal").addEventListener("click", e => { if (e.target.id === "profModal") $("profModal").hidden = true; });
+$("profPick").addEventListener("click", () => $("profFile").click());
+$("profFile").addEventListener("change", async e => {
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  $("profPick").disabled = true; $("profErr").textContent = "";
+  try { me.avatar = (await api.avatarUpload(f)).avatar; afterAvatar("ছবি আপডেট হয়েছে।"); }
+  catch(err){ $("profErr").textContent = err.message; }
+  finally { $("profPick").disabled = false; }
+});
+$("profDel").addEventListener("click", async () => {
+  try { await api.avatarRemove(); me.avatar = null; afterAvatar("ছবি সরানো হয়েছে।"); } catch(err){ $("profErr").textContent = err.message; }
+});
+function afterAvatar(msg){
+  $("whoAv").outerHTML = avatarHTML(me.name, me.avatar).replace('class="av ', 'id="whoAv" class="av ');
+  openProfile(); toast(msg);
+  if (cur) refresh(true);
+}
+
 /* ---------- online payment ---------- */
 async function startPayment(id){
   const b = $("payBtn"); if (b){ b.disabled = true; b.textContent = "PayStation-এ নিয়ে যাওয়া হচ্ছে..."; }
@@ -777,6 +829,12 @@ async function startPayment(id){
 // PayStation sends the customer back to dashboard.html#o=ID&pay=success|failed|cancel|pending
 function payReturnMessage(flag){
   if (!flag) return;
+  if (flag === "success" && cur && !isStaff()) {
+    // Online purchase confirmed by PayStation: report it to the Pixel once per order (same event id as the server).
+    const o = cur.order, k = "techill_fb_purchase_" + o.code;
+    let sent = false; try { sent = !!localStorage.getItem(k); localStorage.setItem(k, "1"); } catch (e) {}
+    if (!sent) setTimeout(() => api.fb("Purchase", {value: o.total, content_name: `${o.pack} · ${o.stack}`, content_type: "product", content_ids: [o.pack], num_items: 1}, o.code), 800);
+  }
   const msg = {success: "পেমেন্ট সফল হয়েছে, ধন্যবাদ! ডেলিভারির কাউন্টডাউন শুরু হয়েছে।", cancel: "পেমেন্ট বাতিল করেছেন। চাইলে আবার চেষ্টা করুন।",
     failed: "পেমেন্ট সম্পন্ন হয়নি। আবার চেষ্টা করুন, টাকা কেটে থাকলে চ্যাটে জানান।", pending: "পেমেন্ট এখনো প্রক্রিয়াধীন। কিছুক্ষণ পর পেজ রিফ্রেশ করুন।",
     retry: "অর্ডার জমা হয়েছে, কিন্তু পেমেন্ট পেজ খোলা যায়নি। নিচের বোতাম চেপে আবার চেষ্টা করুন।", unknown: "এই পেমেন্টটা খুঁজে পাওয়া যায়নি। চ্যাটে জানান।"}[flag];
@@ -821,6 +879,7 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) poll
   me = await api.init();
   $("demoBar").hidden = !api.demo;
   const payFlag = (location.hash.match(/pay=(\w+)/) || [])[1];
+  api.catalog().then(r => { if (r.pixel) api.initPixel(r.pixel.id); }).catch(() => {});
   if (me) enterApp().then(() => payReturnMessage(payFlag)); else { showAuth(); payReturnMessage(payFlag); }
 })();
 </script>

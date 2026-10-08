@@ -61,7 +61,7 @@ function current_user(): ?array {
     if (empty($_SESSION['uid'])) return null;
     static $u = false;
     if ($u === false) {
-        $u = q('SELECT id, name, email, phone, role FROM users WHERE id = ? AND active = 1', [$_SESSION['uid']])->fetch() ?: null;
+        $u = q('SELECT id, name, email, phone, role, avatar FROM users WHERE id = ? AND active = 1', [$_SESSION['uid']])->fetch() ?: null;
         if ($u) $u['id'] = (int)$u['id'];
     }
     return $u;
@@ -314,7 +314,7 @@ function paystation_fields(array $o, array $info, array $cust, string $invoice):
 // Asks PayStation (server to server) what happened to a payment and applies it to the order.
 // Never trusts the browser: amount, invoice and status all come from PayStation's answer.
 // Returns the payment's resulting status.
-function paystation_verify(array $pay, string $trxHint = ''): string {
+function paystation_verify(array $pay, string $trxHint = '', array $fbCtx = []): string {
     if ($pay['status'] === 'success') return 'success';
     $p = payment_settings()['paystation'];
     if ($p['merchant_id'] === '') return $pay['status'];
@@ -352,9 +352,113 @@ function paystation_verify(array $pay, string $trxHint = ''): string {
             q('INSERT INTO messages (order_id, from_admin, body) VALUES (?,1,?)', [$o['id'], $txt . "। ধন্যবাদ! আমরা কাজ শুরু করছি" . ($restart ? ', ডেলিভারির কাউন্টডাউন এখন থেকে শুরু।' : '।')]);
         }
         db()->commit();
+        if ($won) fb_capi('Purchase', q('SELECT * FROM orders WHERE id = ?', [$pay['order_id']])->fetch(), $fbCtx);
         return 'success';
     }
     q("UPDATE payments SET status = ?, trx_id = COALESCE(?, trx_id), method = COALESCE(?, method), payer = COALESCE(?, payer) WHERE id = ? AND status <> 'success'",
       [$status, $trx, $method, $payer, $pay['id']]);
     return $status;
+}
+
+/* ---------- public images (media/) ---------- */
+
+// Validates an uploaded photo and stores it in media/ under a random name. With GD the image is
+// re-encoded (dropping metadata and anything hidden in the file) and scaled down; $square crops to a
+// centred square for profile photos. Returns the public path, e.g. "media/3f…a9.webp".
+function save_image(string $field, int $max, bool $square): string {
+    $f = $_FILES[$field] ?? null;
+    if (!$f || ($f['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) fail('ছবি আপলোড হয়নি, আবার চেষ্টা করুন।');
+    if ($f['size'] > 5 * 1024 * 1024) fail('ছবি 5MB-এর বেশি বড়।');
+    $mime = (new finfo(FILEINFO_MIME_TYPE))->file($f['tmp_name']);
+    $ext = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'][$mime] ?? null;
+    if (!$ext || !@getimagesize($f['tmp_name'])) fail('শুধু JPG, PNG বা WebP ছবি দিন।');
+    $dir = __DIR__ . '/media';
+    if (!is_dir($dir) && !mkdir($dir, 0755, true)) fail('media ফোল্ডার তৈরি করা যায়নি।', 500);
+    $name = bin2hex(random_bytes(16));
+    if (function_exists('imagecreatefromstring') && ($src = @imagecreatefromstring((string)file_get_contents($f['tmp_name'])))) {
+        [$w, $h] = [imagesx($src), imagesy($src)];
+        $sx = $sy = 0; $sw = $w; $sh = $h;
+        if ($square) { $sw = $sh = min($w, $h); $sx = intdiv($w - $sw, 2); $sy = intdiv($h - $sh, 2); }
+        $scale = min(1, $max / max($sw, $sh));
+        $dw = max(1, (int)round($sw * $scale)); $dh = max(1, (int)round($sh * $scale));
+        $dst = imagecreatetruecolor($dw, $dh);
+        imagealphablending($dst, false); imagesavealpha($dst, true);
+        imagecopyresampled($dst, $src, 0, 0, $sx, $sy, $dw, $dh, $sw, $sh);
+        $ok = function_exists('imagewebp') ? imagewebp($dst, "$dir/$name.webp", 82) : imagejpeg($dst, "$dir/$name.jpg", 85);
+        $ext = function_exists('imagewebp') ? 'webp' : 'jpg';
+        imagedestroy($src); imagedestroy($dst);
+        if (!$ok) fail('ছবি সেভ করা যায়নি।', 500);
+    } elseif (!move_uploaded_file($f['tmp_name'], "$dir/$name.$ext")) {
+        fail('ছবি সেভ করা যায়নি।', 500);
+    }
+    return "media/$name.$ext";
+}
+
+function is_media_path(?string $p): bool { return (bool)preg_match('#^media/[a-f0-9]{32}\.(jpg|png|webp)$#', (string)$p); }
+
+function delete_media(?string $p): void { if (is_media_path($p) && is_file(__DIR__ . '/' . $p)) @unlink(__DIR__ . '/' . $p); }
+
+/* ---------- Facebook Pixel & Conversions API ---------- */
+
+const FB_GRAPH_VERSION = 'v21.0';   // Graph API version for the Conversions API; bump when Meta retires it
+
+function marketing_settings(bool $reload = false): array {
+    static $s = null;
+    if ($s === null || $reload) {
+        $row = q("SELECT v FROM settings WHERE k = 'marketing'")->fetch();
+        $s = array_replace(['pixel_enabled' => false, 'pixel_id' => '', 'capi_token' => '', 'test_code' => '', 'capi_last' => null], $row ? (json_decode($row['v'], true) ?: []) : []);
+    }
+    return $s;
+}
+
+// Server-side copy of a browser Pixel event. The same event_id lets Meta drop the duplicate.
+// Never throws: tracking must not break an order or a payment.
+function fb_capi(string $event, array $o, array $extra = []): void {
+    try {
+        $m = marketing_settings();
+        if (!$m['pixel_enabled'] || $m['pixel_id'] === '' || $m['capi_token'] === '' || !function_exists('curl_init')) return;
+        $info = json_decode($o['info_json'] ?? '{}', true) ?: [];
+        $cust = q('SELECT email, phone FROM users WHERE id = ?', [$o['user_id']])->fetch() ?: [];
+        $h = fn($v) => hash('sha256', mb_strtolower(trim((string)$v)));
+        $phone = preg_replace('/\D/', '', (string)($info['phone'] ?? $cust['phone'] ?? ''));
+        if ($phone !== '' && str_starts_with($phone, '01')) $phone = '88' . $phone;
+        $user = array_filter([
+            'em' => !empty($cust['email']) ? [$h($cust['email'])] : null,
+            'ph' => $phone !== '' ? [$h($phone)] : null,
+            'external_id' => [$h('techill-' . $o['user_id'])],
+            'client_ip_address' => $extra['ip'] ?? null, 'client_user_agent' => $extra['ua'] ?? null,
+            'fbp' => $extra['fbp'] ?? null, 'fbc' => $extra['fbc'] ?? null,
+        ]);
+        $body = ['data' => [[
+            'event_name' => $event, 'event_time' => time(), 'event_id' => $o['code'], 'action_source' => 'website',
+            'event_source_url' => site_url('index.html'), 'user_data' => $user,
+            'custom_data' => ['currency' => 'BDT', 'value' => (int)$o['total'], 'content_name' => $o['pack'] . ' · ' . $o['stack'], 'content_type' => 'product', 'content_ids' => [$o['pack']], 'order_id' => $o['code']],
+        ]]];
+        if ($m['test_code'] !== '') $body['test_event_code'] = $m['test_code'];
+        $r = fb_post($m, $body);
+        $m['capi_last'] = ['event' => $event, 'order' => $o['code'], 'ok' => $r['ok'], 'message' => $r['message'], 'at' => time()];
+        q("INSERT INTO settings (k, v) VALUES ('marketing', ?) ON DUPLICATE KEY UPDATE v = VALUES(v)", [json_encode($m, JSON_UNESCAPED_UNICODE)]);
+        marketing_settings(true);
+    } catch (Throwable $e) {
+        error_log('techill capi: ' . $e->getMessage());
+    }
+}
+
+function fb_post(array $m, array $body): array {
+    $base = cfg('fb_graph_base_url') ?: 'https://graph.facebook.com';   // override only for local tests
+    $ch = curl_init($base . '/' . FB_GRAPH_VERSION . '/' . rawurlencode($m['pixel_id']) . '/events?access_token=' . rawurlencode($m['capi_token']));
+    curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => json_encode($body), CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+        CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 4, CURLOPT_TIMEOUT => 6]);
+    $raw = curl_exec($ch); $err = curl_error($ch); curl_close($ch);
+    $j = json_decode((string)$raw, true);
+    if ($raw === false || $err !== '') return ['ok' => false, 'message' => 'Meta-তে সংযোগ হয়নি: ' . $err];
+    if (isset($j['events_received'])) return ['ok' => true, 'message' => 'Meta ' . $j['events_received'] . 'টা ইভেন্ট পেয়েছে'];
+    return ['ok' => false, 'message' => (string)($j['error']['message'] ?? 'অজানা উত্তর')];
+}
+
+// Browser context for fb_capi(), when the request comes from the customer's own browser.
+function fb_context(): array {
+    return ['ip' => client_ip(), 'ua' => mb_substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 400),
+            'fbp' => preg_match('/^fb\.\d\.\d+\.\d+$/', $_COOKIE['_fbp'] ?? '') ? $_COOKIE['_fbp'] : null,
+            'fbc' => preg_match('/^fb\.\d\.\d+\..+$/', $_COOKIE['_fbc'] ?? '') ? mb_substr($_COOKIE['_fbc'], 0, 300) : null];
 }

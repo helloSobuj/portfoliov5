@@ -263,6 +263,7 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
 .tpls{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:18px}
 .tpl{background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:12px;display:grid;gap:12px;align-content:start;cursor:pointer;transition:border-color .15s}
 .tpl.sel{border-color:var(--blue);box-shadow:var(--shadow)}
+.thumb-img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;object-position:top;border-radius:10px;border:1px solid var(--line);background:var(--sunk)}
 .thumb{aspect-ratio:4/5;max-width:100%;border-radius:10px;background:#fbfbfc;border:1px solid #e6e8ec;padding:9px;display:grid;grid-template-rows:7px 38% 1fr;gap:8px;overflow:hidden}
 .thumb i{display:block;border-radius:4px}
 .thumb .a{background:#e6e8ec}
@@ -840,6 +841,7 @@ function cleanup(){
 
 function openCheckout(stack, pack){
   api.track("event", {n: "checkout_open"});
+  const pk = STACKS[stack]?.packs[pack]; if (pk) api.fb("InitiateCheckout", {value: pk.price, content_name: `${pk.name} · ${STACKS[stack].name}`, content_type: "product", content_ids: [pk.name], num_items: 1});
   if (st.step === 5){ $("infoForm").reset(); syncAccount(); $("paySender").value = ""; $("payTrx").value = ""; $("payAgree").checked = false; st.tpl = null; st.add = {}; st.step = 1; st.maxStep = 1; }
   if (st.stack !== stack || st.pack !== pack){ st.tpl = null; st.add = {}; st.step = 1; st.maxStep = 1; }
   st.stack = stack; st.pack = pack;
@@ -883,7 +885,7 @@ function go(n){
 function renderTemplates(){
   $("tpls").innerHTML = S().templates.map((t,i) => `
     <div class="tpl ${st.tpl===i?"sel":""}" data-i="${i}" role="radio" aria-checked="${st.tpl===i}" tabindex="0" id="tpl-${t.code}">
-      <div class="thumb" style="--t:${t.t};--t2:${t.t2}" aria-hidden="true"><i class="a"></i><i class="b"></i><span class="c"><i></i><i></i><i></i><i></i></span></div>
+      ${t.image ? `<img class="thumb-img" src="${t.image}" alt="${t.name} টেমপ্লেটের ছবি" loading="lazy">` : `<div class="thumb" style="--t:${t.t};--t2:${t.t2}" aria-hidden="true"><i class="a"></i><i class="b"></i><span class="c"><i></i><i></i><i></i><i></i></span></div>`}
       <div class="tpl-info"><b>${t.name}</b><small>${t.niche}</small></div>
       <div class="tpl-acts"><a href="${t.demo}" target="_blank" rel="noopener">লাইভ ডেমো ↗</a><span class="radio-dot"></span></div>
     </div>`).join("");
@@ -1011,6 +1013,7 @@ function toastErr(msg){
 $("backBtn").addEventListener("click", () => go(Math.max(1, st.step - 1)));
 $("nextBtn").addEventListener("click", async () => {
   if (!validStep(st.step)) return;
+  if (st.step === 3) api.fb("AddPaymentInfo", {value: compute().total, content_name: `${P().name} · ${S().name}`});
   if (st.step < 4){ go(st.step + 1); return; }
   await submitOrder();
 });
@@ -1061,6 +1064,8 @@ async function submitOrder(){
     if (res.payment_url){ btn.textContent = "পেমেন্ট পেজে নিয়ে যাওয়া হচ্ছে..."; location.href = res.payment_url; return; }
     location.href = `dashboard.html#o=${o.id}&pay=retry`; return;
   }
+  // Same event id as the server-side Conversions API event, so Meta counts the purchase once.
+  api.fb("Purchase", {value: o.total, content_name: `${o.pack} · ${o.stack}`, content_type: "product", content_ids: [o.pack], num_items: 1}, o.code);
   btn.disabled = false;
   showDone(order);
 }
@@ -1133,12 +1138,13 @@ api.init().then(u => { me = u; syncAccount(); return api.catalog(); })
   .then(r => {
     applyCatalog(r.catalog); applyContact(); renderPacks();
     if (r.payments) PAYOPTS = r.payments;
+    if (r.pixel) api.initPixel(r.pixel.id);
     if (PAYOPTS.online) st.method = "PayStation";
     else if (!PAYOPTS.manual) $("packs").insertAdjacentHTML("afterend", '<p class="pk-note">এখন অর্ডার নেওয়া বন্ধ আছে, হোয়াটসঅ্যাপে যোগাযোগ করুন।</p>');
   })
   .catch(() => { $("packs").innerHTML = '<p class="pk-note">প্যাকেজ লোড করা যায়নি, পেজ রিফ্রেশ করুন।</p>'; });
 api.init().then(() => api.startTracking());
-document.addEventListener("click", e => { if (e.target.closest('a[href^="https://wa.me"]')) api.track("event", {n: "whatsapp_click"}); });
+document.addEventListener("click", e => { if (e.target.closest('a[href^="https://wa.me"]')){ api.track("event", {n: "whatsapp_click"}); api.fb("Contact"); } });
 </script>
 
 </body>

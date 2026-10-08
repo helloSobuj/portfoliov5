@@ -156,7 +156,16 @@ details.tv table{margin-top:8px}
 .feed small{color:var(--muted);font-size:.78rem}
 .people{list-style:none;margin:0;padding:0;display:grid;gap:10px}
 .people li{display:grid;grid-template-columns:36px 1fr auto;gap:12px;align-items:center}
-.av{width:36px;height:36px;border-radius:50%;background:var(--blue-soft);color:var(--blue-ink);display:grid;place-items:center;font-weight:700;font-size:.95rem}
+.av{width:36px;height:36px;border-radius:50%;background:var(--blue-soft);color:var(--blue-ink);display:grid;place-items:center;font-weight:700;font-size:.95rem;overflow:hidden;flex:none}
+.av img{width:100%;height:100%;object-fit:cover;display:block}
+.av.sm{width:30px;height:30px;font-size:.8rem}
+.av.lg{width:84px;height:84px;font-size:1.8rem}
+.who-cell{display:flex;align-items:center;gap:10px;min-width:0}
+.who-cell > div{min-width:0}
+.me-btn{border:0;background:transparent;padding:2px;border-radius:50%;cursor:pointer}
+.tpl-img{width:64px;height:80px;border-radius:8px;object-fit:cover;object-position:top;border:1px solid var(--line);display:block;background:var(--sunk)}
+.tpl-ph{width:64px;height:80px;border-radius:8px;border:1.5px dashed var(--line);display:grid;place-items:center;color:var(--muted);font-size:.72rem;text-align:center;line-height:1.2}
+.photo-row{display:flex;gap:14px;align-items:center}
 .people small{color:var(--muted);display:block;font-size:.8rem}
 
 /* tables */
@@ -312,6 +321,7 @@ textarea.inp{resize:vertical;min-height:84px}
     <div class="hdr-r">
       <button class="live-pill" type="button" id="livePill" hidden title="এখন সাইটে আছেন"><span class="dot"></span><span>লাইভ <b id="liveN">০</b></span></button>
       <a class="btn btn-ghost btn-sm dash-link" href="dashboard.html" id="dashLink" hidden>প্রোজেক্ট চ্যাট</a>
+      <button class="me-btn" type="button" id="meBtn" hidden title="আমার প্রোফাইল ও ছবি"></button>
       <button class="icon-btn theme-btn" id="themeBtn" type="button" aria-label="দিন/রাত থিম বদলান">
         <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></svg>
         <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
@@ -369,6 +379,8 @@ function left(t){
   return s < 0 ? txt + " দেরি" : txt + " বাকি";
 }
 const STAGES = api.STAGES;
+const safeImg = u => /^media\/[a-f0-9]{32}\.(jpg|png|webp)$/.test(u || "") || /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(u || "") ? u : null;
+const avatarHTML = (name, url, cls = "") => `<span class="av ${cls}">${safeImg(url) ? `<img src="${safeImg(url)}" alt="">` : esc(String(name || "?").trim().slice(0, 1) || "?")}</span>`;
 const PAY = {pending: "যাচাই বাকি", verified: "যাচাই হয়েছে", rejected: "পাওয়া যায়নি"};
 const MNAME = {bKash: "বিকাশ", Nagad: "নগদ", Rocket: "রকেট", PayStation: "অনলাইন (PayStation)"};
 const PSTAT = {initiated: ["শুরু হয়েছে", "b-off"], processing: ["প্রক্রিয়াধীন", "b-pending"], success: ["সফল", "b-done"], failed: ["ব্যর্থ", "b-late"], canceled: ["বাতিল", "b-cancel"], mismatch: ["মেলেনি", "b-late"], error: ["শুরু হয়নি", "b-late"]};
@@ -381,6 +393,7 @@ const I = {
   board: ic('<rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="10" rx="1.5"/><rect x="17" y="4" width="4" height="13" rx="1.5"/>'),
   visitors: ic('<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
   chart: ic('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'),
+  fb: ic('<path d="M15 3h-2.5A4.5 4.5 0 0 0 8 7.5V10H5.5v3.5H8V21h3.5v-7.5H14l.5-3.5h-3V7.8c0-.7.4-1.3 1.3-1.3H15z"/>'),
   pin: ic('<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>'),
   plus: ic('<path d="M12 5v14M5 12h14"/>'),
   catalog: ic('<path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>'),
@@ -394,12 +407,12 @@ const I = {
   step: ic('<path d="M5 12.5l4.5 4.5L19 7"/>'),
   ok: ic('<path d="M5 12.5l4.5 4.5L19 7"/>')
 };
-const SECTIONS = [["overview", "ওভারভিউ", I.home], ["orders", "অর্ডার", I.orders], ["board", "প্রোজেক্ট বোর্ড", I.board], ["analytics", "অ্যানালিটিক্স", I.chart], ["catalog", "প্যাকেজ ও দাম", I.catalog], ["payments", "পেমেন্ট গেটওয়ে", I.money], ["customers", "কাস্টমার", I.customers], ["team", "টিম ও ডেভেলপার", I.team]];
+const SECTIONS = [["overview", "ওভারভিউ", I.home], ["orders", "অর্ডার", I.orders], ["board", "প্রোজেক্ট বোর্ড", I.board], ["analytics", "অ্যানালিটিক্স", I.chart], ["catalog", "প্যাকেজ ও দাম", I.catalog], ["payments", "পেমেন্ট গেটওয়ে", I.money], ["marketing", "Facebook Pixel", I.fb], ["customers", "কাস্টমার", I.customers], ["team", "টিম ও ডেভেলপার", I.team]];
 
 let me = null, sec = "overview", days = 30, stats = null, orders = [], team = [], customers = [], cat = null, draft = null, dirty = false;
 let oFilter = "all", oQuery = "", oStack = "", boardDev = "", custQ = "", custF = "all", edStack = "woo", drawerId = null;
 let an = null, aDays = 30, aTab = "visitors";
-let pset = null, plist = null, ptest = null;
+let pset = null, plist = null, ptest = null, mset = null, mtest = null;
 let regionName = c => c;
 try { const dn = new Intl.DisplayNames(["bn"], {type: "region"}); regionName = c => { try { return dn.of(c) || c; } catch(e){ return c; } }; } catch(e){}
 const country = c => c ? regionName(c) : "অজানা";
@@ -468,6 +481,7 @@ function go(s){
   if (s === "customers") api.customers().then(r => { customers = r.customers; if (sec === "customers") render(); });
   if (s === "analytics") loadAnalytics();
   if (s === "payments") loadPayments();
+  if (s === "marketing") api.marketingSettings().then(r => { mset = r.settings; if (sec === "marketing") render(); }).catch(e => toast(e.message));
   if (s === "catalog" && !cat) api.catalog().then(r => { cat = r.catalog; draft = structuredClone(cat); if (sec === "catalog") render(); });
 }
 function renderLive(){
@@ -478,7 +492,7 @@ $("livePill").addEventListener("click", () => { aTab = "visitors"; go("analytics
 function render(){
   const m = $("main");
   if (!stats){ m.innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; return; }
-  ({overview: renderOverview, orders: renderOrders, board: renderBoard, analytics: renderAnalytics, catalog: renderCatalog, payments: renderPayments, team: renderTeam, customers: renderCustomers})[sec]();
+  ({overview: renderOverview, orders: renderOrders, board: renderBoard, analytics: renderAnalytics, catalog: renderCatalog, payments: renderPayments, marketing: renderMarketing, team: renderTeam, customers: renderCustomers})[sec]();
 }
 const rangeSeg = () => `<div class="seg" role="group" aria-label="সময়সীমা">${[7, 30, 90].map(d => `<button type="button" data-days="${d}" aria-pressed="${days === d}">${BN(d)} দিন</button>`).join("")}</div>`;
 $("main").addEventListener("click", async e => {
@@ -572,7 +586,7 @@ function renderOverview(){
       <div class="card"><div class="ch"><h3>প্রোজেক্ট পাইপলাইন</h3><small>বাতিল বাদে</small></div>${hbars(STAGES.map((st, i) => ({k: st, n: o.stages[i]})), 0)}
         <div class="ch" style="margin:22px 0 12px"><h3>জনপ্রিয় প্যাকেজ</h3><small>${BN(days)} দিন</small></div>${hbars(s.packs.map(p => ({k: p.pack + " · " + p.stack, n: p.n})), 0)}</div>
       <div class="card"><div class="ch"><h3>টিমের কাজের চাপ</h3><button class="btn btn-ghost btn-sm" type="button" data-go="team">টিম</button></div>
-        <ul class="people">${s.team.filter(t => t.active).map(t => `<li><span class="av">${esc(t.name.slice(0, 1))}</span><div><b>${esc(t.name)}</b><small>${t.role === "admin" ? "অ্যাডমিন" : "ডেভেলপার"} · ${BN(t.done)}টা সম্পন্ন</small></div><div style="text-align:right"><b>${BN(t.running)}</b><small class="${t.overdue ? "late" : ""}">${t.overdue ? BN(t.overdue) + "টা দেরি" : "চলমান"}</small></div></li>`).join("") || '<li class="empty">কোনো ডেভেলপার নেই</li>'}</ul>
+        <ul class="people">${s.team.filter(t => t.active).map(t => `<li>${avatarHTML(t.name, t.avatar)}<div><b>${esc(t.name)}</b><small>${t.role === "admin" ? "অ্যাডমিন" : "ডেভেলপার"} · ${BN(t.done)}টা সম্পন্ন</small></div><div style="text-align:right"><b>${BN(t.running)}</b><small class="${t.overdue ? "late" : ""}">${t.overdue ? BN(t.overdue) + "টা দেরি" : "চলমান"}</small></div></li>`).join("") || '<li class="empty">কোনো ডেভেলপার নেই</li>'}</ul>
         <div class="ch" style="margin:22px 0 12px"><h3>জনপ্রিয় অ্যাড-অন</h3></div>${hbars(s.addons.slice(0, 6), 0)}</div>
       <div class="card"><div class="ch"><h3>সাম্প্রতিক কার্যকলাপ</h3></div>
         <ul class="feed">${s.activity.map(a => `<li data-order="${a.order_id}"><span class="fi ${a.type === "message" ? "m" : ""}">${a.type === "message" ? I.chat : I.step}</span><div><p>${a.type === "message" ? `<b>${esc(a.who || "কাস্টমার")}:</b> ` : ""}${esc(a.text)}</p><small>${esc(a.code)} · ${ago(a.created)}${a.unread ? ' · <span class="late">না-পড়া</span>' : ""}</small></div></li>`).join("") || '<li class="empty">এখনো কিছু নেই</li>'}</ul></div>
@@ -835,7 +849,7 @@ function anEarnings(){
     <div class="grid g3">
       ${card("প্যাকেজ অনুযায়ী আয়", "বাতিল বাদে", hbars(o.by_pack.map(p => ({k: p.k, n: p.t})), 0, tk))}
       ${card("পেমেন্ট মাধ্যম অনুযায়ী", "", hbars(o.by_method.map(m => ({k: m.k, label: MNAME[m.k] || m.k, n: m.t})), 0, tk))}
-      ${card("সবচেয়ে বেশি দিয়েছেন", "শুরু থেকে", e.top_customers.length ? `<ul class="people">${e.top_customers.map(c => `<li><span class="av">${esc(c.name.slice(0, 1))}</span><div><b>${esc(c.name)}</b><small>${esc(c.email)} · ${BN(c.orders)}টা অর্ডার</small></div><b class="num">${tk(c.total)}</b></li>`).join("")}</ul>` : '<p class="empty">এখনো কিছু নেই</p>')}
+      ${card("সবচেয়ে বেশি দিয়েছেন", "শুরু থেকে", e.top_customers.length ? `<ul class="people">${e.top_customers.map(c => `<li>${avatarHTML(c.name, (customers.find(x => x.email === c.email) || {}).avatar)}<div><b>${esc(c.name)}</b><small>${esc(c.email)} · ${BN(c.orders)}টা অর্ডার</small></div><b class="num">${tk(c.total)}</b></li>`).join("")}</ul>` : '<p class="empty">এখনো কিছু নেই</p>')}
     </div>`;
 }
 $("main").addEventListener("click", e => {
@@ -885,8 +899,11 @@ function renderCatalog(){
     <div><button class="btn btn-ghost btn-sm" type="button" data-add="pack">+ নতুন প্যাকেজ</button></div></div>
 
     <div class="card ed-sec"><div class="ch" style="margin:0"><h3>টেমপ্লেট (${esc(S.name)})</h3><button class="btn btn-ghost btn-sm" type="button" data-add="tpl">+ টেমপ্লেট</button></div>
-      <div class="tbl-wrap"><table class="tbl" style="min-width:760px"><thead><tr><th>কোড</th><th>নাম</th><th>কাদের জন্য</th><th>ডেমো লিংক</th><th>রং</th><th></th></tr></thead><tbody>
-      ${S.templates.map((t, i) => { const tb = `${base}.templates.${i}`; return `<tr><td style="width:80px">${inp(tb + ".code")}</td><td>${inp(tb + ".name")}</td><td>${inp(tb + ".niche")}</td><td>${inp(tb + ".demo", "url")}</td>
+      <div class="tbl-wrap"><table class="tbl" style="min-width:920px"><thead><tr><th>ছবি</th><th>কোড</th><th>নাম</th><th>কাদের জন্য</th><th>ডেমো লিংক</th><th>রং <small class="muted">(ছবি না থাকলে)</small></th><th></th></tr></thead><tbody>
+      ${S.templates.map((t, i) => { const tb = `${base}.templates.${i}`; return `<tr>
+        <td style="width:150px"><div class="photo-row" style="gap:8px">${safeImg(t.image) ? `<img class="tpl-img" src="${safeImg(t.image)}" alt="${esc(t.name)}">` : '<span class="tpl-ph">ছবি নেই</span>'}
+          <div style="display:grid;gap:4px"><button class="btn btn-ghost btn-sm" type="button" data-tplimg="${tb}">${t.image ? "বদলান" : "আপলোড"}</button>${t.image ? `<button class="btn btn-ghost btn-sm" type="button" data-tplimg-del="${tb}">সরান</button>` : ""}</div></div></td>
+        <td style="width:80px">${inp(tb + ".code")}</td><td>${inp(tb + ".name")}</td><td>${inp(tb + ".niche")}</td><td>${inp(tb + ".demo", "url")}</td>
         <td style="white-space:nowrap"><input type="color" data-p="${tb}.t" data-t="str" value="${esc(t.t)}" aria-label="মূল রং"> <input type="color" data-p="${tb}.t2" data-t="str" value="${esc(t.t2)}" aria-label="হালকা রং"></td>
         <td><button class="btn btn-ghost btn-sm" type="button" data-del="${base}.templates" data-i="${i}">মুছুন</button></td></tr>`; }).join("")}
       </tbody></table></div></div>
@@ -932,6 +949,18 @@ $("main").addEventListener("click", async e => {
     if (add.dataset.add === "addon") draft.addons.push({key: "new_addon_" + (draft.addons.length + 1), g: 0, name: "নতুন অ্যাড-অন", price: 1000, _new: true});
     markDirty(); return renderCatalog();
   }
+  const ti = e.target.closest("[data-tplimg]");
+  if (ti){
+    const pick = document.createElement("input"); pick.type = "file"; pick.accept = "image/jpeg,image/png,image/webp";
+    pick.onchange = async () => {
+      const f = pick.files[0]; if (!f) return;
+      ti.disabled = true; ti.textContent = "আপলোড হচ্ছে...";
+      try { const r = await api.mediaUpload(f); getP(draft, ti.dataset.tplimg).image = r.url; markDirty(); renderCatalog(); toast("ছবি যোগ হয়েছে। সাইটে দেখাতে নিচে সেভ করুন।"); }
+      catch(err){ toast(err.message); ti.disabled = false; ti.textContent = "আপলোড"; }
+    };
+    pick.click(); return;
+  }
+  const td = e.target.closest("[data-tplimg-del]"); if (td){ delete getP(draft, td.dataset.tplimgDel).image; markDirty(); return renderCatalog(); }
   if (e.target.closest("#catUndo")){ draft = structuredClone(cat); dirty = false; return renderCatalog(); }
   if (e.target.closest("#catReset")){
     if (!confirm("সব প্যাকেজ, দাম আর অ্যাড-অন শুরুর মানে ফিরে যাবে। নিশ্চিত?")) return;
@@ -1026,6 +1055,64 @@ function renderPayments(){
   $("cbCopy").addEventListener("click", async () => { try { await navigator.clipboard.writeText(pset.callback_url); toast("কপি হয়েছে।"); } catch(e){ $("cbUrl").select(); } });
 }
 
+function renderMe(){
+  const t = team.find(x => x.id === me.id);
+  if (t) me.avatar = t.avatar;
+  $("meBtn").innerHTML = avatarHTML(me.name, me.avatar); $("meBtn").hidden = false;
+}
+$("meBtn").addEventListener("click", () => openPerson("team", team.find(x => x.id === me.id) || {...me, active: true, running: 0, overdue: 0, done: 0, created: Date.now() / 1000}));
+
+/* ---------- Facebook Pixel ---------- */
+function renderMarketing(){
+  if (!mset){ $("main").innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; return; }
+  const m = mset, on = m.pixel_enabled && m.pixel_id, last = m.capi_last;
+  const EV = [["PageView", "ল্যান্ডিং পেজ বা ড্যাশবোর্ড খুললে"], ["InitiateCheckout", "কোনো প্যাকেজের \"এই প্যাকেজ নিন\" চাপলে, প্যাকেজের দাম সহ"], ["AddPaymentInfo", "চেকআউটে পেমেন্ট ধাপ পার হলে"],
+    ["Purchase", "অর্ডার জমা হলে (Send Money) বা অনলাইন পেমেন্ট সফল হলে, মোট টাকা সহ"], ["Contact", "হোয়াটসঅ্যাপ বোতামে ক্লিক করলে"]];
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>Facebook Pixel</h1><p>Pixel ID দিলেই সাইটে Pixel চালু হবে। কোড বসাতে হবে না।</p></div>
+      <div class="tools">${on ? '<span class="badge b-done" style="font-size:.9rem;padding:4px 14px">Pixel চালু</span>' : '<span class="badge b-off" style="font-size:.9rem;padding:4px 14px">Pixel বন্ধ</span>'}${m.capi_set ? ' <span class="badge b-run" style="font-size:.9rem;padding:4px 14px">Conversions API চালু</span>' : ""}</div></div>
+    <div class="grid g-main" style="margin-bottom:18px">
+      <form class="card" id="fbForm" style="display:grid;gap:14px;align-content:start">
+        <div class="ch" style="margin:0"><h3>Pixel</h3><label class="switch"><input type="checkbox" name="pixel_enabled" ${m.pixel_enabled ? "checked" : ""}><span></span>Pixel চালু</label></div>
+        <div class="f"><label for="fb-id">Pixel ID</label><input class="inp" id="fb-id" name="pixel_id" inputmode="numeric" value="${esc(m.pixel_id)}" placeholder="যেমন 1234567890123456" autocomplete="off">
+          <small class="muted" style="font-size:.82rem">Meta Events Manager → Data sources → আপনার Pixel → Settings-এ Pixel ID পাবেন। শুধু সংখ্যাগুলো দিন, পুরো কোড না।</small></div>
+        <div style="border-top:1px solid var(--line);padding-top:14px;display:grid;gap:12px">
+          <h3 style="font-size:1rem">Conversions API <small class="muted" style="font-weight:400">(ঐচ্ছিক, তবে দরকারি)</small></h3>
+          <p class="muted" style="font-size:.86rem">iPhone আর অ্যাড ব্লকারে ব্রাউজারের Pixel অনেক সময় আটকে যায়। Access token দিলে সার্ভার নিজেও Meta-কে Purchase জানাবে, ফলে Ad-এর হিসাব আর টার্গেটিং ভালো হয়। একই অর্ডার দুবার গোনা হয় না।</p>
+          <div class="f"><label for="fb-token">Access token ${m.capi_set ? '<small>(সেভ করা আছে, বদলাতে চাইলে নতুন দিন)</small>' : ""}</label><input class="inp" id="fb-token" name="capi_token" type="password" autocomplete="off" placeholder="${m.capi_set ? "••••••••" : "Events Manager → Settings → Conversions API → Generate access token"}"></div>
+          <div class="f"><label for="fb-test">Test event code <small>(পরীক্ষার সময় দিন, পরে খালি করে দিন)</small></label><input class="inp" id="fb-test" name="test_code" value="${esc(m.test_code)}" placeholder="যেমন TEST12345" autocomplete="off"></div>
+        </div>
+        <div class="row2"><button class="btn btn-primary" type="submit">সেভ করুন</button><button class="btn btn-ghost" type="button" id="fbTest" ${m.capi_set && m.pixel_id ? "" : "disabled"}>টেস্ট ইভেন্ট পাঠান</button>${m.capi_set ? '<button class="btn btn-ghost btn-sm" type="button" id="fbClear">Token মুছুন</button>' : ""}</div>
+        <p class="err" id="fbErr" role="alert"></p>
+        ${mtest ? `<div class="alert ${mtest.ok ? "good" : "bad"}" style="cursor:default">${mtest.ok ? I.ok : I.alert}<span>${esc(mtest.message)}${mtest.ok && m.test_code ? " · Events Manager → Test events-এ দেখুন।" : ""}</span></div>` : ""}
+        ${m.test_code ? '<div class="alert warn" style="cursor:default">' + I.alert + '<span>Test event code দেওয়া আছে, তাই সার্ভারের ইভেন্টগুলো শুধু Test events-এ যাচ্ছে, Ad-এর হিসাবে না। পরীক্ষা শেষে কোডটা মুছে সেভ করুন।</span></div>' : ""}
+      </form>
+      <div class="card" style="display:grid;gap:14px;align-content:start">
+        <h3>কোন ইভেন্ট কখন যায়</h3>
+        <ul class="lines">${EV.map(([e, w]) => `<li><b>${e}</b><span class="muted" style="text-align:right">${w}</span></li>`).join("")}</ul>
+        <p class="muted" style="font-size:.86rem">সব টাকা BDT-তে যায়। Purchase-এ অর্ডার কোড event ID হিসেবে যায়, তাই ব্রাউজার আর সার্ভারের একই Purchase Meta একবারই গোনে।</p>
+        <div class="box"><h4>সার্ভার থেকে শেষ পাঠানো</h4>${last ? `<p>${last.ok ? '<span class="badge b-done">সফল</span>' : '<span class="badge b-late">ব্যর্থ</span>'} ${esc(last.event)} · ${esc(last.order)} · ${ago(last.at)}</p><p class="muted" style="font-size:.86rem;margin-top:6px">${esc(last.message)}</p>` : '<p class="muted" style="font-size:.88rem">এখনো কিছু পাঠানো হয়নি।</p>'}</div>
+        <p class="muted" style="font-size:.84rem">চেক করতে: Chrome-এ "Meta Pixel Helper" extension দিয়ে সাইট খুলুন। Pixel চালু থাকলে PageView দেখাবে।</p>
+      </div>
+    </div>`;
+  $("fbForm").addEventListener("submit", async e => {
+    e.preventDefault(); $("fbErr").textContent = "";
+    const f = new FormData(e.target), data = {pixel_id: f.get("pixel_id"), capi_token: f.get("capi_token") || "", test_code: f.get("test_code") || ""};
+    if (f.get("pixel_enabled")) data.pixel_enabled = 1;
+    try { mset = (await api.saveMarketing(data)).settings; mtest = null; renderMarketing(); toast(mset.pixel_enabled ? "সেভ হয়েছে। সাইটে Pixel চালু।" : "সেভ হয়েছে। Pixel বন্ধ।"); }
+    catch(err){ $("fbErr").textContent = err.message; }
+  });
+  $("fbTest")?.addEventListener("click", async () => {
+    const b = $("fbTest"); b.disabled = true; b.textContent = "পাঠানো হচ্ছে...";
+    try { mtest = await api.capiTest(); } catch(err){ mtest = {ok: false, message: err.message}; }
+    renderMarketing();
+  });
+  $("fbClear")?.addEventListener("click", async () => {
+    if (!confirm("Conversions API token মুছবেন? ব্রাউজারের Pixel চলবে, সার্ভার থেকে ইভেন্ট যাবে না।")) return;
+    try { mset = (await api.saveMarketing({pixel_enabled: m.pixel_enabled ? 1 : "", pixel_id: m.pixel_id, test_code: m.test_code, capi_clear: 1})).settings; renderMarketing(); } catch(err){ toast(err.message); }
+  });
+}
+
 /* ---------- people drawer (customers & team) ---------- */
 // kind: "customer" | "team"; p: the person, or null to add a new one
 function openPerson(kind, p){
@@ -1037,6 +1124,9 @@ function openPerson(kind, p){
       <p>${isNew ? (cust ? "কাস্টমারের হয়ে অ্যাকাউন্ট খুলে দিন, পরে তিনি নিজে লগইন করবেন।" : "ডেভেলপার শুধু তাকে দেওয়া প্রোজেক্ট দেখবেন।") : esc(p.email)}</p></div>
       <button class="icon-btn" type="button" id="drClose" aria-label="বন্ধ করুন">${ic('<path d="M6 6l12 12M18 6L6 18"/>')}</button></div>
     <div class="dr-b">
+      ${!isNew ? `<div class="box"><h4>প্রোফাইল ছবি</h4><div class="photo-row">${avatarHTML(p.name, p.avatar, "lg")}<div class="row2">
+        <input type="file" id="pPhoto" accept="image/jpeg,image/png,image/webp" hidden><button class="btn btn-ghost btn-sm" type="button" id="pPhotoPick">${p.avatar ? "ছবি বদলান" : "ছবি দিন"}</button>
+        ${p.avatar ? '<button class="btn btn-ghost btn-sm" type="button" id="pPhotoDel">সরান</button>' : ""}</div></div></div>` : ""}
       ${!isNew ? `<div class="box"><dl class="kv">
         ${cust ? `<dt>অর্ডার</dt><dd>${BN(p.orders)}টা · ${BN(p.running)}টা চলমান</dd><dt>মোট পেমেন্ট</dt><dd>${tk(p.spent)}</dd><dt>শেষ অর্ডার</dt><dd>${p.last_order ? ago(p.last_order) : "—"}</dd>`
                : `<dt>রোল</dt><dd>${p.role === "admin" ? "অ্যাডমিন" : "ডেভেলপার"}</dd><dt>চলমান প্রোজেক্ট</dt><dd>${BN(p.running)}${p.overdue ? ` · <span class="late">${BN(p.overdue)}টা দেরি</span>` : ""}</dd><dt>সম্পন্ন</dt><dd>${BN(p.done)}টা</dd>`}
@@ -1091,6 +1181,18 @@ function openPerson(kind, p){
       closeDrawer();
     } catch(err){ toast(err.message); }
   });
+  const reopen = async () => {
+    if (cust) customers = (await api.customers()).customers; else team = (await api.team()).team;
+    if (p.id === me.id) renderMe();
+    render(); openPerson(kind, (cust ? customers : team).find(x => x.id === p.id));
+  };
+  $("pPhotoPick")?.addEventListener("click", () => $("pPhoto").click());
+  $("pPhoto")?.addEventListener("change", async e => {
+    const f = e.target.files[0]; if (!f) return;
+    const b = $("pPhotoPick"); b.disabled = true; b.textContent = "আপলোড হচ্ছে...";
+    try { await api.avatarUpload(f, p.id); toast("ছবি আপডেট হয়েছে।"); await reopen(); } catch(err){ toast(err.message); b.disabled = false; b.textContent = "ছবি দিন"; }
+  });
+  $("pPhotoDel")?.addEventListener("click", async () => { try { await api.avatarRemove(p.id); toast("ছবি সরানো হয়েছে।"); await reopen(); } catch(err){ toast(err.message); } });
   $("pOrders")?.addEventListener("click", () => { closeDrawer(); oQuery = p.email; oFilter = "all"; go("orders"); });
 }
 
@@ -1107,7 +1209,7 @@ function renderTeam(){
       ${tile("দেরি হচ্ছে", nf(team.reduce((s, t) => s + t.overdue, 0)), "ডেডলাইন পেরিয়ে গেছে")}
     </div>
     <div class="card" style="padding:10px 14px"><div class="tbl-wrap"><table class="tbl" style="min-width:700px"><thead><tr><th>নাম</th><th>রোল</th><th class="r">চলমান</th><th class="r">দেরি</th><th class="r">সম্পন্ন</th><th>অবস্থা</th><th></th></tr></thead><tbody>
-      ${team.map(t => `<tr class="click" data-member="${t.id}"><td><b>${esc(t.name)}</b>${t.id === me.id ? ' <span class="badge b-admin">আপনি</span>' : ""}<span class="sub">${esc(t.email)}</span></td>
+      ${team.map(t => `<tr class="click" data-member="${t.id}"><td><div class="who-cell">${avatarHTML(t.name, t.avatar, "sm")}<div><b>${esc(t.name)}</b>${t.id === me.id ? ' <span class="badge b-admin">আপনি</span>' : ""}<span class="sub">${esc(t.email)}</span></div></div></td>
         <td>${t.role === "admin" ? "অ্যাডমিন" : "ডেভেলপার"}</td>
         <td class="r">${BN(t.running)}</td><td class="r ${t.overdue ? "late" : ""}">${BN(t.overdue)}</td><td class="r">${BN(t.done)}</td>
         <td>${t.active ? '<span class="badge b-done">সক্রিয়</span>' : '<span class="badge b-off">বন্ধ</span>'}</td>
@@ -1139,7 +1241,7 @@ function renderCustomers(){
     </div>
     <div class="chips" style="margin-bottom:14px">${Object.entries(CF).map(([k, [l, f]]) => `<button type="button" data-cf="${k}" aria-pressed="${custF === k}">${l} (${BN(customers.filter(f).length)})</button>`).join("")}</div>
     <div class="card" style="padding:10px 14px">${list.length ? `<div class="tbl-wrap"><table class="tbl" style="min-width:820px"><thead><tr><th>কাস্টমার</th><th>ফোন</th><th class="r">অর্ডার</th><th class="r">চলমান</th><th class="r">মোট পেমেন্ট</th><th>শেষ অর্ডার</th><th>অবস্থা</th><th></th></tr></thead><tbody>
-      ${list.map(c => `<tr class="click" data-cust="${c.id}"><td><b>${esc(c.name)}</b><span class="sub">${esc(c.email)} · ${dateOnly(c.created)}</span></td><td>${esc(c.phone || "—")}</td><td class="r">${BN(c.orders)}</td><td class="r">${BN(c.running)}</td><td class="r num">${tk(c.spent)}</td><td>${c.last_order ? ago(c.last_order) : "—"}</td>
+      ${list.map(c => `<tr class="click" data-cust="${c.id}"><td><div class="who-cell">${avatarHTML(c.name, c.avatar, "sm")}<div><b>${esc(c.name)}</b><span class="sub">${esc(c.email)} · ${dateOnly(c.created)}</span></div></div></td><td>${esc(c.phone || "—")}</td><td class="r">${BN(c.orders)}</td><td class="r">${BN(c.running)}</td><td class="r num">${tk(c.spent)}</td><td>${c.last_order ? ago(c.last_order) : "—"}</td>
         <td>${c.active ? '<span class="badge b-done">সক্রিয়</span>' : '<span class="badge b-off">বন্ধ</span>'}</td><td class="r"><button class="btn btn-ghost btn-sm" type="button" data-cust="${c.id}">এডিট</button></td></tr>`).join("")}
     </tbody></table></div>` : `<p class="empty">${customers.length ? "কাউকে পাওয়া যায়নি।" : "লোড হচ্ছে..."}</p>`}</div>`;
   if (focus){ const i = $("cq"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
@@ -1159,7 +1261,7 @@ async function boot(){
   sec = SECTIONS.some(([k]) => k === location.hash.slice(1)) ? location.hash.slice(1) : "overview";
   render();
   try { await loadAll(); } catch(e){ if (e.status === 401 || e.status === 403) return showAuth(); toast(e.message); return; }
-  renderNav(); renderLive(); go(sec);
+  renderNav(); renderLive(); renderMe(); go(sec);
   setInterval(() => { if (!document.hidden) refreshStats(); }, 30000);
   setInterval(() => { if (!document.hidden && sec !== "catalog") refreshOrders().then(() => { if (["orders", "board"].includes(sec) && !document.activeElement?.closest("select,input")) render(); }); }, 60000);
 }

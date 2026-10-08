@@ -42,6 +42,7 @@ function migrate(): void {
     if (!$col('orders', 'cancelled')) db()->exec('ALTER TABLE orders ADD cancelled TINYINT(1) NOT NULL DEFAULT 0 AFTER developer_id');
     if (!$col('visits', 'city')) db()->exec('ALTER TABLE visits ADD browser VARCHAR(30) NULL AFTER device, ADD os VARCHAR(20) NULL AFTER browser,
         ADD country CHAR(2) NULL AFTER os, ADD country_name VARCHAR(60) NULL AFTER country, ADD region VARCHAR(80) NULL AFTER country_name, ADD city VARCHAR(80) NULL AFTER region');
+    if (!$col('users', 'avatar')) db()->exec('ALTER TABLE users ADD avatar VARCHAR(60) NULL AFTER active');
     if (!$col('live_visitors', 'city')) db()->exec('ALTER TABLE live_visitors ADD browser VARCHAR(30) NULL AFTER device, ADD city VARCHAR(80) NULL AFTER browser, ADD country CHAR(2) NULL AFTER city');
 }
 ?><!doctype html>
