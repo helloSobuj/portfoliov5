@@ -18,15 +18,6 @@
   --font:"Tiro Bangla","Noto Serif Bengali",Georgia,serif;
   --r:18px;
 }
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --bg:#0b1018;--surface:#111925;--sunk:#0e1520;--ink:#e9eef5;--muted:#98a4b7;--line:#1f2b3b;
-    --blue:#3aa0ff;--blue-ink:#7cc0ff;--blue-soft:#10223a;--on-blue:#04121f;
-    --ok:#3ccf7f;--ok-soft:#0f2a1c;--warn:#ffb454;--warn-soft:#2c1f0c;--danger:#ff6b60;--danger-soft:#2d1311;
-    --shadow:0 1px 2px rgb(0 0 0 / .3),0 18px 40px -18px rgb(0 0 0 / .6);
-    color-scheme:dark;
-  }
-}
 :root[data-theme="dark"]{
   --bg:#0b1018;--surface:#111925;--sunk:#0e1520;--ink:#e9eef5;--muted:#98a4b7;--line:#1f2b3b;
   --blue:#3aa0ff;--blue-ink:#7cc0ff;--blue-soft:#10223a;--on-blue:#04121f;
@@ -47,7 +38,6 @@ button,input,textarea,select{font:inherit;color:inherit}
 
 .logo{display:block;height:36px;width:auto}
 .logo-d{display:none}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .logo-l{display:none}:root:not([data-theme="light"]) .logo-d{display:block}}
 :root[data-theme="dark"] .logo-l{display:none}
 :root[data-theme="dark"] .logo-d{display:block}
 
@@ -69,7 +59,6 @@ button,input,textarea,select{font:inherit;color:inherit}
 .who b{font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .who small{color:var(--muted);font-size:.8rem}
 .theme-btn .moon{display:none}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .theme-btn .sun{display:none}:root:not([data-theme="light"]) .theme-btn .moon{display:block}}
 :root[data-theme="dark"] .theme-btn .sun{display:none}
 :root[data-theme="dark"] .theme-btn .moon{display:block}
 .demo-bar{background:var(--warn-soft);color:var(--warn);font-size:.9rem;text-align:center;padding:8px 16px}
@@ -267,6 +256,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:.92rem;min-width:720px}
   .inv{border-radius:0;padding:0}
 }
 
+.row-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:12px;font-size:.92rem;z-index:50;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
 
 @media (max-width:960px){
@@ -383,7 +373,8 @@ const dayOf = t => new Date(t * 1000).toLocaleDateString("bn-BD", {weekday: "lon
 const size = b => b > 1048576 ? BN((b / 1048576).toFixed(1)) + " MB" : BN(Math.max(1, Math.round(b / 1024))) + " KB";
 const STAGES = ["তথ্য জমা", "পেমেন্ট যাচাই", "সেটআপ চলছে", "রিভিউ", "ডেলিভারি"];
 const PAY = {pending: "পেমেন্ট যাচাই বাকি", verified: "পেমেন্ট যাচাই হয়েছে", rejected: "পেমেন্ট পাওয়া যায়নি"};
-const MNAME = {bKash: "বিকাশ", Nagad: "নগদ", Rocket: "রকেট"};
+const MNAME = {bKash: "বিকাশ", Nagad: "নগদ", Rocket: "রকেট", PayStation: "অনলাইন (PayStation)"};
+const awaitingOnline = o => o.pay_method === "PayStation" && o.pay_status !== "verified" && !o.cancelled;
 const INFO_LABELS = {whatsapp: "হোয়াটসঅ্যাপ নম্বর", phone: "ফোন নম্বর (ওয়েবসাইটে দেখাবে)", fb_page: "ফেসবুক পেজের লিংক", address: "ঠিকানা", business_intro: "ব্যবসার পরিচিতি", additional_info: "অতিরিক্ত তথ্য"};
 const FILE_IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>';
 const CLIP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5l-8.6 8.6a5 5 0 0 1-7.1-7.1l8.6-8.6a3.3 3.3 0 0 1 4.7 4.7l-8.6 8.6a1.7 1.7 0 0 1-2.4-2.4l7.9-7.9"/></svg>';
@@ -408,7 +399,7 @@ const ROLE = {admin: "অ্যাডমিন", developer: "ডেভেলপ�
 (function(){
   try { const s = JSON.parse(localStorage.getItem("techill_theme")); if (s === "light" || s === "dark") document.documentElement.dataset.theme = s; } catch(e){}
   $("themeBtn").addEventListener("click", () => {
-    const c = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    const c = document.documentElement.dataset.theme || "light";
     const n = c === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = n;
     try { localStorage.setItem("techill_theme", JSON.stringify(n)); } catch(e){}
   });
@@ -577,7 +568,7 @@ function renderDetail(){
           <button class="btn btn-ghost btn-sm back" type="button" id="backBtn" style="margin-bottom:12px">← সব অর্ডার</button>
           <h2>${esc(o.code)} <span class="badge b-${o.pay_status}">${PAY[o.pay_status]}</span>${o.cancelled ? ' <span class="badge b-cancel">বাতিল</span>' : ""}</h2>
           <p>${esc(o.pack)} প্যাকেজ · ${esc(o.stack)} · ${esc(o.template)}</p>
-          ${isStaff() ? (o.developer ? `<p>ডেভেলপার: <b>${esc(o.developer.name)}</b></p>` : '<p class="late">এখনো কোনো ডেভেলপার দেওয়া হয়নি</p>') : `<button class="btn btn-ghost btn-sm" type="button" id="invBtn" style="margin-top:10px">ইনভয়েস দেখুন</button>`}
+          ${isStaff() ? (o.developer ? `<p>ডেভেলপার: <b>${esc(o.developer.name)}</b></p>` : '<p class="late">এখনো কোনো ডেভেলপার দেওয়া হয়নি</p>') : `<div class="row-btns">${awaitingOnline(o) || (o.pay_status === "rejected" && !o.cancelled) ? `<button class="btn btn-primary btn-sm" type="button" id="payBtn">${tk(o.total)} অনলাইনে পেমেন্ট করুন</button>` : ""}<button class="btn btn-ghost btn-sm" type="button" id="invBtn">ইনভয়েস দেখুন</button></div>`}
         </div>
         <div class="clock" id="clock"></div>
       </div>
@@ -593,6 +584,7 @@ function renderDetail(){
       <div id="tabBody"></div>
     </div>`;
   $("invBtn")?.addEventListener("click", () => showInvoice(o));
+  $("payBtn")?.addEventListener("click", () => startPayment(o.id));
   $("backBtn").addEventListener("click", () => { cur = null; history.replaceState(null, "", location.pathname + location.search); renderList(); renderEmptyDetail(); });
   document.querySelector(".tabs").addEventListener("click", e => { const b = e.target.closest("button[data-tab]"); if (b){ tab = b.dataset.tab; renderDetail(); } });
   if (isStaff()) bindAdmin();
@@ -603,6 +595,7 @@ function tickClock(){
   const el = $("clock"); if (!el || !cur) return;
   const o = cur.order;
   if (o.stage === 4){ el.innerHTML = `<b>✓</b><small>ডেলিভারি সম্পন্ন</small>`; return; }
+  if (awaitingOnline(o)){ el.innerHTML = `<b style="font-size:1.2rem">পেমেন্ট বাকি</b><small>পেমেন্টের পর থেকে ${BN(o.hours)} ঘণ্টার কাউন্টডাউন শুরু হবে</small>`; return; }
   const s = Math.max(0, o.deadline - Math.floor(Date.now() / 1000));
   el.innerHTML = s ? `<b>${pad(Math.floor(s / 3600))}:${pad(Math.floor(s % 3600 / 60))}:${pad(s % 60)}</b><small>ডেলিভারির বাকি · ${when(o.deadline)}</small>` : `<b>০০:০০:০০</b><small>সময় শেষ, শিগগিরই ডেলিভারি</small>`;
 }
@@ -772,6 +765,24 @@ function bindInfo(){
   });
 }
 
+/* ---------- online payment ---------- */
+async function startPayment(id){
+  const b = $("payBtn"); if (b){ b.disabled = true; b.textContent = "PayStation-এ নিয়ে যাওয়া হচ্ছে..."; }
+  try {
+    const r = await api.payStart(id);
+    if (r.paid){ toast("আপনার পেমেন্ট আগেই সম্পন্ন হয়েছে।"); await refresh(true); return; }
+    location.href = r.payment_url;
+  } catch(e){ toast(e.message); if (b){ b.disabled = false; b.textContent = "আবার চেষ্টা করুন"; } }
+}
+// PayStation sends the customer back to dashboard.html#o=ID&pay=success|failed|cancel|pending
+function payReturnMessage(flag){
+  if (!flag) return;
+  const msg = {success: "পেমেন্ট সফল হয়েছে, ধন্যবাদ! ডেলিভারির কাউন্টডাউন শুরু হয়েছে।", cancel: "পেমেন্ট বাতিল করেছেন। চাইলে আবার চেষ্টা করুন।",
+    failed: "পেমেন্ট সম্পন্ন হয়নি। আবার চেষ্টা করুন, টাকা কেটে থাকলে চ্যাটে জানান।", pending: "পেমেন্ট এখনো প্রক্রিয়াধীন। কিছুক্ষণ পর পেজ রিফ্রেশ করুন।",
+    retry: "অর্ডার জমা হয়েছে, কিন্তু পেমেন্ট পেজ খোলা যায়নি। নিচের বোতাম চেপে আবার চেষ্টা করুন।", unknown: "এই পেমেন্টটা খুঁজে পাওয়া যায়নি। চ্যাটে জানান।"}[flag];
+  if (msg){ toast(msg); const t = $("toast"); clearTimeout(t._t); t._t = setTimeout(() => t.hidden = true, 7000); }
+}
+
 /* ---------- refresh & polling ---------- */
 async function refresh(full){
   if (!cur) return;
@@ -809,7 +820,8 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) poll
 (async () => {
   me = await api.init();
   $("demoBar").hidden = !api.demo;
-  if (me) enterApp(); else showAuth();
+  const payFlag = (location.hash.match(/pay=(\w+)/) || [])[1];
+  if (me) enterApp().then(() => payReturnMessage(payFlag)); else { showAuth(); payReturnMessage(payFlag); }
 })();
 </script>
 </body>

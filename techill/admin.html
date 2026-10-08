@@ -20,15 +20,6 @@
   --font:"Tiro Bangla","Noto Serif Bengali",Georgia,serif;
   --r:18px;
 }
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --bg:#0b1018;--surface:#111925;--sunk:#0e1520;--ink:#e9eef5;--muted:#98a4b7;--line:#1f2b3b;--grid:#18222f;
-    --blue:#3aa0ff;--blue-ink:#7cc0ff;--blue-soft:#10223a;--on-blue:#04121f;
-    --ok:#3ccf7f;--ok-soft:#0f2a1c;--warn:#ffb454;--warn-soft:#2c1f0c;--danger:#ff6b60;--danger-soft:#2d1311;
-    --shadow:0 1px 2px rgb(0 0 0 / .3),0 18px 40px -18px rgb(0 0 0 / .6);
-    color-scheme:dark;
-  }
-}
 :root[data-theme="dark"]{
   --bg:#0b1018;--surface:#111925;--sunk:#0e1520;--ink:#e9eef5;--muted:#98a4b7;--line:#1f2b3b;--grid:#18222f;
   --blue:#3aa0ff;--blue-ink:#7cc0ff;--blue-soft:#10223a;--on-blue:#04121f;
@@ -48,7 +39,6 @@ button,input,textarea,select{font:inherit;color:inherit}
 
 .logo{display:block;height:34px;width:auto}
 .logo-d{display:none}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .logo-l{display:none}:root:not([data-theme="light"]) .logo-d{display:block}}
 :root[data-theme="dark"] .logo-l{display:none}
 :root[data-theme="dark"] .logo-d{display:block}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:10px 18px;font-weight:600;text-decoration:none;cursor:pointer;border:1.5px solid transparent;transition:transform .15s,border-color .15s;white-space:nowrap;background:transparent}
@@ -63,7 +53,6 @@ button,input,textarea,select{font:inherit;color:inherit}
 .icon-btn{width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer;flex:none}
 .icon-btn svg{width:19px;height:19px}
 .theme-btn .moon{display:none}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .theme-btn .sun{display:none}:root:not([data-theme="light"]) .theme-btn .moon{display:block}}
 :root[data-theme="dark"] .theme-btn .sun{display:none}
 :root[data-theme="dark"] .theme-btn .moon{display:block}
 .badge{display:inline-flex;align-items:center;gap:4px;font-size:.78rem;font-weight:600;border-radius:999px;padding:2px 10px;white-space:nowrap}
@@ -263,6 +252,21 @@ textarea.inp{resize:vertical;min-height:84px}
 .dl.dn{color:var(--danger)}
 .tile .s .muted{font-size:.8rem}
 
+/* switch, radio segments, steps */
+.switch{display:inline-flex;align-items:center;gap:10px;font-weight:600;font-size:.92rem;cursor:pointer}
+.switch input{position:absolute;opacity:0;width:1px;height:1px}
+.switch span{width:44px;height:26px;border-radius:999px;background:var(--line);position:relative;flex:none;transition:background .15s}
+.switch span::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px rgb(0 0 0 / .25);transition:transform .15s}
+.switch input:checked + span{background:var(--ok)}
+.switch input:checked + span::after{transform:translateX(18px)}
+.switch input:focus-visible + span{outline:2px solid var(--blue);outline-offset:2px}
+.seg-r{position:relative;cursor:pointer}
+.seg-r input{position:absolute;opacity:0}
+.seg-r span{display:block;border-radius:9px;padding:6px 14px;font-weight:600;color:var(--muted);font-size:.9rem}
+.seg-r input:checked + span{background:var(--blue);color:var(--on-blue)}
+.seg-r input:focus-visible + span{outline:2px solid var(--blue)}
+.steps-ol{margin:0;padding-left:20px;display:grid;gap:8px;font-size:.92rem}
+
 /* auth */
 .auth{display:grid;place-items:center;padding:72px 16px}
 .auth-card{width:100%;max-width:420px;background:var(--surface);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:30px;display:grid;gap:14px}
@@ -366,7 +370,9 @@ function left(t){
 }
 const STAGES = api.STAGES;
 const PAY = {pending: "যাচাই বাকি", verified: "যাচাই হয়েছে", rejected: "পাওয়া যায়নি"};
-const MNAME = {bKash: "বিকাশ", Nagad: "নগদ", Rocket: "রকেট"};
+const MNAME = {bKash: "বিকাশ", Nagad: "নগদ", Rocket: "রকেট", PayStation: "অনলাইন (PayStation)"};
+const PSTAT = {initiated: ["শুরু হয়েছে", "b-off"], processing: ["প্রক্রিয়াধীন", "b-pending"], success: ["সফল", "b-done"], failed: ["ব্যর্থ", "b-late"], canceled: ["বাতিল", "b-cancel"], mismatch: ["মেলেনি", "b-late"], error: ["শুরু হয়নি", "b-late"]};
+const pstat = st => `<span class="badge ${(PSTAT[st] || ["", "b-off"])[1]}">${(PSTAT[st] || [st])[0]}</span>`;
 const DEV = {mobile: "মোবাইল", desktop: "ডেস্কটপ", tablet: "ট্যাবলেট"};
 const ic = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 const I = {
@@ -388,11 +394,12 @@ const I = {
   step: ic('<path d="M5 12.5l4.5 4.5L19 7"/>'),
   ok: ic('<path d="M5 12.5l4.5 4.5L19 7"/>')
 };
-const SECTIONS = [["overview", "ওভারভিউ", I.home], ["orders", "অর্ডার", I.orders], ["board", "প্রোজেক্ট বোর্ড", I.board], ["analytics", "অ্যানালিটিক্স", I.chart], ["catalog", "প্যাকেজ ও দাম", I.catalog], ["customers", "কাস্টমার", I.customers], ["team", "টিম ও ডেভেলপার", I.team]];
+const SECTIONS = [["overview", "ওভারভিউ", I.home], ["orders", "অর্ডার", I.orders], ["board", "প্রোজেক্ট বোর্ড", I.board], ["analytics", "অ্যানালিটিক্স", I.chart], ["catalog", "প্যাকেজ ও দাম", I.catalog], ["payments", "পেমেন্ট গেটওয়ে", I.money], ["customers", "কাস্টমার", I.customers], ["team", "টিম ও ডেভেলপার", I.team]];
 
 let me = null, sec = "overview", days = 30, stats = null, orders = [], team = [], customers = [], cat = null, draft = null, dirty = false;
 let oFilter = "all", oQuery = "", oStack = "", boardDev = "", custQ = "", custF = "all", edStack = "woo", drawerId = null;
 let an = null, aDays = 30, aTab = "visitors";
+let pset = null, plist = null, ptest = null;
 let regionName = c => c;
 try { const dn = new Intl.DisplayNames(["bn"], {type: "region"}); regionName = c => { try { return dn.of(c) || c; } catch(e){ return c; } }; } catch(e){}
 const country = c => c ? regionName(c) : "অজানা";
@@ -410,7 +417,7 @@ function toast(m){ const t = $("toast"); t.textContent = m; t.hidden = false; cl
 (function(){
   try { const s = JSON.parse(localStorage.getItem("techill_theme")); if (s === "light" || s === "dark") document.documentElement.dataset.theme = s; } catch(e){}
   $("themeBtn").addEventListener("click", () => {
-    const c = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    const c = document.documentElement.dataset.theme || "light";
     const n = c === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = n;
     try { localStorage.setItem("techill_theme", JSON.stringify(n)); } catch(e){}
   });
@@ -460,6 +467,7 @@ function go(s){
   sec = s; history.replaceState(null, "", "#" + s); renderNav(); render(); scrollTo({top: 0});
   if (s === "customers") api.customers().then(r => { customers = r.customers; if (sec === "customers") render(); });
   if (s === "analytics") loadAnalytics();
+  if (s === "payments") loadPayments();
   if (s === "catalog" && !cat) api.catalog().then(r => { cat = r.catalog; draft = structuredClone(cat); if (sec === "catalog") render(); });
 }
 function renderLive(){
@@ -470,7 +478,7 @@ $("livePill").addEventListener("click", () => { aTab = "visitors"; go("analytics
 function render(){
   const m = $("main");
   if (!stats){ m.innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; return; }
-  ({overview: renderOverview, orders: renderOrders, board: renderBoard, analytics: renderAnalytics, catalog: renderCatalog, team: renderTeam, customers: renderCustomers})[sec]();
+  ({overview: renderOverview, orders: renderOrders, board: renderBoard, analytics: renderAnalytics, catalog: renderCatalog, payments: renderPayments, team: renderTeam, customers: renderCustomers})[sec]();
 }
 const rangeSeg = () => `<div class="seg" role="group" aria-label="সময়সীমা">${[7, 30, 90].map(d => `<button type="button" data-days="${d}" aria-pressed="${days === d}">${BN(d)} দিন</button>`).join("")}</div>`;
 $("main").addEventListener("click", async e => {
@@ -667,6 +675,9 @@ function renderDrawer(d){
         <dl class="kv"><dt>মাধ্যম</dt><dd>${MNAME[o.pay_method] || esc(o.pay_method)}</dd><dt>যে নম্বর থেকে</dt><dd>${esc(o.pay_sender)}</dd><dt>TrxID</dt><dd><b>${esc(o.pay_trx)}</b></dd></dl>
         <ul class="lines" style="margin-top:12px">${o.lines.map(l => `<li><span>${esc(l.label)}</span><span>${l.amt < 0 ? "−" : ""}${tk(Math.abs(l.amt))}</span></li>`).join("")}<li class="t"><span>মোট</span><span>${tk(o.total)}</span></li></ul>
         ${o.cancelled ? "" : `<div class="row2" style="margin-top:12px">${o.pay_status !== "verified" ? `<button class="btn btn-ok btn-sm" type="button" data-pay="verified">${tk(o.total)} পেয়েছি, যাচাই করুন</button>` : ""}${o.pay_status !== "rejected" ? '<button class="btn btn-ghost btn-sm" type="button" data-pay="rejected">পেমেন্ট পাওয়া যায়নি</button>' : ""}${o.pay_status !== "pending" ? '<button class="btn btn-ghost btn-sm" type="button" data-pay="pending">যাচাই বাকি করুন</button>' : ""}</div>`}</div>
+      ${o.pay_method === "PayStation" || (d.payments || []).length ? `<div class="box"><h4>অনলাইন পেমেন্ট (PayStation)</h4>
+        ${(d.payments || []).length ? `<ul class="tl">${d.payments.map(p => `<li><b>${pstat(p.status)} ${tk(p.amount)}</b>${p.sandbox ? ' <span class="badge b-pending">Sandbox</span>' : ""}<p>${esc(p.invoice)}${p.trx_id ? " · TrxID " + esc(p.trx_id) : ""}${p.method ? " · " + esc(p.method) : ""}${p.payer ? " · " + esc(p.payer) : ""}</p>${p.note ? `<p class="muted">${esc(p.note)}</p>` : ""}<small>${when(p.created)}</small></li>`).join("")}</ul>` : '<p class="muted" style="font-size:.88rem">এখনো কোনো চেষ্টা হয়নি।</p>'}
+        ${o.pay_status !== "verified" && (d.payments || []).length ? '<div class="row2" style="margin-top:10px"><button class="btn btn-ghost btn-sm" type="button" id="psVerify">PayStation থেকে আবার যাচাই করুন</button></div>' : ""}</div>` : ""}
       <form class="box" id="adjForm"><h4>দাম ও সময় সমন্বয়</h4>
         <div class="grid" style="grid-template-columns:1fr 120px;gap:10px">
           <div class="f"><label for="adj-l">চার্জ / ছাড়ের বিবরণ</label><input class="inp" id="adj-l" name="line_label" placeholder="যেমন: ঈদ ছাড় / অতিরিক্ত পেজ"></div>
@@ -686,6 +697,9 @@ function renderDrawer(d){
     catch(err){ toast(err.message); }
   }));
   $("drawer").querySelector("[data-assign]").addEventListener("change", async e => { try { await api.assign(o.id, e.target.value); toast("ডেভেলপার আপডেট হয়েছে।"); after(); } catch(err){ toast(err.message); } });
+  $("psVerify")?.addEventListener("click", async () => {
+    try { const r = await api.payVerify(o.id); toast(r.order.pay_status === "verified" ? "পেমেন্ট পাওয়া গেছে, অর্ডার নিশ্চিত হয়েছে।" : "PayStation-এ এখনো সফল পেমেন্ট নেই।"); after(); } catch(err){ toast(err.message); }
+  });
   $("adjForm").addEventListener("submit", async e => {
     e.preventDefault(); $("adjErr").textContent = "";
     const data = Object.fromEntries(new FormData(e.target));
@@ -931,6 +945,86 @@ $("main").addEventListener("click", async e => {
   }
 });
 addEventListener("beforeunload", e => { if (dirty){ e.preventDefault(); e.returnValue = ""; } });
+
+/* ---------- payment gateway ---------- */
+async function loadPayments(){
+  try { const [a, b] = await Promise.all([api.paymentSettings(), api.payments()]); pset = a.settings; plist = b; if (sec === "payments") render(); } catch(e){ toast(e.message); }
+}
+function renderPayments(){
+  if (!pset){ $("main").innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; return; }
+  const p = pset.paystation, on = p.ready, rows = plist?.payments || [];
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>পেমেন্ট গেটওয়ে</h1><p>PayStation দিয়ে বিকাশ, নগদ, রকেট আর কার্ডে স্বয়ংক্রিয় পেমেন্ট। পেমেন্ট সফল হলে অর্ডার নিজে থেকেই নিশ্চিত হয়।</p></div>
+      <div class="tools">${on ? `<span class="badge b-done" style="font-size:.9rem;padding:4px 14px">অনলাইন পেমেন্ট চালু${p.sandbox ? " · Sandbox" : " · Live"}</span>` : '<span class="badge b-off" style="font-size:.9rem;padding:4px 14px">অনলাইন পেমেন্ট বন্ধ</span>'}</div></div>
+    ${p.enabled && p.sandbox ? '<div class="alert warn" style="margin-bottom:16px;cursor:default">' + I.alert + '<span><b style="font-size:1rem">Sandbox চালু আছে।</b> এখন কাস্টমারের আসল টাকা কাটবে না। পরীক্ষা শেষে Live করে দিন।</span></div>' : ""}
+    <div class="tiles">
+      ${tile("সফল অনলাইন পেমেন্ট", nf(plist?.month?.count || 0), "গত ৩০ দিনে")}
+      ${tile("অনলাইনে এসেছে", tkShort(plist?.month?.total || 0), "গত ৩০ দিনে")}
+      ${tile("ব্যর্থ / বাতিল", nf(rows.filter(r => ["failed", "canceled", "error", "mismatch"].includes(r.status)).length), "শেষ ১০০টা চেষ্টার মধ্যে")}
+      ${tile("ম্যানুয়াল Send Money", pset.manual_enabled ? "চালু" : "বন্ধ", "বিকাশ/নগদ নম্বর: প্যাকেজ ও দাম")}
+    </div>
+    <div class="grid g-main" style="margin-bottom:18px">
+      <form class="card" id="psForm" style="display:grid;gap:14px;align-content:start">
+        <div class="ch" style="margin:0"><h3>PayStation</h3><label class="switch"><input type="checkbox" name="ps_enabled" ${p.enabled ? "checked" : ""}><span></span>অনলাইন পেমেন্ট চালু</label></div>
+        <div class="f"><label>মোড</label><div class="seg" role="radiogroup" aria-label="মোড">
+          <label class="seg-r"><input type="radio" name="ps_mode" value="sandbox" ${p.sandbox ? "checked" : ""}><span>Sandbox (পরীক্ষা)</span></label>
+          <label class="seg-r"><input type="radio" name="ps_mode" value="live" ${p.sandbox ? "" : "checked"}><span>Live (আসল টাকা)</span></label></div>
+          <small class="muted" style="font-size:.82rem">Sandbox আর Live-এর Merchant ID/পাসওয়ার্ড আলাদা। যে মোড বাছবেন সেই মোডের তথ্য দিন।</small></div>
+        <div class="f"><label for="ps-mid">Merchant ID</label><input class="inp" id="ps-mid" name="ps_merchant_id" value="${esc(p.merchant_id)}" autocomplete="off" placeholder="PayStation থেকে পাওয়া Merchant ID"></div>
+        <div class="f"><label for="ps-pw">পাসওয়ার্ড ${p.password_set ? '<small>(সেভ করা আছে, বদলাতে চাইলে নতুন লিখুন)</small>' : ""}</label><input class="inp" id="ps-pw" name="ps_password" type="password" autocomplete="new-password" placeholder="${p.password_set ? "••••••••" : "PayStation থেকে পাওয়া পাসওয়ার্ড"}"></div>
+        <label class="checks" style="font-size:.92rem"><label><input type="checkbox" name="ps_pay_with_charge" ${p.pay_with_charge ? "checked" : ""}> গেটওয়ের চার্জ কাস্টমার দেবেন</label></label>
+        <div class="row2" style="border-top:1px solid var(--line);padding-top:14px"><label class="switch"><input type="checkbox" name="manual_enabled" ${pset.manual_enabled ? "checked" : ""}><span></span>ম্যানুয়াল Send Money-ও নেব (TrxID দিয়ে, আপনি নিজে যাচাই করবেন)</label></div>
+        <div class="row2"><button class="btn btn-primary" type="submit">সেভ করুন</button><button class="btn btn-ghost" type="button" id="psTest" ${p.merchant_id ? "" : "disabled"}>সংযোগ পরীক্ষা</button>${p.password_set ? '<button class="btn btn-ghost btn-sm" type="button" id="psClear">পাসওয়ার্ড মুছুন</button>' : ""}</div>
+        <p class="err" id="psErr" role="alert"></p>
+        ${ptest ? `<div class="alert ${ptest.ok ? "good" : "bad"}" style="cursor:default">${ptest.ok ? I.ok : I.alert}<span>${esc(ptest.text)}</span></div>` : ""}
+        ${pset.curl ? "" : '<div class="alert bad" style="cursor:default">' + I.alert + '<span>সার্ভারে PHP cURL চালু নেই, PayStation-এর সাথে কথা বলা যাবে না। cPanel → Select PHP Version থেকে curl চালু করুন।</span></div>'}
+      </form>
+      <div class="card" style="display:grid;gap:14px;align-content:start">
+        <h3>কীভাবে চালু করবেন</h3>
+        <ol class="steps-ol">
+          <li>PayStation-এ মার্চেন্ট অ্যাকাউন্ট খুলুন, ওরা Sandbox আর Live-এর Merchant ID ও পাসওয়ার্ড দেবে।</li>
+          <li>এখানে <b>Sandbox</b> বেছে Sandbox-এর তথ্য দিন, চালু করে সেভ করুন। <b>সংযোগ পরীক্ষা</b> চাপুন।</li>
+          <li>সাইট থেকে একটা ছোট অর্ডার দিয়ে পুরো পেমেন্ট করে দেখুন। অর্ডার নিজে থেকে "যাচাই হয়েছে" হলে সব ঠিক আছে।</li>
+          <li><b>Live</b> বেছে Live-এর তথ্য দিয়ে সেভ করুন। এখন থেকে আসল টাকা আসবে।</li>
+          <li>বন্ধ করতে চাইলে উপরের সুইচ বন্ধ করে সেভ করুন। তখন কাস্টমাররা শুধু ম্যানুয়াল Send Money দেখবেন।</li>
+        </ol>
+        <div class="f"><label>Callback / IPN URL <small>(PayStation চাইলে এটা দিন)</small></label><div class="row2"><input class="inp" readonly value="${esc(pset.callback_url)}" id="cbUrl" style="flex:1"><button class="btn btn-ghost btn-sm" type="button" id="cbCopy">কপি</button></div>
+          <small class="muted" style="font-size:.82rem">প্রতিটা পেমেন্টের সাথে এটা নিজে থেকেই পাঠানো হয়। সাইট HTTPS-এ থাকতে হবে, আর অনেক সময় PayStation সার্ভারের IP হোয়াইটলিস্ট করতে বলে।</small></div>
+        <p class="muted" style="font-size:.85rem">নিরাপত্তা: কাস্টমার পেমেন্ট শেষে ফিরে এলে সার্ভার নিজে PayStation-কে জিজ্ঞেস করে নিশ্চিত হয়। টাকার পরিমাণ আর ইনভয়েস না মিললে অর্ডার নিশ্চিত হয় না। একই পেমেন্ট দুবার গোনা হয় না।</p>
+      </div>
+    </div>
+    <div class="card" style="padding:10px 14px"><div class="ch" style="padding:8px 6px 0"><h3>সাম্প্রতিক অনলাইন পেমেন্ট</h3><small>শেষ ১০০টা চেষ্টা</small></div>
+      ${rows.length ? `<div class="tbl-wrap"><table class="tbl" style="min-width:860px"><thead><tr><th>সময়</th><th>অর্ডার</th><th>কাস্টমার</th><th class="r">টাকা</th><th>অবস্থা</th><th>মাধ্যম</th><th>TrxID</th><th>নোট</th></tr></thead><tbody>
+        ${rows.map(r => `<tr class="click" data-open="${r.order_id}"><td>${when(r.created)}</td><td><b>${esc(r.code)}</b><span class="sub">${esc(r.invoice)}</span></td><td>${esc(r.customer)}</td><td class="r num">${tk(r.amount)}</td>
+          <td>${pstat(r.status)}${r.sandbox ? ' <span class="badge b-pending">Sandbox</span>' : ""}</td><td>${esc(r.method || "—")}<span class="sub">${esc(r.payer || "")}</span></td><td>${esc(r.trx_id || "—")}</td><td class="muted" style="max-width:220px">${esc(r.note || "")}</td></tr>`).join("")}
+      </tbody></table></div>` : '<p class="empty">এখনো কোনো অনলাইন পেমেন্ট হয়নি।</p>'}</div>`;
+  $("psForm").addEventListener("submit", async e => {
+    e.preventDefault(); $("psErr").textContent = "";
+    const f = new FormData(e.target), data = {ps_merchant_id: f.get("ps_merchant_id"), ps_password: f.get("ps_password") || ""};
+    if (f.get("ps_enabled")) data.ps_enabled = 1;
+    if (f.get("ps_mode") === "sandbox") data.ps_sandbox = 1;
+    if (f.get("ps_pay_with_charge")) data.ps_pay_with_charge = 1;
+    if (f.get("manual_enabled")) data.manual_enabled = 1;
+    if (data.ps_enabled && !data.ps_sandbox && pset.paystation.sandbox && !confirm("Live মোড চালু করছেন। এখন থেকে কাস্টমারের আসল টাকা কাটবে। Live-এর Merchant ID আর পাসওয়ার্ড দিয়েছেন তো?")) return;
+    try { pset = (await api.savePaymentSettings(data)).settings; ptest = null; renderPayments(); toast(pset.paystation.ready ? "সেভ হয়েছে। চেকআউটে অনলাইন পেমেন্ট দেখাচ্ছে।" : "সেভ হয়েছে। অনলাইন পেমেন্ট বন্ধ আছে।"); }
+    catch(err){ $("psErr").textContent = err.message; }
+  });
+  $("psClear")?.addEventListener("click", async () => {
+    if (!confirm("সেভ করা পাসওয়ার্ড মুছবেন? অনলাইন পেমেন্ট বন্ধ হয়ে যাবে।")) return;
+    try { pset = (await api.savePaymentSettings({ps_merchant_id: p.merchant_id, ps_sandbox: p.sandbox ? 1 : "", ps_pay_with_charge: p.pay_with_charge ? 1 : "", manual_enabled: 1, ps_clear_password: 1})).settings; renderPayments(); } catch(err){ toast(err.message); }
+  });
+  $("psTest")?.addEventListener("click", async () => {
+    const b = $("psTest"); b.disabled = true; b.textContent = "পরীক্ষা হচ্ছে...";
+    try {
+      const r = await api.paymentTest();
+      ptest = !r.reachable ? {ok: false, text: "PayStation-এ পৌঁছানো যায়নি: " + r.message}
+        : r.status_code === "200" || r.status_code === "2001" ? {ok: true, text: `PayStation-এ সংযোগ ঠিক আছে (${r.sandbox ? "Sandbox" : "Live"})। Merchant ID চেনা গেছে কিনা নিশ্চিত হতে একটা ছোট পরীক্ষামূলক পেমেন্ট করে দেখুন। PayStation বলেছে: ${r.message || r.status_code}`}
+        : {ok: false, text: `PayStation উত্তর দিয়েছে কোড ${r.status_code}: ${r.message}`};
+    } catch(err){ ptest = {ok: false, text: err.message}; }
+    renderPayments();
+  });
+  $("cbCopy").addEventListener("click", async () => { try { await navigator.clipboard.writeText(pset.callback_url); toast("কপি হয়েছে।"); } catch(e){ $("cbUrl").select(); } });
+}
 
 /* ---------- people drawer (customers & team) ---------- */
 // kind: "customer" | "team"; p: the person, or null to add a new one

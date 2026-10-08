@@ -220,3 +220,141 @@ function geo_for_ip(string $ip): array {
     q('REPLACE INTO geo_cache (ip_hash, country, country_name, region, city) VALUES (?,?,?,?,?)', [$hash, $geo['country'], $geo['country_name'], $geo['region'], $geo['city']]);
     return $geo;
 }
+
+/* ---------- payments (PayStation) ---------- */
+
+const PAYSTATION_LIVE = 'https://api.paystation.com.bd';
+const PAYSTATION_SANDBOX = 'https://sandbox.paystation.com.bd';
+
+// Admin-editable payment settings. The PayStation password is stored here and never sent to a browser.
+function payment_settings(bool $reload = false): array {
+    static $s = null;
+    if ($s === null || $reload) {
+        $row = q("SELECT v FROM settings WHERE k = 'payments'")->fetch();
+        $saved = $row ? (json_decode($row['v'], true) ?: []) : [];
+        $s = array_replace_recursive([
+            'manual_enabled' => true,
+            'paystation' => ['enabled' => false, 'sandbox' => true, 'merchant_id' => '', 'password' => '', 'pay_with_charge' => 0],
+        ], $saved);
+    }
+    return $s;
+}
+
+function paystation_ready(): bool {
+    $p = payment_settings()['paystation'];
+    return !empty($p['enabled']) && $p['merchant_id'] !== '' && $p['password'] !== '';
+}
+
+// Absolute URL of a file next to api.php, e.g. site_url('dashboard.html').
+function site_url(string $file): string {
+    $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
+    $dir = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
+    return ($https ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . $dir . '/' . $file;
+}
+
+// POST to PayStation. Form-encoded unless $json; returns ['ok', 'http', 'error', 'json'].
+function paystation_post(string $path, array $body, array $headers = [], bool $json = false): array {
+    $p = payment_settings()['paystation'];
+    if (!function_exists('curl_init')) return ['ok' => false, 'http' => 0, 'error' => 'PHP cURL extension নেই।', 'json' => []];
+    $headers[] = 'Accept: application/json';
+    $headers[] = $json ? 'Content-Type: application/json' : 'Content-Type: application/x-www-form-urlencoded';
+    // 'paystation_base_url' in config.php is only for testing against a local mock; leave it out in production.
+    $base = cfg('paystation_base_url') ?: ($p['sandbox'] ? PAYSTATION_SANDBOX : PAYSTATION_LIVE);
+    $ch = curl_init($base . $path);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true, CURLOPT_POSTFIELDS => $json ? json_encode($body) : http_build_query($body),
+        CURLOPT_HTTPHEADER => $headers, CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => false,
+        CURLOPT_SSL_VERIFYPEER => true, CURLOPT_SSL_VERIFYHOST => 2, CURLOPT_CONNECTTIMEOUT => 15, CURLOPT_TIMEOUT => 40,
+        CURLOPT_USERAGENT => 'Techill/1.0',
+    ]);
+    $raw = curl_exec($ch);
+    $err = curl_error($ch);
+    $http = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    $j = json_decode((string)$raw, true);
+    if ($raw === false || $err !== '') return ['ok' => false, 'http' => $http, 'error' => 'PayStation-এ সংযোগ হয়নি: ' . $err, 'json' => []];
+    if (!is_array($j)) return ['ok' => false, 'http' => $http, 'error' => 'PayStation থেকে বোঝা যায় এমন উত্তর আসেনি (HTTP ' . $http . ')।', 'json' => []];
+    return ['ok' => true, 'http' => $http, 'error' => '', 'json' => $j];
+}
+
+function ps_accepted(array $r): bool {
+    return $r['ok'] && (string)($r['json']['status_code'] ?? '') === '200' && strtolower((string)($r['json']['status'] ?? '')) === 'success';
+}
+
+function ps_status(string $s): string {
+    $s = strtolower(trim($s));
+    if (in_array($s, ['success', 'successful', 'completed', 'paid'], true)) return 'success';
+    if (in_array($s, ['canceled', 'cancelled', 'cancel'], true)) return 'canceled';
+    if (in_array($s, ['processing', 'pending', 'initiated'], true)) return 'processing';
+    return 'failed';
+}
+
+function to_local_phone(string $v): string {
+    $d = preg_replace('/\D/', '', strtr($v, ['০'=>'0','১'=>'1','২'=>'2','৩'=>'3','৪'=>'4','৫'=>'5','৬'=>'6','৭'=>'7','৮'=>'8','৯'=>'9']));
+    if (str_starts_with($d, '880')) $d = substr($d, 2);
+    return $d;
+}
+
+// The initiate-payment fields for an order attempt (credentials included).
+function paystation_fields(array $o, array $info, array $cust, string $invoice): array {
+    $p = payment_settings()['paystation'];
+    $phone = to_local_phone((string)($info['phone'] ?? '') ?: (string)($info['whatsapp'] ?? '') ?: (string)($cust['phone'] ?? ''));
+    return [
+        'merchantId' => $p['merchant_id'], 'password' => $p['password'],
+        'invoice_number' => $invoice, 'currency' => 'BDT', 'payment_amount' => (string)(int)$o['total'],
+        'pay_with_charge' => (string)(int)$p['pay_with_charge'], 'reference' => $o['code'],
+        'cust_name' => mb_substr((string)($info['admin_name'] ?? '') ?: (string)($cust['name'] ?? 'Customer'), 0, 100),
+        'cust_phone' => $phone, 'cust_email' => (string)($cust['email'] ?? ''),
+        'cust_address' => mb_substr((string)($info['address'] ?? '') ?: 'Bangladesh', 0, 200),
+        'callback_url' => site_url('api.php?action=paystation_callback'),
+        'checkout_items' => mb_substr($o['pack'] . ' প্যাকেজ (' . $o['stack'] . ')', 0, 200), 'opt_a' => (string)$o['id'],
+    ];
+}
+
+// Asks PayStation (server to server) what happened to a payment and applies it to the order.
+// Never trusts the browser: amount, invoice and status all come from PayStation's answer.
+// Returns the payment's resulting status.
+function paystation_verify(array $pay, string $trxHint = ''): string {
+    if ($pay['status'] === 'success') return 'success';
+    $p = payment_settings()['paystation'];
+    if ($p['merchant_id'] === '') return $pay['status'];
+    $r = paystation_post('/transaction-status', ['invoice_number' => $pay['invoice_number']], ['merchantId: ' . $p['merchant_id']]);
+    if ((!ps_accepted($r) || empty($r['json']['data'])) && $trxHint !== '') {
+        $r = paystation_post('/v2/transaction-status', ['trxId' => $trxHint], ['merchantId: ' . $p['merchant_id']], true);
+    }
+    if (!ps_accepted($r) || !is_array($r['json']['data'] ?? null)) {
+        q('UPDATE payments SET note = ? WHERE id = ?', [mb_substr($r['ok'] ? 'যাচাই: ' . ($r['json']['message'] ?? 'তথ্য পাওয়া যায়নি') : $r['error'], 0, 255), $pay['id']]);
+        return $pay['status'];
+    }
+    $d = $r['json']['data'];
+    $status = ps_status((string)($d['trx_status'] ?? ''));
+    $trx = mb_substr((string)($d['trx_id'] ?? ''), 0, 60) ?: null;
+    $method = mb_substr((string)($d['payment_method'] ?? ''), 0, 40) ?: null;
+    $payer = mb_substr((string)($d['payer_mobile_no'] ?? ''), 0, 30) ?: null;
+    $amount = null;
+    foreach (['payment_amount', 'request_amount', 'trx_amount'] as $k) if (isset($d[$k]) && $d[$k] !== '') { $amount = (float)$d[$k]; break; }
+
+    if ($status === 'success') {
+        $note = null;
+        if (!empty($d['invoice_number']) && (string)$d['invoice_number'] !== $pay['invoice_number']) $note = 'ইনভয়েস নম্বর মেলেনি: ' . $d['invoice_number'];
+        elseif ($amount === null || $amount + 0.01 < (float)$pay['amount']) $note = 'টাকার পরিমাণ মেলেনি: চাওয়া হয়েছিল ' . $pay['amount'] . ', এসেছে ' . ($amount ?? 'অজানা');
+        if ($note) { q("UPDATE payments SET status = 'mismatch', trx_id = ?, method = ?, payer = ?, note = ? WHERE id = ?", [$trx, $method, $payer, $note, $pay['id']]); return 'mismatch'; }
+        db()->beginTransaction();
+        $won = q("UPDATE payments SET status = 'success', trx_id = ?, method = ?, payer = ?, note = NULL WHERE id = ? AND status <> 'success'", [$trx, $method, $payer, $pay['id']])->rowCount() === 1;
+        if ($won) {
+            $o = q('SELECT * FROM orders WHERE id = ? FOR UPDATE', [$pay['order_id']])->fetch();
+            $restart = (int)$o['stage'] <= 1;   // the countdown starts once the money is in
+            q("UPDATE orders SET pay_status = 'verified', pay_trx = ?, pay_sender = ?, stage = GREATEST(stage, 1), progress = GREATEST(progress, 15)"
+              . ($restart ? ', deadline_at = UTC_TIMESTAMP() + INTERVAL hours HOUR' : '') . ' WHERE id = ?',
+              [mb_substr((string)$trx, 0, 20), mb_substr((string)($payer ?? ''), 0, 20), $o['id']]);
+            $txt = 'অনলাইন পেমেন্ট সফল: ৳' . bn_digits(number_format((int)$pay['amount'])) . ($method ? " · $method" : '') . ($trx ? " · TrxID $trx" : '');
+            q('INSERT INTO order_events (order_id, stage, progress, note) VALUES (?,?,?,?)', [$o['id'], max(1, (int)$o['stage']), max(15, (int)$o['progress']), $txt]);
+            q('INSERT INTO messages (order_id, from_admin, body) VALUES (?,1,?)', [$o['id'], $txt . "। ধন্যবাদ! আমরা কাজ শুরু করছি" . ($restart ? ', ডেলিভারির কাউন্টডাউন এখন থেকে শুরু।' : '।')]);
+        }
+        db()->commit();
+        return 'success';
+    }
+    q("UPDATE payments SET status = ?, trx_id = COALESCE(?, trx_id), method = COALESCE(?, method), payer = COALESCE(?, payer) WHERE id = ? AND status <> 'success'",
+      [$status, $trx, $method, $payer, $pay['id']]);
+    return $status;
+}

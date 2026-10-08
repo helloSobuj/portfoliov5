@@ -32,15 +32,6 @@
   --body:"Tiro Bangla","Noto Serif Bengali",Georgia,serif;
   --r:18px;
 }
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --bg:#0b1018;--surface:#111925;--sunk:#0e1520;--ink:#e9eef5;--muted:#98a4b7;--line:#1f2b3b;
-    --blue:#3aa0ff;--blue-ink:#7cc0ff;--blue-soft:#10223a;--on-blue:#04121f;
-    --ok:#3ccf7f;--ok-soft:#0f2a1c;--warn:#ffb454;--warn-soft:#2c1f0c;--danger:#ff6b60;
-    --shadow:0 1px 2px rgb(0 0 0 / .3),0 18px 40px -18px rgb(0 0 0 / .6);
-    color-scheme:dark;
-  }
-}
 :root[data-theme="dark"]{
   --bg:#0b1018;--surface:#111925;--sunk:#0e1520;--ink:#e9eef5;--muted:#98a4b7;--line:#1f2b3b;
   --blue:#3aa0ff;--blue-ink:#7cc0ff;--blue-soft:#10223a;--on-blue:#04121f;
@@ -63,7 +54,6 @@ button,input,textarea,select{font:inherit;color:inherit}
 /* logo per theme */
 .logo{display:block;height:40px;width:auto}
 .logo-d{display:none}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .logo-l{display:none}:root:not([data-theme="light"]) .logo-d{display:block}}
 :root[data-theme="dark"] .logo-l{display:none}
 :root[data-theme="dark"] .logo-d{display:block}
 
@@ -87,7 +77,6 @@ button,input,textarea,select{font:inherit;color:inherit}
 .theme-btn{width:42px;height:42px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer}
 .theme-btn svg{width:20px;height:20px}
 .theme-btn .moon{display:none}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .theme-btn .sun{display:none}:root:not([data-theme="light"]) .theme-btn .moon{display:block}}
 :root[data-theme="dark"] .theme-btn .sun{display:none}
 :root[data-theme="dark"] .theme-btn .moon{display:block}
 
@@ -325,6 +314,18 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
 .methods{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:20px}
 .method{border:2px solid var(--line);border-radius:12px;padding:12px;text-align:center;cursor:pointer;font-weight:700;background:var(--bg)}
 .method[aria-pressed="true"]{border-color:var(--blue);background:var(--blue-soft);color:var(--blue-ink)}
+.online-opt{display:grid;grid-template-columns:44px minmax(0,1fr) 20px;gap:14px;align-items:center;width:100%;text-align:left;border:2px solid var(--line);border-radius:14px;padding:14px 16px;background:var(--bg);cursor:pointer;margin-bottom:14px}
+.online-opt[aria-pressed="true"]{border-color:var(--blue);background:var(--blue-soft)}
+.online-opt[aria-pressed="true"] .radio-dot{border-color:var(--blue)}
+.online-opt[aria-pressed="true"] .radio-dot::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--blue)}
+.oo-ic{width:44px;height:44px;border-radius:12px;background:var(--surface);color:var(--blue);display:grid;place-items:center}
+.oo-ic svg{width:22px;height:22px}
+.oo-t{display:grid;gap:2px;min-width:0}
+.oo-t b{font-size:1.02rem}
+.oo-t em{font-style:normal;font-size:.75rem;font-weight:600;color:var(--ok);background:var(--ok-soft);border-radius:999px;padding:1px 9px;margin-left:6px;white-space:nowrap}
+.oo-t small{color:var(--muted);font-size:.86rem}
+.or-line{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.88rem;margin:4px 0 14px}
+.or-line::before,.or-line::after{content:"";flex:1;height:1px;background:var(--line)}
 .paybox{background:var(--sunk);border-radius:12px;padding:16px 18px;display:grid;gap:10px;margin-bottom:22px;font-size:.95rem}
 .paybox ol{margin:0;padding-left:20px;display:grid;gap:4px}
 .copyrow{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 8px 8px 14px}
@@ -634,7 +635,7 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
       <!-- 3 payment -->
       <div class="panel" data-step="3" hidden>
         <h2>পেমেন্ট করুন</h2>
-        <p class="sub">পেমেন্ট আমাদের টিম ম্যানুয়ালি যাচাই করবে।</p>
+        <p class="sub" id="paySub">পেমেন্ট আমাদের টিম ম্যানুয়ালি যাচাই করবে।</p>
         <div class="pay">
           <div class="card">
             <h3>অর্ডার সারাংশ</h3>
@@ -644,6 +645,17 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
           </div>
           <div class="card">
             <h3>পেমেন্ট মাধ্যম</h3>
+            <button type="button" class="online-opt" id="onlineOpt" aria-pressed="false" hidden>
+              <span class="oo-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/></svg></span>
+              <span class="oo-t"><b>অনলাইনে পেমেন্ট <em>সবচেয়ে সহজ</em></b><small>বিকাশ, নগদ, রকেট বা কার্ড, PayStation-এর নিরাপদ পেজে</small></span>
+              <span class="radio-dot"></span>
+            </button>
+            <div class="online-box paybox" id="onlineBox" hidden>
+              <p>তথ্য জমা দিলেই PayStation-এর পেমেন্ট পেজ খুলবে। সেখানে <b class="num" id="oAmt">৳০</b> পরিশোধ করুন। পেমেন্ট সফল হলে অর্ডার নিজে থেকেই নিশ্চিত হবে, Transaction ID লিখতে হবে না।</p>
+              <p class="hint" id="oCharge" hidden>গেটওয়ের চার্জ এই টাকার সাথে যোগ হবে।</p>
+            </div>
+            <p class="or-line" id="manualHead" hidden><span>অথবা নিজে Send Money করুন</span></p>
+            <div id="manualBox">
             <div class="methods" id="methods">
               <button type="button" class="method" data-m="bKash" aria-pressed="true">বিকাশ</button>
               <button type="button" class="method" data-m="Nagad" aria-pressed="false">নগদ</button>
@@ -660,7 +672,10 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
             <div class="fgrid" style="grid-template-columns:1fr">
               <div class="f" id="f-sender"><label for="paySender">যে নম্বর থেকে পাঠিয়েছেন <span class="req">*</span></label><input type="tel" id="paySender" inputmode="tel" placeholder="01XXXXXXXXX" autocomplete="tel"><span class="msg"></span></div>
               <div class="f" id="f-trx"><label for="payTrx">Transaction ID <span class="req">*</span></label><input type="text" id="payTrx" placeholder="যেমন: 9JK7XQ2LMP" autocomplete="off"><span class="msg"></span></div>
-              <label class="check" id="f-agree"><input type="checkbox" id="payAgree"><span>আমি বুঝেছি, সব তথ্য জমা দেওয়ার পর থেকে ডেলিভারি সময় গোনা শুরু হবে।</span></label>
+            </div>
+            </div>
+            <div class="fgrid" style="grid-template-columns:1fr;margin-top:16px">
+              <label class="check" id="f-agree"><input type="checkbox" id="payAgree"><span id="agreeText">আমি বুঝেছি, সব তথ্য জমা দেওয়ার পর থেকে ডেলিভারি সময় গোনা শুরু হবে।</span></label>
             </div>
           </div>
         </div>
@@ -732,6 +747,7 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
 <script>
 /* ===== প্যাকেজ, দাম, অ্যাড-অন, পেমেন্ট নম্বর: admin.html → "প্যাকেজ ও দাম" থেকে বদলান =====
    ডিফল্ট মান assets/catalog.json-এ। পেজ লোড হলে সার্ভার থেকে সর্বশেষ ক্যাটালগ আসে। */
+let PAYOPTS = {online: false, manual: true, pay_with_charge: 0};
 let CAT = null, WHATSAPP_NUMBER = "", PAY_NUMBERS = {}, STACKS = {}, GROUPS = [], ADDONS = [], GATEWAY_EXTRA_HOURS = 48;
 function applyCatalog(c){
   CAT = c; WHATSAPP_NUMBER = c.whatsapp || ""; PAY_NUMBERS = c.pay_numbers || {}; STACKS = c.stacks;
@@ -764,7 +780,7 @@ const CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
   const saved = store.get("techill_theme");
   if (saved === "light" || saved === "dark") document.documentElement.dataset.theme = saved;
   $("themeBtn").addEventListener("click", () => {
-    const cur = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    const cur = document.documentElement.dataset.theme || "light";
     const next = cur === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = next; store.set("techill_theme", next);
   });
@@ -847,7 +863,8 @@ function renderHead(){
   $("barTotal").textContent = tk(c.total);
   $("barHrs").textContent = `${BN(c.hours)} ঘণ্টা` + (c.gw ? " (গেটওয়ে যাচাই সহ)" : "");
   $("backBtn").hidden = st.step === 1;
-  $("nextBtn").textContent = st.step === 3 ? "পেমেন্ট করেছি, এগিয়ে যান" : st.step === 4 ? "জমা দিন ও কাউন্টডাউন শুরু" : "পরের ধাপ";
+  const onl = st.method === "PayStation";
+  $("nextBtn").textContent = st.step === 3 ? (onl ? "এগিয়ে যান" : "পেমেন্ট করেছি, এগিয়ে যান") : st.step === 4 ? (onl ? "জমা দিন ও পেমেন্ট করুন" : "জমা দিন ও কাউন্টডাউন শুরু") : "পরের ধাপ";
   $("coBar").hidden = st.step === 5;
 }
 $("stepper").addEventListener("click", e => { const b = e.target.closest("button[data-go]"); if (b && !b.disabled) go(+b.dataset.go); });
@@ -912,7 +929,7 @@ $("groups").addEventListener("click", e => {
 });
 
 /* step 3 */
-const MNAME = {bKash:"বিকাশ", Nagad:"নগদ", Rocket:"রকেট"};
+const MNAME = {bKash:"বিকাশ", Nagad:"নগদ", Rocket:"রকেট", PayStation:"অনলাইন (PayStation)"};
 function factsHTML(c){
   return `<dt>প্ল্যাটফর্ম</dt><dd>${S().name}</dd><dt>টেমপ্লেট</dt><dd>${c.tpl ? c.tpl.name + " · " + c.tpl.code : "-"}</dd><dt>প্রোডাক্ট আপলোড</dt><dd>${BN(c.products)}টা</dd><dt>ডেলিভারি</dt><dd>${BN(c.hours)} ঘণ্টা</dd>`;
 }
@@ -921,12 +938,22 @@ function renderPayment(){
   $("payFacts").innerHTML = factsHTML(c);
   $("payLines").innerHTML = c.lines.map(l => `<li><span>${l.label}</span><span>${tk(l.amt)}</span></li>`).join("");
   $("payTotal").textContent = tk(c.total);
-  $("mAmt").textContent = tk(c.total);
+  $("mAmt").textContent = tk(c.total); $("oAmt").textContent = tk(c.total);
+  if (!PAYOPTS.manual && st.method !== "PayStation") st.method = "PayStation";
+  if (!PAYOPTS.online && st.method === "PayStation") st.method = "bKash";
+  const online = st.method === "PayStation";
+  $("onlineOpt").hidden = !PAYOPTS.online; $("onlineOpt").setAttribute("aria-pressed", String(online));
+  $("onlineBox").hidden = !online; $("oCharge").hidden = !PAYOPTS.pay_with_charge;
+  $("manualHead").hidden = !(PAYOPTS.online && PAYOPTS.manual);
+  $("manualBox").hidden = !PAYOPTS.manual;
+  document.querySelectorAll("#manualBox .paybox, #manualBox .fgrid").forEach(el => el.hidden = online);
   document.querySelectorAll(".method").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.m === st.method)));
-  $("mName").textContent = MNAME[st.method];
-  $("mNum").textContent = PAY_NUMBERS[st.method];
+  if (!online){ $("mName").textContent = MNAME[st.method]; $("mNum").textContent = PAY_NUMBERS[st.method]; }
+  $("paySub").textContent = online ? "অনলাইনে পেমেন্ট করলে অর্ডার সাথে সাথে নিশ্চিত হয়।" : "Send Money করলে আমাদের টিম পেমেন্ট যাচাই করবে।";
+  $("agreeText").textContent = online ? "আমি বুঝেছি, পেমেন্ট সফল হওয়ার পর থেকে ডেলিভারি সময় গোনা শুরু হবে।" : "আমি বুঝেছি, সব তথ্য জমা দেওয়ার পর থেকে ডেলিভারি সময় গোনা শুরু হবে।";
 }
 $("methods").addEventListener("click", e => { const b = e.target.closest(".method"); if (b){ st.method = b.dataset.m; renderPayment(); } });
+$("onlineOpt").addEventListener("click", () => { st.method = "PayStation"; renderPayment(); });
 $("copyNum").addEventListener("click", async () => {
   const t = PAY_NUMBERS[st.method];
   try { await navigator.clipboard.writeText(t); $("copyNum").textContent = "কপি হয়েছে"; }
@@ -941,6 +968,10 @@ function setErr(wrap, msg){ wrap.classList.toggle("bad", !!msg); const m = wrap.
 function validStep(n){
   if (n === 1){
     if (st.tpl == null){ toastErr("একটা টেমপ্লেট সিলেক্ট করুন।"); return false; }
+  }
+  if (n === 3 && st.method === "PayStation"){
+    if (!$("payAgree").checked){ toastErr("শর্তে টিক দিন।"); return false; }
+    return true;
   }
   if (n === 3){
     let ok = true;
@@ -1007,7 +1038,8 @@ async function submitOrder(){
   if (me){ fd.delete("password"); fd.set("email", me.email); }
   fd.append("stack_key", st.stack); fd.append("pack", st.pack); fd.append("tpl", st.tpl);
   fd.append("addons", JSON.stringify(st.add)); fd.append("total", c.total);
-  fd.append("pay_method", st.method); fd.append("pay_sender", $("paySender").value.trim()); fd.append("pay_trx", $("payTrx").value.trim());
+  fd.append("pay_method", st.method);
+  if (st.method !== "PayStation"){ fd.append("pay_sender", $("paySender").value.trim()); fd.append("pay_trx", $("payTrx").value.trim()); }
   let res;
   try { res = await api.createOrder(fd); }
   catch(e){
@@ -1024,6 +1056,11 @@ async function submitOrder(){
     lines: o.lines, name: o.info.admin_name, method: o.pay_method, trx: o.pay_trx
   };
   store.set("techill_order", order);
+  if (st.method === "PayStation"){
+    // Hand over to PayStation; it sends the customer back to the dashboard after paying.
+    if (res.payment_url){ btn.textContent = "পেমেন্ট পেজে নিয়ে যাওয়া হচ্ছে..."; location.href = res.payment_url; return; }
+    location.href = `dashboard.html#o=${o.id}&pay=retry`; return;
+  }
   btn.disabled = false;
   showDone(order);
 }
@@ -1093,7 +1130,12 @@ $("chip").addEventListener("click", () => { const o = store.get("techill_order")
 
 updateChip();
 api.init().then(u => { me = u; syncAccount(); return api.catalog(); })
-  .then(r => { applyCatalog(r.catalog); applyContact(); renderPacks(); })
+  .then(r => {
+    applyCatalog(r.catalog); applyContact(); renderPacks();
+    if (r.payments) PAYOPTS = r.payments;
+    if (PAYOPTS.online) st.method = "PayStation";
+    else if (!PAYOPTS.manual) $("packs").insertAdjacentHTML("afterend", '<p class="pk-note">এখন অর্ডার নেওয়া বন্ধ আছে, হোয়াটসঅ্যাপে যোগাযোগ করুন।</p>');
+  })
   .catch(() => { $("packs").innerHTML = '<p class="pk-note">প্যাকেজ লোড করা যায়নি, পেজ রিফ্রেশ করুন।</p>'; });
 api.init().then(() => api.startTracking());
 document.addEventListener("click", e => { if (e.target.closest('a[href^="https://wa.me"]')) api.track("event", {n: "whatsapp_click"}); });

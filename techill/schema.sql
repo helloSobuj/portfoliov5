@@ -147,3 +147,24 @@ CREATE TABLE IF NOT EXISTS geo_cache (
   city       VARCHAR(80) NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- One row per online payment attempt (PayStation). invoice_number is unique per attempt,
+-- as PayStation rejects a re-used one. Only a server-to-server status check marks a row 'success'.
+CREATE TABLE IF NOT EXISTS payments (
+  id             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  order_id       INT UNSIGNED NOT NULL,
+  gateway        VARCHAR(20)  NOT NULL DEFAULT 'paystation',
+  invoice_number VARCHAR(40)  NOT NULL,
+  amount         INT UNSIGNED NOT NULL,
+  status         ENUM('initiated','success','failed','canceled','processing','mismatch','error') NOT NULL DEFAULT 'initiated',
+  trx_id         VARCHAR(60)  NULL,
+  method         VARCHAR(40)  NULL,
+  payer          VARCHAR(30)  NULL,
+  sandbox        TINYINT(1)   NOT NULL DEFAULT 0,
+  note           VARCHAR(255) NULL,
+  created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_payments_invoice (invoice_number),
+  KEY ix_payments_order (order_id),
+  CONSTRAINT fk_payments_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -48,7 +48,12 @@ window.TechillAPI = (() => {
   const post = (action, obj) => http(action, {method: "POST", form: toForm(obj)});
 
   /* ---------- demo backend (browser only) ---------- */
-  const KEY = "techill_demo_db_v3", SKEY = "techill_demo_uid", CKEY = "techill_demo_catalog";
+  const KEY = "techill_demo_db_v3", SKEY = "techill_demo_uid", CKEY = "techill_demo_catalog", PKEY = "techill_demo_payments";
+  const demoPaySettings = () => ls.get(PKEY) || {manual_enabled: true, paystation: {enabled: true, sandbox: true, merchant_id: "DEMO-MERCHANT", password: "demo", pay_with_charge: 0}};
+  const publicPay = () => { const s = demoPaySettings(), p = s.paystation; return {online: !!(p.enabled && p.merchant_id && p.password), manual: !!s.manual_enabled, pay_with_charge: +p.pay_with_charge, sandbox: !!p.sandbox}; };
+  const payOut = s => ({manual_enabled: !!s.manual_enabled, paystation: {enabled: !!s.paystation.enabled, sandbox: !!s.paystation.sandbox, merchant_id: s.paystation.merchant_id,
+    password_set: !!s.paystation.password, pay_with_charge: +s.paystation.pay_with_charge, ready: !!(s.paystation.enabled && s.paystation.merchant_id && s.paystation.password)},
+    callback_url: new URL("api.php?action=paystation_callback", location.href).href, curl: true});
   let mem = {}, fileCatalog = null;
   const ls = {
     get(k) { try { const v = localStorage.getItem(k); return v == null ? mem[k] ?? null : JSON.parse(v); } catch (e) { return mem[k] ?? null; } },
@@ -228,7 +233,49 @@ window.TechillAPI = (() => {
       ls.set(SKEY, u.id); return {user: meUser(d)};
     },
     async logout() { ls.del(SKEY); return {}; },
-    async catalog() { return {catalog: await demoCatalog()}; },
+    async catalog() { return {catalog: await demoCatalog(), payments: publicPay()}; },
+    // Demo stand-in for PayStation: the "payment" succeeds at once, so the preview shows the paid state.
+    demoPay(d, o) {
+      d.payments = d.payments || [];
+      const inv = o.code + "-" + Math.random().toString(16).slice(2, 8).toUpperCase(), trx = "DEMO" + Math.random().toString(36).slice(2, 8).toUpperCase();
+      d.payments.push({id: nextId(d), order_id: o.id, invoice: inv, amount: o.total, status: "success", trx_id: trx, method: "bKash", payer: "01711999888", sandbox: true, note: "ডেমো পেমেন্ট", created: now(), updated: now()});
+      const restart = o.stage <= 1;
+      Object.assign(o, {pay_status: "verified", pay_method: "PayStation", pay_trx: trx, pay_sender: "01711999888", stage: Math.max(1, o.stage), progress: Math.max(15, o.progress)});
+      if (restart) o.deadline = now() + o.hours * 3600;
+      const txt = `অনলাইন পেমেন্ট সফল: ৳${BN(o.total.toLocaleString("en-IN"))} · bKash · TrxID ${trx} (ডেমো)`;
+      addEvent(d, o, txt, null);
+      d.messages.push({id: nextId(d), order_id: o.id, user_id: null, from_admin: true, body: txt + "। ধন্যবাদ! আমরা কাজ শুরু করছি, ডেলিভারির কাউন্টডাউন এখন থেকে শুরু।", file_id: null, seen: false, created: now()});
+      return `dashboard.html#o=${o.id}&pay=success`;
+    },
+    async pay_start({order_id}) {
+      const d = load(), u = needUser(d), o = orderFor(d, u, order_id);
+      if (o.cancelled) bad("এই অর্ডার বাতিল করা হয়েছে।", 409);
+      if (o.pay_status === "verified") bad("এই অর্ডারের পেমেন্ট আগেই হয়ে গেছে।", 409);
+      if (!publicPay().online) bad("অনলাইন পেমেন্ট এখন বন্ধ আছে।", 409);
+      const url = mock.demoPay(d, o); save(d); return {payment_url: url};
+    },
+    async pay_verify({order_id}) {
+      const d = load(), u = needAdmin(d), o = orderFor(d, u, order_id);
+      return {results: [], payments: (d.payments || []).filter(p => p.order_id === o.id).reverse(), order: orderOut(d, u, o)};
+    },
+    async payment_settings() { const d = load(); needAdmin(d); return {settings: payOut(demoPaySettings())}; },
+    async payment_settings_save(f) {
+      const d = load(); needAdmin(d);
+      const s = demoPaySettings(), p = {...s.paystation};
+      p.enabled = !!f.ps_enabled; p.sandbox = !!f.ps_sandbox; p.merchant_id = String(f.ps_merchant_id || "").trim();
+      if (f.ps_password) p.password = f.ps_password; if (f.ps_clear_password) p.password = "";
+      p.pay_with_charge = f.ps_pay_with_charge ? 1 : 0;
+      if (p.enabled && (!p.merchant_id || !p.password)) bad("গেটওয়ে চালু করতে Merchant ID আর পাসওয়ার্ড দুটোই দিন।");
+      if (!f.manual_enabled && !p.enabled) bad("অন্তত একটা পেমেন্ট মাধ্যম চালু রাখতে হবে, নইলে কেউ অর্ডার করতে পারবে না।");
+      const n = {manual_enabled: !!f.manual_enabled, paystation: p}; ls.set(PKEY, n); return {settings: payOut(n)};
+    },
+    async payment_test() { const d = load(); needAdmin(d); return {reachable: true, status_code: "2001", message: "(ডেমো) PayStation-এ সংযোগ হয়েছে, পরীক্ষার ইনভয়েস পাওয়া যায়নি, এটাই প্রত্যাশিত।", sandbox: demoPaySettings().paystation.sandbox}; },
+    async payments() {
+      const d = load(); needAdmin(d);
+      const rows = (d.payments || []).slice().reverse().map(p => { const o = d.orders.find(x => x.id === p.order_id), c = o && d.users.find(x => x.id === o.user_id); return {...p, code: o?.code, customer: c?.name}; });
+      const m = rows.filter(p => p.status === "success" && p.created > now() - 30 * 86400);
+      return {payments: rows, month: {count: m.length, total: m.reduce((s, p) => s + p.amount, 0)}};
+    },
     async catalog_save({catalog, reset}) {
       const d = load(); needAdmin(d);
       if (reset) { ls.del(CKEY); return {catalog: await loadFileCatalog()}; }
@@ -242,6 +289,9 @@ window.TechillAPI = (() => {
       if (!S || !S.packs[pack] || !S.templates[tpl]) bad("প্যাকেজ বা টেমপ্লেট পাওয়া যায়নি।");
       const c = compute(cat, {stack: sk, pack, add: JSON.parse(g("addons") || "{}")});
       if (g("total") && +g("total") !== c.total) bad("দাম আপডেট হয়েছে, পেজ রিফ্রেশ করে আবার দেখে নিন।", 422);
+      const online = g("pay_method") === "PayStation", pay = publicPay();
+      if (online && !pay.online) bad("অনলাইন পেমেন্ট এখন বন্ধ আছে, পেজ রিফ্রেশ করে অন্য মাধ্যম বাছুন।", 409);
+      if (!online && !pay.manual) bad("ম্যানুয়াল পেমেন্ট এখন বন্ধ আছে, অনলাইনে পেমেন্ট করুন।", 409);
       if (!u) { const id = createOrLogin(d, g("admin_name"), g("email").toLowerCase(), g("phone"), fd.get("password") || ""); ls.set(SKEY, id); u = meUser(d); }
       const info = {}; for (const k of ["admin_name", "whatsapp", "phone", "fb_page", "address", "business_intro", "additional_info"]) info[k] = g(k);
       const oid = nextId(d), t = now(), code = "TC-" + Math.random().toString(36).slice(2, 8).toUpperCase(), T = S.templates[tpl];
@@ -252,7 +302,9 @@ window.TechillAPI = (() => {
       await addFile(d, oid, u.id, "csv", fd.get("product_csv"));
       d.events.push({id: nextId(d), order_id: oid, stage: 0, progress: 5, note: "অর্ডার ও তথ্য জমা হয়েছে।", by: u.id, created: t});
       d.messages.push({id: nextId(d), order_id: oid, user_id: null, from_admin: true, body: `আসসালামু আলাইকুম! অর্ডার ${code} পেয়েছি। পেমেন্ট যাচাই করে কাজ শুরু করছি। কোনো প্রশ্ন বা নতুন তথ্য থাকলে এখানেই লিখুন।`, file_id: null, seen: false, created: t});
-      save(d); return {order: orderOut(d, u, d.orders.find(o => o.id === oid)), user: u};
+      const created = d.orders.find(o => o.id === oid);
+      const payment_url = online ? mock.demoPay(d, created) : undefined;
+      save(d); return {order: orderOut(d, u, created), user: u, payment_url};
     },
     async orders() {
       const d = load(), u = needUser(d);
@@ -265,6 +317,7 @@ window.TechillAPI = (() => {
         order: orderOut(d, u, o),
         events: d.events.filter(e => e.order_id === o.id).sort((a, b) => b.id - a.id).map(({by, ...e}) => e),
         messages: d.messages.filter(m => m.order_id === o.id).sort((a, b) => a.id - b.id).map(m => msgOut(d, m)),
+        payments: isAdmin(u) ? (d.payments || []).filter(p => p.order_id === o.id).slice().reverse() : undefined,
         files: d.files.filter(f => f.order_id === o.id).sort((a, b) => b.id - a.id).map(f => ({id: f.id, kind: f.kind, name: f.name, size: f.size, by_admin: isStaff(d.users.find(x => x.id === f.user_id)), created: f.created}))
       };
     },
@@ -545,6 +598,12 @@ window.TechillAPI = (() => {
     customers: () => run("customers", {}, () => http("customers")),
     customerSave: data => run("customer_save", data, () => post("customer_save", data)),
     analytics: days => run("analytics", {days}, () => http("analytics", {params: {days}})),
+    payStart: order_id => run("pay_start", {order_id}, () => post("pay_start", {order_id})),
+    payVerify: order_id => run("pay_verify", {order_id}, () => post("pay_verify", {order_id})),
+    paymentSettings: () => run("payment_settings", {}, () => http("payment_settings")),
+    savePaymentSettings: data => run("payment_settings_save", data, () => post("payment_settings_save", data)),
+    paymentTest: () => run("payment_test", {}, () => post("payment_test", {})),
+    payments: () => run("payments", {}, () => http("payments")),
     async exportUrl() { await ready; return demo ? mock.exportCSV() : "api.php?action=export_orders"; },
     fileUrl: id => demo ? mock.fileUrl(id) : "api.php?action=file&id=" + encodeURIComponent(id),
     /* analytics beacon: page view now, a heartbeat every 30s while the tab is visible */
@@ -561,6 +620,6 @@ window.TechillAPI = (() => {
       this.track("view", {r: document.referrer, u, tz});
       setInterval(() => { if (!document.hidden) this.track("ping"); }, 30000);
     },
-    resetDemo() { ls.del(KEY); ls.del(SKEY); ls.del(CKEY); }
+    resetDemo() { ls.del(KEY); ls.del(SKEY); ls.del(CKEY); ls.del(PKEY); }
   };
 })();

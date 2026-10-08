@@ -9,7 +9,9 @@ require __DIR__ . '/lib.php';
 start_session();
 $action = $_GET['action'] ?? '';
 $isPost = $_SERVER['REQUEST_METHOD'] === 'POST';
-if ($isPost && $action !== 'track') check_csrf();
+// The analytics beacon and PayStation's callback come without our CSRF token. Neither trusts
+// its input: the callback only triggers a server-to-server status check with PayStation.
+if ($isPost && !in_array($action, ['track', 'paystation_callback'], true)) check_csrf();
 
 const STAGES = 5;          // তথ্য জমা, পেমেন্ট যাচাই, সেটআপ চলছে, রিভিউ, ডেলিভারি
 const LOGIN_LIMIT = 10;    // failed logins per IP per 15 minutes
@@ -38,7 +40,7 @@ try {
         case 'info_update':  $isPost || fail('POST only', 405); info_update();
         case 'admin_update': $isPost || fail('POST only', 405); staff_update();
         case 'track':        $isPost || fail('POST only', 405); track();
-        case 'catalog':      out(['catalog' => catalog()]);
+        case 'catalog':      out(['catalog' => catalog(), 'payments' => public_payments()]);
         case 'catalog_save': $isPost || fail('POST only', 405); catalog_save();
         case 'admin_stats':  admin_stats();
         case 'assign':       $isPost || fail('POST only', 405); assign();
@@ -48,6 +50,13 @@ try {
         case 'customers':    customers_list();
         case 'customer_save': $isPost || fail('POST only', 405); customer_save();
         case 'analytics':    analytics();
+        case 'pay_start':    $isPost || fail('POST only', 405); pay_start();
+        case 'paystation_callback': paystation_callback();
+        case 'pay_verify':   $isPost || fail('POST only', 405); pay_verify();
+        case 'payment_settings': payment_settings_get();
+        case 'payment_settings_save': $isPost || fail('POST only', 405); payment_settings_save();
+        case 'payment_test': $isPost || fail('POST only', 405); payment_test();
+        case 'payments':     payments_list();
         case 'export_orders': export_orders();
         default:             fail('Unknown action', 404);
     }
@@ -156,10 +165,17 @@ function order_create(): void {
     if (isset($_POST['total']) && (int)$_POST['total'] !== $total) fail('দাম আপডেট হয়েছে, পেজ রিফ্রেশ করে আবার দেখে নিন।', 422);
 
     $method = str_in('pay_method', 20);
-    if (!in_array($method, ['bKash', 'Nagad', 'Rocket'], true)) fail('পেমেন্ট মাধ্যম সঠিক নয়।');
-    $sender = str_in('pay_sender', 20); $trx = str_in('pay_trx', 20);
-    if (!valid_phone($sender)) fail('যে নম্বর থেকে পাঠিয়েছেন সেটা সঠিক নয়।');
-    if (!preg_match('/^[A-Za-z0-9]{8,12}$/', $trx)) fail('Transaction ID সঠিক নয়।');
+    $online = $method === 'PayStation';
+    if ($online) {
+        if (!paystation_ready()) fail('অনলাইন পেমেন্ট এখন বন্ধ আছে, পেজ রিফ্রেশ করে অন্য মাধ্যম বাছুন।', 409);
+        $sender = ''; $trx = '';
+    } else {
+        if (!in_array($method, ['bKash', 'Nagad', 'Rocket'], true)) fail('পেমেন্ট মাধ্যম সঠিক নয়।');
+        if (!payment_settings()['manual_enabled']) fail('ম্যানুয়াল পেমেন্ট এখন বন্ধ আছে, অনলাইনে পেমেন্ট করুন।', 409);
+        $sender = str_in('pay_sender', 20); $trx = str_in('pay_trx', 20);
+        if (!valid_phone($sender)) fail('যে নম্বর থেকে পাঠিয়েছেন সেটা সঠিক নয়।');
+        if (!preg_match('/^[A-Za-z0-9]{8,12}$/', $trx)) fail('Transaction ID সঠিক নয়।');
+    }
 
     $info = [];
     foreach (['admin_name' => 120, 'whatsapp' => 20, 'phone' => 20, 'fb_page' => 255, 'address' => 255, 'business_intro' => 3000, 'additional_info' => 3000] as $k => $max) $info[$k] = str_in($k, $max);
@@ -187,12 +203,20 @@ function order_create(): void {
     save_upload('product_csv', $oid, $u['id'], 'csv');
     q('INSERT INTO order_events (order_id, stage, progress, note, created_by) VALUES (?,0,5,?,?)', [$oid, 'অর্ডার ও তথ্য জমা হয়েছে।', $u['id']]);
     q('INSERT INTO messages (order_id, from_admin, body) VALUES (?,1,?)',
-      [$oid, "আসসালামু আলাইকুম! অর্ডার $code পেয়েছি। পেমেন্ট যাচাই করে কাজ শুরু করছি। কোনো প্রশ্ন বা নতুন তথ্য থাকলে এখানেই লিখুন।"]);
+      [$oid, $online ? "আসসালামু আলাইকুম! অর্ডার $code পেয়েছি। অনলাইন পেমেন্ট সম্পন্ন হলেই কাজ শুরু হবে। কোনো প্রশ্ন বা নতুন তথ্য থাকলে এখানেই লিখুন।"
+                     : "আসসালামু আলাইকুম! অর্ডার $code পেয়েছি। পেমেন্ট যাচাই করে কাজ শুরু করছি। কোনো প্রশ্ন বা নতুন তথ্য থাকলে এখানেই লিখুন।"]);
     db()->commit();
     $vid = (string)($_POST['vid'] ?? '');
     if (preg_match('/^[a-f0-9]{32}$/', $vid)) q("INSERT INTO track_events (vid, name) VALUES (?, 'order')", [$vid]);
 
-    out(['order' => order_out(q('SELECT * FROM orders WHERE id = ?', [$oid])->fetch()), 'user' => $u, 'csrf' => $_SESSION['csrf']]);
+    $row = q('SELECT * FROM orders WHERE id = ?', [$oid])->fetch();
+    $res = ['order' => order_out($row), 'user' => $u, 'csrf' => $_SESSION['csrf']];
+    if ($online) {
+        // The order is saved either way; if PayStation is unreachable the customer can retry from the dashboard.
+        try { $res['payment_url'] = paystation_start($row); }
+        catch (RuntimeException $e) { $res['pay_error'] = $e->getMessage(); }
+    }
+    out($res);
 }
 
 function orders_list(): void {
@@ -214,7 +238,9 @@ function order_detail(): void {
         q('SELECT * FROM order_events WHERE order_id = ? ORDER BY id DESC', [$id])->fetchAll());
     $files = array_map(fn($f) => ['id' => (int)$f['id'], 'kind' => $f['kind'], 'name' => $f['original_name'], 'size' => (int)$f['size'], 'by_admin' => in_array($f['role'], ['developer', 'admin'], true), 'created' => strtotime($f['created_at'] . ' UTC')],
         q('SELECT f.*, u.role FROM files f LEFT JOIN users u ON u.id = f.user_id WHERE f.order_id = ? ORDER BY f.id DESC', [$id])->fetchAll());
-    out(['order' => order_out($o, $u), 'events' => $events, 'messages' => message_rows($id), 'files' => $files]);
+    $res = ['order' => order_out($o, $u), 'events' => $events, 'messages' => message_rows($id), 'files' => $files];
+    if (is_admin($u)) $res['payments'] = payment_rows($id);
+    out($res);
 }
 
 /* ---------- chat & files ---------- */
@@ -773,4 +799,132 @@ function analytics(): void {
                 q("SELECT u.name, u.email, COUNT(*) n, SUM(o.total) t FROM orders o JOIN users u ON u.id = o.user_id WHERE o.cancelled = 0 AND o.pay_status = 'verified' GROUP BY u.id ORDER BY t DESC LIMIT 8")->fetchAll()),
         ],
     ]);
+}
+
+/* ---------- online payments (PayStation) ---------- */
+
+function public_payments(): array {
+    $s = payment_settings();
+    return ['online' => paystation_ready(), 'manual' => (bool)$s['manual_enabled'], 'pay_with_charge' => (int)$s['paystation']['pay_with_charge'], 'sandbox' => (bool)$s['paystation']['sandbox']];
+}
+
+// Records a new attempt and asks PayStation for a checkout page; returns its payment_url.
+// Throws instead of fail() so order_create can still return the saved order.
+function paystation_start(array $o): string {
+    if (!paystation_ready()) throw new RuntimeException('অনলাইন পেমেন্ট এখন বন্ধ আছে।');
+    $p = payment_settings()['paystation'];
+    $info = json_decode($o['info_json'], true) ?: [];
+    $cust = q('SELECT name, email, phone FROM users WHERE id = ?', [$o['user_id']])->fetch() ?: [];
+    $invoice = $o['code'] . '-' . strtoupper(bin2hex(random_bytes(3)));
+    q('INSERT INTO payments (order_id, invoice_number, amount, sandbox) VALUES (?,?,?,?)', [$o['id'], $invoice, $o['total'], $p['sandbox'] ? 1 : 0]);
+    $r = paystation_post('/initiate-payment', paystation_fields($o, $info, $cust, $invoice));
+    $url = (string)($r['json']['payment_url'] ?? '');
+    if (ps_accepted($r) && preg_match('#^https://[^/]*paystation\.com\.bd/#', $url)) return $url;
+    $why = $r['ok'] ? ('PayStation: ' . ($r['json']['message'] ?? 'অনুরোধ নেওয়া হয়নি') . ' (কোড ' . ($r['json']['status_code'] ?? '?') . ')') : $r['error'];
+    q("UPDATE payments SET status = 'error', note = ? WHERE invoice_number = ?", [mb_substr($why, 0, 255), $invoice]);
+    error_log('techill paystation initiate: ' . $why);
+    throw new RuntimeException('অনলাইন পেমেন্ট শুরু করা যায়নি। ড্যাশবোর্ড থেকে আবার চেষ্টা করুন।');
+}
+
+function payment_rows(int $orderId): array {
+    return array_map(fn($r) => ['id' => (int)$r['id'], 'invoice' => $r['invoice_number'], 'amount' => (int)$r['amount'], 'status' => $r['status'], 'trx_id' => $r['trx_id'],
+        'method' => $r['method'], 'payer' => $r['payer'], 'sandbox' => (bool)$r['sandbox'], 'note' => $r['note'], 'created' => strtotime($r['created_at'] . ' UTC'), 'updated' => strtotime($r['updated_at'] . ' UTC')],
+        q('SELECT * FROM payments WHERE order_id = ? ORDER BY id DESC', [$orderId])->fetchAll());
+}
+
+// Customer (or admin) starts / retries an online payment for an unpaid order.
+function pay_start(): void {
+    $u = require_user();
+    $o = order_for($u, (int)($_POST['order_id'] ?? 0));
+    if (is_staff($u) && !is_admin($u)) fail('শুধু কাস্টমার বা অ্যাডমিন পেমেন্ট শুরু করতে পারেন।', 403);
+    if ($o['cancelled']) fail('এই অর্ডার বাতিল করা হয়েছে।', 409);
+    if ($o['pay_status'] === 'verified') fail('এই অর্ডারের পেমেন্ট আগেই হয়ে গেছে।', 409);
+    // A payment may have gone through without the customer coming back; check before charging again.
+    foreach (q("SELECT * FROM payments WHERE order_id = ? AND status IN ('initiated','processing') AND created_at > UTC_TIMESTAMP() - INTERVAL 2 DAY ORDER BY id DESC LIMIT 3", [$o['id']])->fetchAll() as $prev) {
+        if (paystation_verify($prev) === 'success') out(['paid' => true]);
+    }
+    if ($o['pay_method'] !== 'PayStation') q("UPDATE orders SET pay_method = 'PayStation', pay_status = 'pending' WHERE id = ?", [$o['id']]);
+    try { out(['payment_url' => paystation_start(q('SELECT * FROM orders WHERE id = ?', [$o['id']])->fetch())]); }
+    catch (RuntimeException $e) { fail($e->getMessage(), 502); }
+}
+
+// PayStation sends the customer's browser back here (GET), and may also POST a server notification.
+// Either way we look the payment up with PayStation before changing anything.
+function paystation_callback(): void {
+    $in = $_GET + $_POST;
+    $body = json_decode((string)file_get_contents('php://input'), true);
+    if (is_array($body)) $in += (is_array($body['data'] ?? null) ? $body['data'] : []) + $body;
+    $pick = function (array $keys) use ($in): string {
+        foreach ($keys as $k) if (isset($in[$k]) && is_scalar($in[$k]) && trim((string)$in[$k]) !== '') return mb_substr(trim((string)$in[$k]), 0, 60);
+        return '';
+    };
+    $invoice = $pick(['invoice_number', 'invoiceNumber', 'invoice_no']);
+    $trx = $pick(['trx_id', 'trxId', 'transaction_id']);
+    $pay = $invoice !== '' ? q('SELECT * FROM payments WHERE invoice_number = ?', [$invoice])->fetch() : false;
+    if (!$pay && $trx !== '') $pay = q('SELECT * FROM payments WHERE trx_id = ?', [$trx])->fetch();
+    $isIpn = $_SERVER['REQUEST_METHOD'] === 'POST';
+    if (!$pay) {
+        if ($isIpn) out(['status' => 'error', 'message' => 'unknown invoice'], 404);
+        header('Location: ' . site_url('dashboard.html#pay=unknown')); exit;
+    }
+    $status = paystation_verify($pay, $trx);
+    if ($isIpn) out(['status' => 'success', 'result' => $status]);
+    $flag = ['success' => 'success', 'canceled' => 'cancel', 'processing' => 'pending'][$status] ?? 'failed';
+    header('Cache-Control: no-store');
+    header('Location: ' . site_url('dashboard.html#o=' . (int)$pay['order_id'] . '&pay=' . $flag));
+    exit;
+}
+
+// Admin: ask PayStation again about the latest attempts of an order.
+function pay_verify(): void {
+    $u = require_admin();
+    $o = order_for($u, (int)($_POST['order_id'] ?? 0));
+    $results = [];
+    foreach (q("SELECT * FROM payments WHERE order_id = ? AND status <> 'success' ORDER BY id DESC LIMIT 5", [$o['id']])->fetchAll() as $p) $results[] = paystation_verify($p, (string)$p['trx_id']);
+    out(['results' => $results, 'payments' => payment_rows((int)$o['id']), 'order' => order_out(order_row((int)$o['id']), $u)]);
+}
+
+function payment_settings_out(): array {
+    $s = payment_settings(); $p = $s['paystation'];
+    return ['manual_enabled' => (bool)$s['manual_enabled'], 'paystation' => ['enabled' => (bool)$p['enabled'], 'sandbox' => (bool)$p['sandbox'], 'merchant_id' => $p['merchant_id'],
+        'password_set' => $p['password'] !== '', 'pay_with_charge' => (int)$p['pay_with_charge'], 'ready' => paystation_ready()],
+        'callback_url' => site_url('api.php?action=paystation_callback'), 'curl' => function_exists('curl_init')];
+}
+function payment_settings_get(): void { require_admin(); out(['settings' => payment_settings_out()]); }
+
+function payment_settings_save(): void {
+    require_admin();
+    $s = payment_settings();
+    $p = $s['paystation'];
+    $p['enabled'] = !empty($_POST['ps_enabled']);
+    $p['sandbox'] = !empty($_POST['ps_sandbox']);
+    $p['merchant_id'] = str_in('ps_merchant_id', 80);
+    if (isset($_POST['ps_password']) && (string)$_POST['ps_password'] !== '') $p['password'] = mb_substr((string)$_POST['ps_password'], 0, 200);
+    if (!empty($_POST['ps_clear_password'])) $p['password'] = '';
+    $p['pay_with_charge'] = (int)!empty($_POST['ps_pay_with_charge']);
+    $manual = !empty($_POST['manual_enabled']);
+    if ($p['enabled'] && ($p['merchant_id'] === '' || $p['password'] === '')) fail('গেটওয়ে চালু করতে Merchant ID আর পাসওয়ার্ড দুটোই দিন।');
+    if (!$manual && !$p['enabled']) fail('অন্তত একটা পেমেন্ট মাধ্যম চালু রাখতে হবে, নইলে কেউ অর্ডার করতে পারবে না।');
+    q("INSERT INTO settings (k, v) VALUES ('payments', ?) ON DUPLICATE KEY UPDATE v = VALUES(v)", [json_encode(['manual_enabled' => $manual, 'paystation' => $p], JSON_UNESCAPED_UNICODE)]);
+    payment_settings(true);
+    out(['settings' => payment_settings_out()]);
+}
+// Checks that this server can reach PayStation and that the Merchant ID is recognised,
+// by looking up an invoice number that does not exist. It does not create a payment.
+function payment_test(): void {
+    require_admin();
+    $p = payment_settings()['paystation'];
+    if ($p['merchant_id'] === '') fail('আগে Merchant ID দিয়ে সেভ করুন।');
+    $r = paystation_post('/transaction-status', ['invoice_number' => 'TECHILL-TEST-' . strtoupper(bin2hex(random_bytes(3)))], ['merchantId: ' . $p['merchant_id']]);
+    if (!$r['ok']) out(['reachable' => false, 'message' => $r['error']]);
+    out(['reachable' => true, 'status_code' => (string)($r['json']['status_code'] ?? ''), 'message' => (string)($r['json']['message'] ?? ''), 'sandbox' => (bool)$p['sandbox']]);
+}
+
+function payments_list(): void {
+    require_admin();
+    $rows = q('SELECT p.*, o.code, u.name c_name FROM payments p JOIN orders o ON o.id = p.order_id JOIN users u ON u.id = o.user_id ORDER BY p.id DESC LIMIT 100')->fetchAll();
+    $sum = q("SELECT COUNT(*) n, COALESCE(SUM(amount), 0) t FROM payments WHERE status = 'success' AND created_at > UTC_TIMESTAMP() - INTERVAL 30 DAY")->fetch();
+    out(['payments' => array_map(fn($r) => ['id' => (int)$r['id'], 'order_id' => (int)$r['order_id'], 'code' => $r['code'], 'customer' => $r['c_name'], 'invoice' => $r['invoice_number'],
+        'amount' => (int)$r['amount'], 'status' => $r['status'], 'trx_id' => $r['trx_id'], 'method' => $r['method'], 'payer' => $r['payer'], 'sandbox' => (bool)$r['sandbox'], 'note' => $r['note'],
+        'created' => strtotime($r['created_at'] . ' UTC')], $rows), 'month' => ['count' => (int)$sum['n'], 'total' => (int)$sum['t']]]);
 }
