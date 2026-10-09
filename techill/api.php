@@ -253,7 +253,8 @@ function order_create(): void {
         $tld = substr($d, strrpos($d, '.') + 1);
         if (!valid_label(substr($d, 0, strrpos($d, '.') ?: 0))) $domFail('ডোমেইনের নাম সঠিক নয়।');
         if (!in_array($tld, allowed_tlds($PK), true)) $domFail(".$tld এই প্যাকেজে নেই। পাওয়া যাবে: ." . implode(', .', allowed_tlds($PK)));
-        if (domain_lookup([$d])[$d] === 'taken') $domFail("$d এর মধ্যে অন্য কেউ নিয়ে নিয়েছে, আরেকটা বাছুন।", 409);
+        if (domains_booked([$d])) $domFail("$d আরেকটা অর্ডারে বুক করা আছে, আরেকটা বাছুন।", 409);
+        if (domain_lookup([$d], true)[$d]['status'] === 'taken') $domFail("$d এর মধ্যে অন্য কেউ নিয়ে নিয়েছে, আরেকটা বাছুন।", 409);
         $domain = $d;
     } elseif ($domMode === 'own') {
         $d = clean_host(str_in('domain', 253));
@@ -1531,7 +1532,17 @@ function domain_check(): void {
     if (in_array($typed, $tlds, true)) $tlds = array_values(array_unique(array_merge([$typed], $tlds)));
     $names = array_map(fn($t) => "$label.$t", $tlds);
     $st = domain_lookup($names);
+    $booked = domains_booked($names);
     $premium = $cat['tlds_premium'] ?? TLDS_PREMIUM;
-    out(['name' => $label, 'results' => array_map(fn($d, $t) => ['domain' => $d, 'tld' => $t, 'status' => $st[$d], 'premium' => in_array($t, $premium, true)], $names, $tlds),
+    out(['name' => $label, 'checked_at' => gmdate('c'),
+         'results' => array_map(fn($d, $t) => ['domain' => $d, 'tld' => $t, 'premium' => in_array($t, $premium, true)]
+             + (in_array($d, $booked, true) ? ['status' => 'taken', 'src' => 'order'] : $st[$d]), $names, $tlds),
          'tlds' => allowed_tlds($PK), 'premium_missing' => array_values(array_diff($premium, allowed_tlds($PK)))]);
+}
+
+// New domains already picked by another live order (not yet registered, so the registry still says free).
+function domains_booked(array $domains): array {
+    if (!$domains) return [];
+    $marks = implode(',', array_fill(0, count($domains), '?'));
+    return q("SELECT DISTINCT domain FROM orders WHERE cancelled = 0 AND domain IN ($marks)", $domains)->fetchAll(PDO::FETCH_COLUMN);
 }

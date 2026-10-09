@@ -391,7 +391,11 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
 .dom-search button{border-radius:0;margin:0}
 .dom-tlds{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 0;font-size:.88rem;color:var(--muted);align-items:center}
 .dom-tlds b{background:var(--sunk);color:var(--ink);border-radius:999px;padding:2px 10px;font-weight:600}
-.dom-list{list-style:none;padding:0;margin:20px 0 0;display:grid;gap:8px;max-width:720px}
+.dom-live{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:18px;font-size:.9rem;color:var(--muted)}
+.dom-live .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px var(--ok-soft)}
+.linkbtn{background:none;border:0;padding:0;color:var(--blue-ink);font:inherit;font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.linkbtn:disabled{opacity:.5;cursor:default}
+.dom-list{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:8px;max-width:720px}
 .dom-list li{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px 12px 18px}
 .dom-list li.sel{border-color:var(--ok);background:var(--ok-soft)}
 .dom-list .dn{font-weight:700;font-size:1.05rem;word-break:break-all}
@@ -761,7 +765,7 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
             <div class="f full" data-req data-type="file"><div class="csvbar"><label for="i-csv">প্রোডাক্ট CSV ফাইল <span class="req">*</span></label><button type="button" class="btn btn-ghost btn-sm" id="demoCsv">ডেমো CSV ডাউনলোড</button></div><div class="drop"><input type="file" id="i-csv" name="product_csv" accept=".csv,text/csv"></div><span class="hint" id="csvHint">ডেমো ফাইলের কলাম ঠিক রেখে আপনার প্রোডাক্ট বসান। ছবি Google Drive-এ রেখে লিংক দিন।</span><span class="msg"></span></div>
             <div class="gw-box" id="gwBox" hidden>
               <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>পেমেন্ট গেটওয়ের জন্য কাগজপত্র</h3>
-              <p>আপনার অর্ডারে পেমেন্ট গেটওয়ে আছে। গেটওয়ে প্রোভাইডার (বিকাশ/নগদ মার্চেন্ট, SSLCommerz ইত্যাদি) মার্চেন্ট অ্যাকাউন্ট খোলার জন্য এই তথ্যগুলো চায়, তাই এগুলো ছাড়া গেটওয়ে রেজিস্টার করা যাবে না। তথ্যগুলো শুধু আমাদের টিম গেটওয়ে রেজিস্ট্রেশনের কাজে দেখবে।</p>
+              <p>আপনার অর্ডারে PayStation পেমেন্ট গেটওয়ে আছে। PayStation-এ মার্চেন্ট অ্যাকাউন্ট খুলতে ট্রেড লাইসেন্স আর মালিকের NID লাগে, তাই এগুলো ছাড়া গেটওয়ে রেজিস্টার করা যাবে না। তথ্যগুলো শুধু আমাদের টিম গেটওয়ে রেজিস্ট্রেশনের কাজে দেখবে।</p>
               <div class="fgrid">
                 <div class="f" data-req data-gw><label for="i-tl">ট্রেড লাইসেন্স নম্বর <span class="req">*</span></label><input type="text" id="i-tl" name="trade_license" autocomplete="off" placeholder="লাইসেন্সে যে নম্বর লেখা"><span class="msg"></span></div>
                 <div class="f" data-req data-gw data-type="doc"><label for="i-tlf">ট্রেড লাইসেন্সের ছবি/PDF <span class="req">*</span></label><div class="drop"><input type="file" id="i-tlf" name="trade_license_file" accept="image/jpeg,image/png,image/webp,application/pdf"></div><span class="msg"></span></div>
@@ -1060,6 +1064,11 @@ function syncGwBox(){ $("gwBox").hidden = !needsGw(); }
 const cleanHost = v => String(v || "").trim().toLowerCase().replace(/^(https?:\/\/)?(www\.)?/, "").replace(/\/.*$/, "");
 const hasDomain = () => P().incl.includes("domain") || !!st.add.domain;
 const CHECK_IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M7.5 12.5l3 3 6-6"/></svg>';
+// Where each answer came from, in words the customer understands.
+const DOM_SRC = r => r.status === "unknown" ? "এখন যাচাই করা গেল না, বাছলে আমরা কিনে দেওয়ার আগে নিশ্চিত হব"
+  : r.src === "order" ? "আরেকজন কাস্টমার এই ডোমেইনটা বুক করেছেন"
+  : r.status === "taken" ? "অন্য কেউ রেজিস্টার করে রেখেছে"
+  : r.src === "dns" ? "DNS অনুযায়ী খালি, কেনার আগে রেজিস্ট্রিতে আবার দেখা হবে" : "রেজিস্ট্রি থেকে এইমাত্র যাচাই করা";
 function renderDomain(){
   const d = st.dom, inc = hasDomain(), tlds = api.allowedTlds(CAT, P()), prem = (CAT.tlds_premium || ["com"]).filter(t => !tlds.includes(t));
   if (!inc && d.mode === "new"){ d.mode = "own"; d.domain = ""; d.results = null; }
@@ -1076,7 +1085,8 @@ function renderDomain(){
     if (d.msg) h += `<p class="err" style="margin-top:10px">${esc(d.msg)}</p>`;
     if (d.results){
       const anyFree = d.results.some(r => r.status === "available");
-      h += `<ul class="dom-list">${d.results.map(r => `<li class="${d.domain === r.domain ? "sel" : ""}"><span class="dn">${esc(r.domain)}${r.status === "unknown" ? "<small>এখন যাচাই করা গেল না, বাছলে আমরা কিনে দেওয়ার আগে নিশ্চিত হব</small>" : r.status === "taken" ? "<small>অন্য কেউ নিয়ে নিয়েছে</small>" : ""}</span>
+      h += `<div class="dom-live"><span class="dot"></span>লাইভ যাচাই · ${new Date(d.checkedAt || Date.now()).toLocaleTimeString("bn-BD", {hour: "numeric", minute: "2-digit"})}<button type="button" class="linkbtn" data-drecheck ${d.busy ? "disabled" : ""}>আবার চেক করুন</button></div>`;
+      h += `<ul class="dom-list">${d.results.map(r => `<li class="${d.domain === r.domain ? "sel" : ""}"><span class="dn">${esc(r.domain)}<small>${DOM_SRC(r)}</small></span>
         <span class="st">${r.status === "available" ? '<span class="pill ok">খালি আছে</span>' : r.status === "taken" ? '<span class="pill no">নেওয়া হয়ে গেছে</span>' : '<span class="pill q">অজানা</span>'}
         ${r.status !== "taken" ? (d.domain === r.domain ? '<span class="pill ok">✓ বাছাই করা</span>' : `<button type="button" class="btn ${r.status === "available" ? "btn-primary" : "btn-ghost"} btn-sm" data-dpick="${esc(r.domain)}">বেছে নিন</button>`) : ""}</span></li>`).join("")}</ul>`;
       if (!anyFree) h += `<p class="dom-note">এই নামে খালি কোনো ডোমেইন নিশ্চিত পাওয়া যায়নি। নামটা একটু বদলে দেখুন:</p><div class="dom-sugg">${[d.q + "bd", d.q + "shop", "my" + d.q, d.q + "store", "get" + d.q].map(n => api.domainLabel(n)).filter(api.validLabel).map(n => `<button type="button" data-dsugg="${esc(n)}">${esc(n)}</button>`).join("")}</div>`;
@@ -1097,7 +1107,7 @@ async function searchDomain(q){
   d.busy = true; renderDomain();
   try {
     const r = await api.domainCheck(st.stack, st.pack, q);
-    d.results = r.results; d.q = r.name;
+    d.results = r.results; d.q = r.name; d.checkedAt = r.checked_at;
     if (d.domain && !r.results.some(x => x.domain === d.domain && x.status !== "taken")) d.domain = "";
     const first = r.results.find(x => x.status === "available"); if (first && !d.domain) d.domain = first.domain;
   } catch(e){ d.msg = e.message; }
@@ -1108,6 +1118,7 @@ $("domBox").addEventListener("click", e => {
   const m = e.target.closest("[data-dmode]"); if (m){ st.dom.mode = m.dataset.dmode; renderDomain(); $("domErr").textContent = ""; (m.dataset.dmode === "new" ? $("domQ") : $("domOwn"))?.focus(); return; }
   const p = e.target.closest("[data-dpick]"); if (p){ st.dom.domain = p.dataset.dpick; renderDomain(); $("domErr").textContent = ""; return; }
   const g = e.target.closest("[data-dsugg]"); if (g){ searchDomain(g.dataset.dsugg); return; }
+  if (e.target.closest("[data-drecheck]")){ searchDomain(st.dom.q); return; }
   if (e.target.closest("#domAddBtn")){
     // Send Money was already paid for the old total, so go back and show the new amount first.
     if (st.method !== "PayStation"){ st.add.domain = true; cleanup(); st.dom.mode = "new"; go(3); toastErr("ডোমেইন যোগ হয়েছে, মোট টাকা বেড়েছে। বাড়তি টাকা পাঠিয়ে আবার এগিয়ে যান।"); return; }

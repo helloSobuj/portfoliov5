@@ -915,33 +915,73 @@ function rdap_base(string $tld): ?string {
     return $map[$tld] ?? $fallback[$tld] ?? null;
 }
 
-// Availability of several full domain names at once (parallel RDAP lookups, 15-minute cache).
-// 404 from the registry = available, 200 = registered, anything else = unknown.
-function domain_lookup(array $domains): array {
+// Live availability of several full domain names at once. The registry's RDAP server is asked
+// first (404 = available, 200 = registered); a name it cannot answer for is checked in DNS over
+// HTTPS (NXDOMAIN = most likely available). Answers are kept 3 minutes; $fresh skips the cache.
+// Returns [domain => ['status' => available|taken|unknown, 'src' => rdap|dns|null]].
+function domain_lookup(array $domains, bool $fresh = false): array {
     $out = [];
     if (!$domains) return $out;
-    $marks = implode(',', array_fill(0, count($domains), '?'));
-    foreach (q("SELECT domain, status FROM domain_cache WHERE domain IN ($marks) AND checked_at > UTC_TIMESTAMP() - INTERVAL 15 MINUTE AND status <> 'unknown'", $domains)->fetchAll() as $r) $out[$r['domain']] = $r['status'];
+    if (!$fresh) {
+        $marks = implode(',', array_fill(0, count($domains), '?'));
+        foreach (q("SELECT domain, status, source FROM domain_cache WHERE domain IN ($marks) AND checked_at > UTC_TIMESTAMP() - INTERVAL 3 MINUTE AND status <> 'unknown'", $domains)->fetchAll() as $r)
+            $out[$r['domain']] = ['status' => $r['status'], 'src' => $r['source']];
+    }
     $todo = array_values(array_diff($domains, array_keys($out)));
     if ($todo && function_exists('curl_multi_init')) {
-        $mh = curl_multi_init(); $hs = [];
+        $urls = [];
+        foreach ($todo as $d) if ($base = rdap_base(substr($d, strrpos($d, '.') + 1))) $urls[$d] = $base . 'domain/' . rawurlencode($d);
+        foreach (http_multi($urls, ['Accept: application/rdap+json, application/json']) as $d => [$code, $body]) {
+            // A web server's HTML error page is not a registry answer, so only a non-HTML 404 means free.
+            if ($code === 404 && !str_starts_with(ltrim($body), '<')) $out[$d] = ['status' => 'available', 'src' => 'rdap'];
+            elseif ($code === 200) $out[$d] = ['status' => 'taken', 'src' => 'rdap'];
+        }
+        $left = array_values(array_diff($todo, array_keys($out)));
+        if ($left) foreach (dns_probe($left) as $d => $st) if ($st !== 'unknown') $out[$d] = ['status' => $st, 'src' => 'dns'];
         foreach ($todo as $d) {
-            $base = rdap_base(substr($d, strrpos($d, '.') + 1));
-            if (!$base) { $out[$d] = 'unknown'; continue; }
-            $ch = curl_init($base . 'domain/' . rawurlencode($d));
-            curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 6, CURLOPT_CONNECTTIMEOUT => 3, CURLOPT_FOLLOWLOCATION => true, CURLOPT_MAXREDIRS => 3,
-                CURLOPT_HTTPHEADER => ['Accept: application/rdap+json, application/json'], CURLOPT_USERAGENT => 'Techill/1.0']);
-            curl_multi_add_handle($mh, $ch); $hs[$d] = $ch;
+            $out[$d] = $out[$d] ?? ['status' => 'unknown', 'src' => null];
+            q('REPLACE INTO domain_cache (domain, status, source, checked_at) VALUES (?,?,?, UTC_TIMESTAMP())', [$d, $out[$d]['status'], $out[$d]['src']]);
         }
-        do { $st = curl_multi_exec($mh, $running); if ($running) curl_multi_select($mh, 1); } while ($running && $st === CURLM_OK);
-        foreach ($hs as $d => $ch) {
-            $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $out[$d] = $code === 404 ? 'available' : ($code === 200 ? 'taken' : 'unknown');
-            curl_multi_remove_handle($mh, $ch); curl_close($ch);
-            q('REPLACE INTO domain_cache (domain, status, checked_at) VALUES (?,?, UTC_TIMESTAMP())', [$d, $out[$d]]);
-        }
-        curl_multi_close($mh);
     }
-    foreach ($domains as $d) $out[$d] = $out[$d] ?? 'unknown';
+    foreach ($domains as $d) $out[$d] = $out[$d] ?? ['status' => 'unknown', 'src' => null];
+    return $out;
+}
+
+// GETs several URLs in parallel. Returns [key => [http code, body]] (code 0 when unreachable).
+function http_multi(array $urls, array $headers = []): array {
+    $mh = curl_multi_init(); $hs = []; $res = [];
+    foreach ($urls as $k => $u) {
+        $ch = curl_init($u);
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 6, CURLOPT_CONNECTTIMEOUT => 3, CURLOPT_FOLLOWLOCATION => true, CURLOPT_MAXREDIRS => 3,
+            CURLOPT_HTTPHEADER => $headers, CURLOPT_USERAGENT => 'Techill/1.0']);
+        curl_multi_add_handle($mh, $ch); $hs[$k] = $ch;
+    }
+    do { $st = curl_multi_exec($mh, $running); if ($running) curl_multi_select($mh, 1); } while ($running && $st === CURLM_OK);
+    foreach ($hs as $k => $ch) {
+        $res[$k] = [(int)curl_getinfo($ch, CURLINFO_HTTP_CODE), (string)curl_multi_getcontent($ch)];
+        curl_multi_remove_handle($mh, $ch); curl_close($ch);
+    }
+    curl_multi_close($mh);
+    return $res;
+}
+
+// Free DNS-over-HTTPS check (Google, then Cloudflare): a name the registry has never delegated
+// answers NXDOMAIN. Not as certain as RDAP (a registered name without nameservers also answers
+// NXDOMAIN), so it is only used when the registry itself cannot be reached.
+function dns_probe(array $domains): array {
+    $out = array_fill_keys($domains, 'unknown');
+    $servers = cfg('doh_base_url') ? [rtrim(cfg('doh_base_url'), '/') . '/resolve?'] : ['https://dns.google/resolve?', 'https://cloudflare-dns.com/dns-query?ct=application/dns-json&'];
+    foreach ($servers as $base) {
+        $left = array_keys(array_filter($out, fn($s) => $s === 'unknown'));
+        if (!$left) break;
+        $urls = [];
+        foreach ($left as $d) $urls[$d] = $base . 'name=' . rawurlencode($d) . '&type=NS';
+        foreach (http_multi($urls, ['Accept: application/dns-json']) as $d => [$code, $body]) {
+            $j = $code === 200 ? json_decode($body, true) : null;
+            if (!is_array($j) || !isset($j['Status'])) continue;
+            if ((int)$j['Status'] === 3) $out[$d] = 'available';
+            elseif ((int)$j['Status'] === 0) $out[$d] = 'taken';
+        }
+    }
     return $out;
 }

@@ -37,6 +37,54 @@ window.TechillAPI = (() => {
     return cat.addons.some(a => a.gw && (!a.only || a.only === stackKey) && ((pack.incl || []).includes(a.key) || add[a.key]));
   }
 
+  /* ---------- live domain lookup from the browser ----------
+     Used when there is no PHP backend (demo/preview), and to fill in names the server could not
+     answer. Asks the registry's RDAP server first (404 = free, 200 = registered); if the browser
+     cannot reach it, asks free DNS-over-HTTPS (Google, then Cloudflare): NXDOMAIN = most likely free. */
+  const RDAP_FALLBACK = {com: "https://rdap.verisign.com/com/v1/", net: "https://rdap.verisign.com/net/v1/", shop: "https://rdap.gmoregistry.net/rdap/",
+    top: "https://rdap.zdnsgtld.com/top/", store: "https://rdap.centralnic.com/store/", online: "https://rdap.centralnic.com/online/",
+    site: "https://rdap.centralnic.com/site/", website: "https://rdap.centralnic.com/website/"};
+  let rdapMap = null;
+  async function rdapBase(tld) {
+    if (!rdapMap) {
+      rdapMap = (() => { try { const c = JSON.parse(localStorage.getItem("techill_rdap") || "null"); return c && Date.now() - c.at < 7 * 864e5 ? c.map : null; } catch (e) { return null; } })();
+      if (!rdapMap) {
+        rdapMap = {};
+        try {
+          const j = await (await timed("https://data.iana.org/rdap/dns.json", {}, 5000)).json();
+          for (const [tlds, urls] of j.services || []) { const u = urls.find(x => x.startsWith("https://")) || urls[0]; for (const t of tlds) rdapMap[t.toLowerCase()] = u.replace(/\/?$/, "/"); }
+          try { localStorage.setItem("techill_rdap", JSON.stringify({at: Date.now(), map: rdapMap})); } catch (e) {}
+        } catch (e) {}
+      }
+    }
+    return rdapMap[tld] || RDAP_FALLBACK[tld] || null;
+  }
+  function timed(url, opts = {}, ms = 6000) {
+    const c = new AbortController(), t = setTimeout(() => c.abort(), ms);
+    return fetch(url, {...opts, signal: c.signal, credentials: "omit", cache: "no-store"}).finally(() => clearTimeout(t));
+  }
+  async function rdapStatus(d) {
+    const base = await rdapBase(d.slice(d.lastIndexOf(".") + 1)); if (!base) return null;
+    try {
+      const r = await timed(base + "domain/" + encodeURIComponent(d), {headers: {accept: "application/rdap+json"}});
+      // A web server's HTML error page is not a registry answer, so only a non-HTML 404 means free.
+      return r.status === 404 && !(await r.text()).trimStart().startsWith("<") ? "available" : r.status === 200 ? "taken" : null;
+    }
+    catch (e) { return null; }
+  }
+  async function dnsStatus(d) {
+    for (const u of [`https://dns.google/resolve?name=${encodeURIComponent(d)}&type=NS`, `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(d)}&type=NS&ct=application/dns-json`]) {
+      try { const j = await (await timed(u, {}, 5000)).json(); if (j.Status === 3) return "available"; if (j.Status === 0) return "taken"; } catch (e) {}
+    }
+    return null;
+  }
+  async function liveDomainStatus(domains) {
+    return Object.fromEntries(await Promise.all(domains.map(async d => {
+      const r = await rdapStatus(d); if (r) return [d, {status: r, src: "rdap"}];
+      const n = await dnsStatus(d); return [d, n ? {status: n, src: "dns"} : {status: "unknown", src: null}];
+    })));
+  }
+
   /* ---------- visitor id ---------- */
   const vid = (() => {
     try { let v = localStorage.getItem("techill_vid"); if (!/^[a-f0-9]{32}$/.test(v || "")) { v = [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, "0")).join(""); localStorage.setItem("techill_vid", v); } return v; }
@@ -76,7 +124,7 @@ window.TechillAPI = (() => {
   const post = (action, obj) => http(action, {method: "POST", form: toForm(obj)});
 
   /* ---------- demo backend (browser only) ---------- */
-  const KEY = "techill_demo_db_v5", SKEY = "techill_demo_uid", CKEY = "techill_demo_catalog", PKEY = "techill_demo_payments", MKEY = "techill_demo_marketing";
+  const KEY = "techill_demo_db_v6", SKEY = "techill_demo_uid", CKEY = "techill_demo_catalog", PKEY = "techill_demo_payments", MKEY = "techill_demo_marketing";
   const EKEY = "techill_demo_email", SUPKEY = "techill_demo_support", RKEY = "techill_demo_referral";
   const EMAIL_DEF = {enabled: true, transport: "smtp", host: "mail.techill.top", port: 465, secure: "ssl", username: "noreply@techill.top", password: "demo", from_email: "noreply@techill.top", from_name: "Techill",
     reply_to: "", admin_emails: "", otp_required: true, notify: {new_order: true, status: true, message: true, assign: true, referral: true}};
@@ -127,7 +175,7 @@ window.TechillAPI = (() => {
       [6, "Laravel", "গ্রোথ", "টেক বাজার · L2", [["কুরিয়ার API × ১", 2000]], "verified", 3, 85, 3, 40, 48, null, false],
       [7, "WooCommerce", "প্রো", "হোম ডেকর · W5", [["ফেসবুক Pixel", 1000]], "verified", 2, 35, 3, 80, 72, null, false],
       [8, "WooCommerce", "বিজনেস", "ফ্রেশ বাজার · W4", [], "pending", 0, 5, null, 3, 48, null, false],
-      [9, "Laravel", "লাইট", "মেগা স্টোর · L1", [["বিকাশ/নগদ মার্চেন্ট API", 3500]], "verified", 2, 60, 2, 24 * 4, 72, null, false],
+      [9, "Laravel", "লাইট", "মেগা স্টোর · L1", [["PayStation পেমেন্ট গেটওয়ে", 3000]], "verified", 2, 60, 2, 24 * 4, 72, null, false],
       [10, "WooCommerce", "স্টার্টার", "গ্যাজেট জোন · W2", [], "rejected", 0, 5, null, 24 * 6, 24, null, true],
       [5, "Laravel", "আল্টিমেট", "গ্লো বিউটি · L5", [["বেসিক SEO সেটআপ", 2000]], "verified", 4, 100, 3, 24 * 20, 72, "https://glowbeauty.com.bd", false],
       [6, "WooCommerce", "বিজনেস", "ফ্যাশন হাউস · W1", [], "pending", 1, 15, 2, 7, 48, null, false]
@@ -463,11 +511,10 @@ window.TechillAPI = (() => {
       const label = domainLabel(name); if (!validLabel(label)) bad("ইংরেজি অক্ষর, সংখ্যা বা হাইফেন দিয়ে নাম লিখুন (যেমন myshop)।");
       let tlds = allowedTlds(cat, P); const typed = (String(name).toLowerCase().match(/\.([a-z]{2,24})\s*$/) || [])[1];
       if (typed && tlds.includes(typed)) tlds = [typed, ...tlds.filter(t => t !== typed)];
-      // Demo: a few famous names are always taken, the rest by a fixed hash so results look real and stay stable.
-      const famous = ["google", "facebook", "daraz", "techill", "amazon", "shop", "bd"];
-      const st = d => { let h = 0; for (const c of d) h = (h * 31 + c.charCodeAt(0)) >>> 0; return famous.includes(label) || (d.endsWith(".com") ? h % 3 === 0 : h % 5 === 0) ? "taken" : "available"; };
+      const st = await liveDomainStatus(tlds.map(t => `${label}.${t}`)), booked = new Set(load().orders.filter(o => !o.cancelled && o.domain).map(o => o.domain));
       const prem = cat.tlds_premium || TLDS_PREMIUM;
-      return {name: label, results: tlds.map(t => ({domain: `${label}.${t}`, tld: t, status: st(`${label}.${t}`), premium: prem.includes(t)})), tlds: allowedTlds(cat, P), premium_missing: prem.filter(t => !allowedTlds(cat, P).includes(t))};
+      return {name: label, checked_at: new Date().toISOString(), tlds: allowedTlds(cat, P), premium_missing: prem.filter(t => !allowedTlds(cat, P).includes(t)),
+        results: tlds.map(t => { const d = `${label}.${t}`; return {domain: d, tld: t, premium: prem.includes(t), ...(booked.has(d) ? {status: "taken", src: "order"} : st[d])}; })};
     },
     async ref_check({code}) {
       const d = load(), s = demoRef(), u = meUser(d); code = String(code || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -625,6 +672,8 @@ window.TechillAPI = (() => {
         const d = g("domain").toLowerCase(), t = d.slice(d.lastIndexOf(".") + 1);
         if (!validLabel(d.slice(0, d.lastIndexOf(".")))) db("ডোমেইনের নাম সঠিক নয়।");
         if (!allowedTlds(cat, PK).includes(t)) db(`.${t} এই প্যাকেজে নেই।`);
+        if (load().orders.some(o => !o.cancelled && o.domain === d)) { const e = new Error(`${d} আরেকটা অর্ডারে বুক করা আছে, আরেকটা বাছুন।`); e.status = 409; e.domain_error = true; throw e; }
+        if ((await liveDomainStatus([d]))[d].status === "taken") { const e = new Error(`${d} এর মধ্যে অন্য কেউ নিয়ে নিয়েছে, আরেকটা বাছুন।`); e.status = 409; e.domain_error = true; throw e; }
         domain = d;
       } else if (dm === "own") { const d = g("domain").toLowerCase().replace(/^(https?:\/\/)?(www\.)?/, "").split(/[/?]/)[0]; if (!validHost(d)) db("আপনার ডোমেইনটা ঠিকভাবে লিখুন, যেমন myshop.com"); domain = d; }
       info.domain_mode = dm;
@@ -1074,7 +1123,13 @@ window.TechillAPI = (() => {
     emailTest: to => run("email_test", {to}, () => post("email_test", {to: to || ""})),
     supportSettings: () => run("support_settings", {}, () => http("support_settings")),
     saveSupport: data => run("support_save", data, () => post("support_save", data)),
-    domainCheck: (stack, pack, name) => run("domain_check", {stack, pack, name}, () => http("domain_check", {params: {stack, pack, name}})),
+    // Names the server could not answer for (registry down, host blocks outbound calls) are retried from the browser.
+    domainCheck: async (stack, pack, name) => {
+      const r = await run("domain_check", {stack, pack, name}, () => http("domain_check", {params: {stack, pack, name}}));
+      const miss = r.results.filter(x => x.status === "unknown").map(x => x.domain);
+      if (miss.length && !demo) { const st = await liveDomainStatus(miss); r.results.forEach(x => { if (st[x.domain]) Object.assign(x, st[x.domain]); }); }
+      return r;
+    },
     allowedTlds, domainLabel, validLabel, validHost, needsGatewayDocs,
     refCheck: code => run("ref_check", {code}, () => http("ref_check", {params: {code}})),
     referral: () => run("referral", {}, () => http("referral")),

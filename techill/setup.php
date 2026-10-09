@@ -47,6 +47,7 @@ function migrate(): void {
         ADD ref_code VARCHAR(12) NULL AFTER email_notify, ADD referred_by INT UNSIGNED NULL AFTER ref_code, ADD UNIQUE KEY uq_users_ref (ref_code)');
     if (!$col('orders', 'referrer_id')) db()->exec('ALTER TABLE orders ADD referrer_id INT UNSIGNED NULL AFTER cancelled');
     if (!$col('orders', 'domain')) db()->exec('ALTER TABLE orders ADD domain VARCHAR(253) NULL AFTER referrer_id');
+    if (!$col('domain_cache', 'source')) db()->exec('ALTER TABLE domain_cache ADD source VARCHAR(8) NULL AFTER status');
     db()->exec("ALTER TABLE files MODIFY kind ENUM('logo','csv','attachment','license','nid') NOT NULL DEFAULT 'attachment'");
     if (!$col('live_visitors', 'city')) db()->exec('ALTER TABLE live_visitors ADD browser VARCHAR(30) NULL AFTER device, ADD city VARCHAR(80) NULL AFTER browser, ADD country CHAR(2) NULL AFTER city');
 }

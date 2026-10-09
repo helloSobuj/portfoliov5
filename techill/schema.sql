@@ -242,11 +242,12 @@ CREATE TABLE IF NOT EXISTS payouts (
   CONSTRAINT fk_payout_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Domain availability answers from the registries (RDAP), kept for a few minutes, and a log of
+-- Domain availability answers (registry RDAP, or DNS when the registry cannot be reached), kept a few minutes, and a log of
 -- searches per IP so the lookup cannot be used to hammer the registries.
 CREATE TABLE IF NOT EXISTS domain_cache (
   domain     VARCHAR(253) PRIMARY KEY,
   status     ENUM('available','taken','unknown') NOT NULL,
+  source     VARCHAR(8) NULL,
   checked_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
