@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS orders (
   developer_id INT UNSIGNED NULL,
   cancelled   TINYINT(1) NOT NULL DEFAULT 0,
   referrer_id INT UNSIGNED NULL,
+  domain      VARCHAR(253) NULL,
   stage       TINYINT UNSIGNED NOT NULL DEFAULT 0,
   progress    TINYINT UNSIGNED NOT NULL DEFAULT 5,
   site_url    VARCHAR(255) NULL,
@@ -68,7 +69,7 @@ CREATE TABLE IF NOT EXISTS files (
   id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   order_id      INT UNSIGNED NOT NULL,
   user_id       INT UNSIGNED NOT NULL,
-  kind          ENUM('logo','csv','attachment') NOT NULL DEFAULT 'attachment',
+  kind          ENUM('logo','csv','attachment','license','nid') NOT NULL DEFAULT 'attachment',
   original_name VARCHAR(200) NOT NULL,
   stored_name   CHAR(40)     NOT NULL,
   mime          VARCHAR(100) NOT NULL,
@@ -239,4 +240,19 @@ CREATE TABLE IF NOT EXISTS payouts (
   processed_by INT UNSIGNED NULL,
   KEY ix_payout_user (user_id),
   CONSTRAINT fk_payout_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Domain availability answers from the registries (RDAP), kept for a few minutes, and a log of
+-- searches per IP so the lookup cannot be used to hammer the registries.
+CREATE TABLE IF NOT EXISTS domain_cache (
+  domain     VARCHAR(253) PRIMARY KEY,
+  status     ENUM('available','taken','unknown') NOT NULL,
+  checked_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS domain_searches (
+  id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  ip         VARCHAR(45) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  KEY ix_dsearch_ip (ip, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

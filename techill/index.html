@@ -236,7 +236,7 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
 .co-title small{display:block;font-family:var(--body);font-weight:500;font-size:.85rem;color:var(--muted)}
 .x{width:40px;height:40px;border-radius:10px;border:1.5px solid var(--line);background:transparent;cursor:pointer;display:grid;place-items:center;flex:none}
 .x svg{width:18px;height:18px}
-.stepper{list-style:none;padding:0;margin:0 auto;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;max-width:1140px;padding-inline:24px;padding-block:18px}
+.stepper{list-style:none;padding:0;margin:0 auto;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;max-width:1140px;padding-inline:24px;padding-block:18px}
 .stepper li{display:flex;align-items:center;gap:8px;font-size:.9rem;font-weight:500;color:var(--muted);min-width:0}
 .stepper li span.n{flex:none;width:28px;height:28px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:.8rem;font-weight:700;background:var(--surface)}
 .stepper li.on{color:var(--ink)}
@@ -374,6 +374,41 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
 .timeline li.a i{background:var(--blue);box-shadow:0 0 0 4px var(--blue-soft)}
 .done-card{width:100%;text-align:left}
 
+/* payment gateway documents (step 4) */
+.gw-box{grid-column:1/-1;border:1.5px solid color-mix(in srgb,var(--warn) 40%,var(--line));background:var(--warn-soft);border-radius:16px;padding:18px 20px;display:grid;gap:16px}
+.gw-box h3{font-size:1.08rem;display:flex;gap:10px;align-items:center}
+.gw-box h3 svg{width:22px;height:22px;color:var(--warn);flex:none}
+.gw-box > p{font-size:.92rem;color:var(--ink);margin-top:-8px}
+.gw-box .fgrid{gap:16px 20px}
+/* domain (step 5) */
+.dom-modes{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.dom-modes button{border:2px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 16px;font-weight:600;cursor:pointer}
+.dom-modes button[aria-pressed="true"]{border-color:var(--blue);background:var(--blue-soft);color:var(--blue-ink)}
+.dom-search{display:flex;align-items:stretch;border:2px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden;max-width:720px}
+.dom-search:focus-within{border-color:var(--blue)}
+.dom-search span{display:grid;place-items:center;padding:0 4px 0 16px;color:var(--muted);font-weight:600}
+.dom-search input{flex:1;min-width:0;border:0;outline:none;background:transparent;padding:14px 8px;font-size:1.1rem}
+.dom-search button{border-radius:0;margin:0}
+.dom-tlds{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 0;font-size:.88rem;color:var(--muted);align-items:center}
+.dom-tlds b{background:var(--sunk);color:var(--ink);border-radius:999px;padding:2px 10px;font-weight:600}
+.dom-list{list-style:none;padding:0;margin:20px 0 0;display:grid;gap:8px;max-width:720px}
+.dom-list li{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px 12px 18px}
+.dom-list li.sel{border-color:var(--ok);background:var(--ok-soft)}
+.dom-list .dn{font-weight:700;font-size:1.05rem;word-break:break-all}
+.dom-list .dn small{display:block;font-weight:400;font-size:.82rem;color:var(--muted)}
+.dom-list .st{display:flex;align-items:center;gap:10px;flex:none}
+.pill{font-size:.8rem;font-weight:600;border-radius:999px;padding:2px 10px;white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}.pill.no{background:var(--sunk);color:var(--muted);text-decoration:line-through}.pill.q{background:var(--warn-soft);color:var(--warn)}
+.dom-pick{display:flex;align-items:center;gap:14px;background:var(--ok-soft);border:1.5px solid var(--ok);border-radius:16px;padding:16px 18px;max-width:720px;margin-top:18px}
+.dom-pick svg{width:28px;height:28px;color:var(--ok);flex:none}
+.dom-pick b{font-size:1.25rem;word-break:break-all}
+.dom-note{max-width:720px;margin-top:16px;font-size:.9rem;color:var(--muted)}
+.dom-sugg{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.dom-sugg button{border:1.5px dashed var(--line);background:transparent;border-radius:999px;padding:4px 12px;cursor:pointer;font-size:.9rem}
+.dom-sugg button:hover{border-color:var(--blue);color:var(--blue-ink)}
+.dom-add{max-width:720px;display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--blue-soft);border-radius:16px;padding:16px 18px;margin-bottom:18px}
+.dom-add p{flex:1;min-width:220px}
+
 /* referral */
 .ref-bar{background:linear-gradient(90deg,var(--warn-soft),var(--blue-soft));border-bottom:1px solid var(--line)}
 .ref-bar .container{display:flex;align-items:center;gap:12px;min-height:52px;padding-block:8px;font-size:.95rem}
@@ -416,7 +451,7 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
   .pay{grid-template-columns:1fr}
   .stepper .lb{display:none}
   .stepper li.on .lb{display:inline}
-  .stepper{grid-template-columns:repeat(5,auto);justify-content:space-between}
+  .stepper{grid-template-columns:repeat(6,auto);justify-content:space-between}
 }
 @media (max-width:640px){
   body{font-size:16px}
@@ -430,6 +465,8 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
   .clock div{min-width:88px}
   .co-sum b{font-size:1.25rem}
   .co-acts .btn{padding:10px 14px}
+  .co-acts{min-width:0}
+  .co-acts #nextBtn{white-space:normal;line-height:1.25;text-align:center;max-width:200px}
   .t1{right:0}.t2{left:0}
   .calc{padding:28px 22px}
 }
@@ -722,13 +759,30 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
             <div class="f full"><label for="i-logo">লোগো <small>(PNG/JPG/SVG, না থাকলে খালি রাখুন)</small></label><div class="drop"><input type="file" id="i-logo" name="logo" accept="image/png,image/jpeg,image/svg+xml,image/webp"></div><span class="msg"></span></div>
             <div class="f full" data-req><label for="i-intro">ব্যবসার পরিচিতি <span class="req">*</span></label><textarea id="i-intro" name="business_intro" placeholder="কী বিক্রি করেন, কাদের জন্য, ডেলিভারি চার্জ কত, রিটার্ন পলিসি কী"></textarea><span class="msg"></span></div>
             <div class="f full" data-req data-type="file"><div class="csvbar"><label for="i-csv">প্রোডাক্ট CSV ফাইল <span class="req">*</span></label><button type="button" class="btn btn-ghost btn-sm" id="demoCsv">ডেমো CSV ডাউনলোড</button></div><div class="drop"><input type="file" id="i-csv" name="product_csv" accept=".csv,text/csv"></div><span class="hint" id="csvHint">ডেমো ফাইলের কলাম ঠিক রেখে আপনার প্রোডাক্ট বসান। ছবি Google Drive-এ রেখে লিংক দিন।</span><span class="msg"></span></div>
+            <div class="gw-box" id="gwBox" hidden>
+              <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>পেমেন্ট গেটওয়ের জন্য কাগজপত্র</h3>
+              <p>আপনার অর্ডারে পেমেন্ট গেটওয়ে আছে। গেটওয়ে প্রোভাইডার (বিকাশ/নগদ মার্চেন্ট, SSLCommerz ইত্যাদি) মার্চেন্ট অ্যাকাউন্ট খোলার জন্য এই তথ্যগুলো চায়, তাই এগুলো ছাড়া গেটওয়ে রেজিস্টার করা যাবে না। তথ্যগুলো শুধু আমাদের টিম গেটওয়ে রেজিস্ট্রেশনের কাজে দেখবে।</p>
+              <div class="fgrid">
+                <div class="f" data-req data-gw><label for="i-tl">ট্রেড লাইসেন্স নম্বর <span class="req">*</span></label><input type="text" id="i-tl" name="trade_license" autocomplete="off" placeholder="লাইসেন্সে যে নম্বর লেখা"><span class="msg"></span></div>
+                <div class="f" data-req data-gw data-type="doc"><label for="i-tlf">ট্রেড লাইসেন্সের ছবি/PDF <span class="req">*</span></label><div class="drop"><input type="file" id="i-tlf" name="trade_license_file" accept="image/jpeg,image/png,image/webp,application/pdf"></div><span class="msg"></span></div>
+                <div class="f" data-req data-gw data-type="nid"><label for="i-nid">NID নম্বর <span class="req">*</span></label><input type="text" id="i-nid" name="nid_number" inputmode="numeric" autocomplete="off" placeholder="১০, ১৩ বা ১৭ ডিজিট"><span class="hint">ট্রেড লাইসেন্স যার নামে, তার NID।</span><span class="msg"></span></div>
+                <div class="f" data-req data-gw data-type="doc"><label for="i-nidf">NID কার্ডের ছবি/PDF <span class="req">*</span></label><div class="drop"><input type="file" id="i-nidf" name="nid_file" accept="image/jpeg,image/png,image/webp,application/pdf"></div><span class="hint">সামনে আর পেছন দুই পাশ, এক ছবিতে বা একটা PDF-এ।</span><span class="msg"></span></div>
+              </div>
+            </div>
             <div class="f full"><label for="i-more">অতিরিক্ত তথ্য</label><textarea id="i-more" name="additional_info" placeholder="রং, ফন্ট, পছন্দের কোনো ওয়েবসাইট, বিশেষ কোনো চাহিদা"></textarea></div>
           </div>
           <p class="err" id="formErr" role="alert"></p>
         </form>
       </div>
-      <!-- 5 countdown -->
+      <!-- 5 domain -->
       <div class="panel" data-step="5" hidden>
+        <h2>ওয়েবসাইটের ডোমেইন</h2>
+        <p class="sub" id="domSub">আপনার দোকানের ঠিকানা খুঁজে বেছে নিন। এই নামেই আমাদের টিম আপনার প্রোজেক্ট চিনবে।</p>
+        <div id="domBox"></div>
+        <p class="err" id="domErr" role="alert"></p>
+      </div>
+      <!-- 6 countdown -->
+      <div class="panel" data-step="6" hidden>
         <div class="done-wrap">
           <span class="ok-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span>
           <h2>তথ্য জমা হয়েছে, কাউন্টডাউন শুরু</h2>
@@ -844,14 +898,16 @@ $("packs").addEventListener("click", e => {
 });
 
 /* ---------- checkout state ---------- */
-const st = {stack:"woo", pack:1, tpl:null, add:{}, method:"bKash", step:1, maxStep:1};
+const newDom = () => ({mode: "new", q: "", results: null, domain: "", own: "", busy: false, msg: ""});
+const st = {stack:"woo", pack:1, tpl:null, add:{}, method:"bKash", step:1, maxStep:1, dom: newDom()};
 const S = () => STACKS[st.stack];
 const P = () => S().packs[st.pack];
 const included = k => P().incl.includes(k);
 const inclQty = k => P().inclQty[k] || 0;
 const priceOf = a => a.key === "domain" ? S().domainPrice : a.price;
 const avail = a => !a.only || a.only === st.stack;
-const STEPS = ["টেমপ্লেট","অ্যাড-অন","পেমেন্ট","তথ্য","কাউন্টডাউন"];
+const STEPS = ["টেমপ্লেট","অ্যাড-অন","পেমেন্ট","তথ্য","ডোমেইন","কাউন্টডাউন"];
+const DONE = 6;
 
 function compute(){
   const p = P(), r = api.compute(CAT, st);
@@ -872,8 +928,8 @@ function cleanup(){
 function openCheckout(stack, pack){
   api.track("event", {n: "checkout_open"});
   const pk = STACKS[stack]?.packs[pack]; if (pk) api.fb("InitiateCheckout", {value: pk.price, content_name: `${pk.name} · ${STACKS[stack].name}`, content_type: "product", content_ids: [pk.name], num_items: 1});
-  if (st.step === 5){ $("infoForm").reset(); syncAccount(); $("paySender").value = ""; $("payTrx").value = ""; $("payAgree").checked = false; st.tpl = null; st.add = {}; st.step = 1; st.maxStep = 1; }
-  if (st.stack !== stack || st.pack !== pack){ st.tpl = null; st.add = {}; st.step = 1; st.maxStep = 1; }
+  if (st.step === DONE){ $("infoForm").reset(); syncAccount(); $("paySender").value = ""; $("payTrx").value = ""; $("payAgree").checked = false; st.tpl = null; st.add = {}; st.step = 1; st.maxStep = 1; st.dom = newDom(); }
+  if (st.stack !== stack || st.pack !== pack){ st.tpl = null; st.add = {}; st.step = 1; st.maxStep = 1; st.dom = newDom(); }
   st.stack = stack; st.pack = pack;
   $("co").hidden = false; document.body.style.overflow = "hidden";
   go(st.step);
@@ -889,15 +945,15 @@ function renderHead(){
   $("coSub").textContent = `${S().name} · ${tk(c.p.price)}`;
   $("stepper").innerHTML = STEPS.map((s,i) => {
     const n = i+1, cls = n === st.step ? "on" : (n < st.maxStep || n < st.step ? "done" : "");
-    const can = n <= st.maxStep && st.step !== 5 && n < 5;
+    const can = n <= st.maxStep && st.step !== DONE && n < DONE;
     return `<li class="${cls}"><button type="button" data-go="${n}" ${can?"":"disabled"} aria-current="${n===st.step?"step":"false"}"><span class="n">${cls==="done"?"✓":BN(n)}</span><span class="lb">${s}</span></button></li>`;
   }).join("");
   $("barTotal").textContent = tk(c.total);
   $("barHrs").textContent = `${BN(c.hours)} ঘণ্টা` + (c.gw ? " (গেটওয়ে যাচাই সহ)" : "");
   $("backBtn").hidden = st.step === 1;
   const onl = st.method === "PayStation";
-  $("nextBtn").textContent = st.step === 3 ? (onl ? "এগিয়ে যান" : "পেমেন্ট করেছি, এগিয়ে যান") : st.step === 4 ? (onl ? "জমা দিন ও পেমেন্ট করুন" : "জমা দিন ও কাউন্টডাউন শুরু") : "পরের ধাপ";
-  $("coBar").hidden = st.step === 5;
+  $("nextBtn").textContent = st.step === 3 ? (onl ? "এগিয়ে যান" : "পেমেন্ট করেছি, এগিয়ে যান") : st.step === 5 ? (onl ? "জমা দিন ও পেমেন্ট করুন" : "জমা দিন ও কাউন্টডাউন শুরু") : "পরের ধাপ";
+  $("coBar").hidden = st.step === DONE;
 }
 $("stepper").addEventListener("click", e => { const b = e.target.closest("button[data-go]"); if (b && !b.disabled) go(+b.dataset.go); });
 
@@ -907,6 +963,8 @@ function go(n){
   if (n === 1) renderTemplates();
   if (n === 2) renderAddons();
   if (n === 3) renderPayment();
+  if (n === 4) syncGwBox();
+  if (n === 5) renderDomain();
   renderHead();
   $("coBody").scrollTop = 0;
 }
@@ -994,6 +1052,70 @@ $("copyNum").addEventListener("click", async () => {
   setTimeout(() => $("copyNum").textContent = "কপি", 1800);
 });
 
+/* step 4: payment gateway documents, only when the order has a gateway */
+const needsGw = () => api.needsGatewayDocs(CAT, st.stack, P(), st.add);
+function syncGwBox(){ $("gwBox").hidden = !needsGw(); }
+
+/* step 5: domain */
+const cleanHost = v => String(v || "").trim().toLowerCase().replace(/^(https?:\/\/)?(www\.)?/, "").replace(/\/.*$/, "");
+const hasDomain = () => P().incl.includes("domain") || !!st.add.domain;
+const CHECK_IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M7.5 12.5l3 3 6-6"/></svg>';
+function renderDomain(){
+  const d = st.dom, inc = hasDomain(), tlds = api.allowedTlds(CAT, P()), prem = (CAT.tlds_premium || ["com"]).filter(t => !tlds.includes(t));
+  if (!inc && d.mode === "new"){ d.mode = "own"; d.domain = ""; d.results = null; }
+  const modes = [["new", "নতুন ডোমেইন খুঁজুন"], ["own", "আমার ডোমেইন আছে"], ["later", "পরে ঠিক করব"]];
+  let h = "";
+  if (!inc){
+    const dom = ADDONS.find(a => a.key === "domain");
+    h += `<div class="dom-add"><p><b>এই প্যাকেজে ডোমেইন নেই।</b> নিজের ডোমেইন থাকলে নিচে লিখুন, অথবা ${dom ? esc(dom.name) : "ডোমেইন ও হোস্টিং"} যোগ করে এখান থেকেই নতুন ডোমেইন বেছে নিন।</p>${dom && avail(dom) ? `<button type="button" class="btn btn-primary btn-sm" id="domAddBtn">${tk(priceOf(dom))}/বছরে ডোমেইন যোগ করুন</button>` : ""}</div>`;
+  }
+  h += `<div class="dom-modes" role="group" aria-label="ডোমেইন">${modes.filter(([k]) => k !== "new" || inc).map(([k, l]) => `<button type="button" data-dmode="${k}" aria-pressed="${d.mode === k}">${l}</button>`).join("")}</div>`;
+  if (d.mode === "new"){
+    h += `<form class="dom-search" id="domForm" role="search"><span>www.</span><input id="domQ" value="${esc(d.q)}" placeholder="আপনার দোকানের নাম, যেমন rakibfashion" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="ডোমেইনের নাম"><button class="btn btn-primary" type="submit" ${d.busy ? "disabled" : ""}>${d.busy ? "খুঁজছি..." : "খুঁজুন"}</button></form>
+      <div class="dom-tlds">এই প্যাকেজে পাবেন: ${tlds.map(t => `<b>.${t}</b>`).join("")}${prem.length ? `<span>· ${prem.map(t => "." + t).join(", ")} পেতে বড় প্যাকেজ নিন</span>` : ""}</div>`;
+    if (d.msg) h += `<p class="err" style="margin-top:10px">${esc(d.msg)}</p>`;
+    if (d.results){
+      const anyFree = d.results.some(r => r.status === "available");
+      h += `<ul class="dom-list">${d.results.map(r => `<li class="${d.domain === r.domain ? "sel" : ""}"><span class="dn">${esc(r.domain)}${r.status === "unknown" ? "<small>এখন যাচাই করা গেল না, বাছলে আমরা কিনে দেওয়ার আগে নিশ্চিত হব</small>" : r.status === "taken" ? "<small>অন্য কেউ নিয়ে নিয়েছে</small>" : ""}</span>
+        <span class="st">${r.status === "available" ? '<span class="pill ok">খালি আছে</span>' : r.status === "taken" ? '<span class="pill no">নেওয়া হয়ে গেছে</span>' : '<span class="pill q">অজানা</span>'}
+        ${r.status !== "taken" ? (d.domain === r.domain ? '<span class="pill ok">✓ বাছাই করা</span>' : `<button type="button" class="btn ${r.status === "available" ? "btn-primary" : "btn-ghost"} btn-sm" data-dpick="${esc(r.domain)}">বেছে নিন</button>`) : ""}</span></li>`).join("")}</ul>`;
+      if (!anyFree) h += `<p class="dom-note">এই নামে খালি কোনো ডোমেইন নিশ্চিত পাওয়া যায়নি। নামটা একটু বদলে দেখুন:</p><div class="dom-sugg">${[d.q + "bd", d.q + "shop", "my" + d.q, d.q + "store", "get" + d.q].map(n => api.domainLabel(n)).filter(api.validLabel).map(n => `<button type="button" data-dsugg="${esc(n)}">${esc(n)}</button>`).join("")}</div>`;
+    }
+    if (d.domain) h += `<div class="dom-pick">${CHECK_IC}<div><small class="hint" style="font-size:.85rem">আপনার ওয়েবসাইটের ঠিকানা</small><br><b>${esc(d.domain)}</b></div></div>`;
+    h += `<p class="dom-note">ডোমেইন আমরা আপনার নামে রেজিস্টার করে দেব। খালি দেখালেও কেনার আগ মুহূর্তে কেউ নিয়ে নিলে বা প্রিমিয়াম দামের হলে আমরা জানিয়ে আরেকটা বাছতে বলব।</p>`;
+  } else if (d.mode === "own"){
+    h += `<div class="f" style="max-width:720px"><label for="domOwn">আপনার ডোমেইন</label><div class="dom-search"><span>www.</span><input id="domOwn" value="${esc(d.own)}" placeholder="myshop.com" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+      <span class="hint">ডোমেইনের DNS কীভাবে আমাদের সার্ভারে দেবেন, ডেভেলপার চ্যাটে জানিয়ে দেবেন।</span></div>`;
+  } else {
+    h += `<p class="dom-note" style="font-size:.95rem">ঠিক আছে, ডোমেইন পরে ড্যাশবোর্ডের চ্যাটে জানাবেন। ডোমেইন ছাড়া ওয়েবসাইট লাইভ করা যায় না, তাই যত তাড়াতাড়ি সম্ভব ঠিক করে ফেলুন।</p>`;
+  }
+  $("domBox").innerHTML = h;
+}
+async function searchDomain(q){
+  const d = st.dom; d.q = api.domainLabel(q); d.msg = "";
+  if (!api.validLabel(d.q)){ d.msg = "ইংরেজি অক্ষর, সংখ্যা বা হাইফেন দিয়ে নাম লিখুন (যেমন rakibfashion)।"; d.results = null; renderDomain(); $("domQ").focus(); return; }
+  d.busy = true; renderDomain();
+  try {
+    const r = await api.domainCheck(st.stack, st.pack, q);
+    d.results = r.results; d.q = r.name;
+    if (d.domain && !r.results.some(x => x.domain === d.domain && x.status !== "taken")) d.domain = "";
+    const first = r.results.find(x => x.status === "available"); if (first && !d.domain) d.domain = first.domain;
+  } catch(e){ d.msg = e.message; }
+  d.busy = false; renderDomain(); $("domErr").textContent = "";
+}
+$("domBox").addEventListener("submit", e => { if (e.target.id === "domForm"){ e.preventDefault(); searchDomain($("domQ").value); } });
+$("domBox").addEventListener("click", e => {
+  const m = e.target.closest("[data-dmode]"); if (m){ st.dom.mode = m.dataset.dmode; renderDomain(); $("domErr").textContent = ""; (m.dataset.dmode === "new" ? $("domQ") : $("domOwn"))?.focus(); return; }
+  const p = e.target.closest("[data-dpick]"); if (p){ st.dom.domain = p.dataset.dpick; renderDomain(); $("domErr").textContent = ""; return; }
+  const g = e.target.closest("[data-dsugg]"); if (g){ searchDomain(g.dataset.dsugg); return; }
+  if (e.target.closest("#domAddBtn")){
+    // Send Money was already paid for the old total, so go back and show the new amount first.
+    if (st.method !== "PayStation"){ st.add.domain = true; cleanup(); st.dom.mode = "new"; go(3); toastErr("ডোমেইন যোগ হয়েছে, মোট টাকা বেড়েছে। বাড়তি টাকা পাঠিয়ে আবার এগিয়ে যান।"); return; }
+    st.add.domain = true; cleanup(); st.dom.mode = "new"; renderHead(); renderDomain(); $("domQ")?.focus();
+  }
+});
+$("domBox").addEventListener("input", e => { if (e.target.id === "domOwn") st.dom.own = e.target.value; if (e.target.id === "domQ") st.dom.q = e.target.value; });
+
 /* validation helpers */
 const phoneOK = v => /^(?:\+?88)?01[3-9]\d{8}$/.test(v.replace(/[\s-]/g,"").replace(/[০-৯]/g, d => "০১২৩৪৫৬৭৮৯".indexOf(d)));
 function setErr(wrap, msg){ wrap.classList.toggle("bad", !!msg); const m = wrap.querySelector(".msg"); if (m) m.textContent = msg || ""; }
@@ -1015,10 +1137,16 @@ function validStep(n){
     if (!ok){ document.querySelector("#f-sender.bad input, #f-trx.bad input")?.focus(); }
     return ok;
   }
+  if (n === 5){
+    const d = st.dom; $("domErr").textContent = "";
+    if (d.mode === "new" && !d.domain){ $("domErr").textContent = "একটা খালি ডোমেইন খুঁজে \"বেছে নিন\" চাপুন, বা \"পরে ঠিক করব\" বাছুন।"; return false; }
+    if (d.mode === "own" && !api.validHost(cleanHost(d.own))){ $("domErr").textContent = "আপনার ডোমেইনটা ঠিকভাবে লিখুন, যেমন myshop.com"; $("domOwn")?.focus(); return false; }
+    return true;
+  }
   if (n === 4){
     let first = null;
     document.querySelectorAll("#infoForm .f").forEach(w => {
-      const inp = w.querySelector("input,textarea"); if (!inp || w.hidden) return;
+      const inp = w.querySelector("input,textarea"); if (!inp || w.closest("[hidden]")) return;
       const type = w.dataset.type, req = w.hasAttribute("data-req");
       const v = inp.type === "file" ? (inp.files[0] ? "1" : "") : inp.value.trim();
       let msg = "";
@@ -1028,6 +1156,9 @@ function validStep(n){
       else if (v && type === "url" && !/^https?:\/\/\S+\.\S+/.test(v)) msg = "https:// দিয়ে শুরু হওয়া পুরো লিংক দিন।";
       else if (type === "pass" && v.length < 8) msg = "পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের দিন।";
       else if (inp.id === "i-csv" && inp.files[0] && !/\.csv$/i.test(inp.files[0].name)) msg = "শুধু .csv ফাইল দিন।";
+      else if (type === "nid" && v && !/^(\d{10}|\d{13}|\d{17})$/.test(v.replace(/[০-৯]/g, d => "০১২৩৪৫৬৭৮৯".indexOf(d)).replace(/\D/g, ""))) msg = "NID নম্বর ১০, ১৩ বা ১৭ ডিজিটের হয়, আবার দেখে লিখুন।";
+      else if (type === "doc" && inp.files[0] && !/\.(jpe?g|png|webp|pdf)$/i.test(inp.files[0].name)) msg = "শুধু JPG, PNG, WebP বা PDF দিন।";
+      else if (type === "doc" && inp.files[0] && inp.files[0].size > 10 * 1024 * 1024) msg = "ফাইল ১০MB-এর বেশি বড়।";
       else if (type === "otp" && !otpSkip && !/^\d{6}$/.test(v.replace(/[০-৯]/g, d => "০১২৩৪৫৬৭৮৯".indexOf(d)))) msg = otpFor ? "ইমেইলে পাঠানো ৬ ডিজিটের কোড দিন।" : "\"কোড পাঠান\" চেপে ইমেইলে আসা কোডটা দিন।";
       setErr(w, msg); if (msg && !first) first = inp;
     });
@@ -1046,7 +1177,7 @@ $("backBtn").addEventListener("click", () => go(Math.max(1, st.step - 1)));
 $("nextBtn").addEventListener("click", async () => {
   if (!validStep(st.step)) return;
   if (st.step === 3) api.fb("AddPaymentInfo", {value: compute().total, content_name: `${P().name} · ${S().name}`});
-  if (st.step < 4){ go(st.step + 1); return; }
+  if (st.step < 5){ go(st.step + 1); return; }
   await submitOrder();
 });
 
@@ -1075,13 +1206,20 @@ async function submitOrder(){
   fd.append("addons", JSON.stringify(st.add)); fd.append("total", c.total);
   fd.append("pay_method", st.method);
   if (refInfo && c.ref) fd.append("ref_code", refInfo.code);
+  if (!needsGw()) ["trade_license", "trade_license_file", "nid_number", "nid_file"].forEach(k => fd.delete(k));
+  fd.append("domain_mode", st.dom.mode);
+  if (st.dom.mode === "new") fd.append("domain", st.dom.domain);
+  if (st.dom.mode === "own") fd.append("domain", cleanHost(st.dom.own));
   if (st.method !== "PayStation"){ fd.append("pay_sender", $("paySender").value.trim()); fd.append("pay_trx", $("payTrx").value.trim()); }
   let res;
   try { res = await api.createOrder(fd); }
   catch(e){
     btn.disabled = false;
     if (e.ref_invalid){ refInfo = null; api.refForget(); $("refBar").hidden = true; e.message += " ছাড় ছাড়া নতুন মোট " + tk(compute().total) + "। আবার জমা দিন।"; }
-    if (e.need_otp){ $("f-otp").hidden = false; otpSkip = false; setErr($("f-otp"), e.message); $("i-otp").focus(); }
+    if (e.need_otp){ $("f-otp").hidden = false; otpSkip = false; }
+    if (e.domain_error){ if (e.status === 409){ st.dom.domain = ""; st.dom.results = null; } renderDomain(); $("domErr").textContent = e.message; renderHead(); return; }
+    if (!e.ref_invalid && e.status !== 409 && st.step === 5) go(4);
+    if (e.need_otp){ setErr($("f-otp"), e.message); $("i-otp").focus(); }
     renderHead();
     if (e.status === 409) setErr($("f-pass"), e.message);
     $("formErr").textContent = e.message || "জমা দেওয়া যায়নি। ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।";
@@ -1093,7 +1231,7 @@ async function submitOrder(){
   const order = {
     id: o.code, oid: o.id, start: o.created * 1000, deadline: o.deadline * 1000, hours: o.hours,
     stack: o.stack, pack: o.pack, tpl: o.template, total: o.total, products: o.products,
-    lines: o.lines, name: o.info.admin_name, method: o.pay_method, trx: o.pay_trx
+    lines: o.lines, name: o.info.admin_name, method: o.pay_method, trx: o.pay_trx, domain: o.domain || ""
   };
   store.set("techill_order", order);
   if (st.method === "PayStation"){
@@ -1126,19 +1264,19 @@ let timer = null;
 function orderText(o){
   return `আসসালামু আলাইকুম, আমি Techill-এ অর্ডার করেছি।\n\nঅর্ডার: ${o.id}\nনাম: ${o.name}\nপ্ল্যাটফর্ম: ${o.stack}\nপ্যাকেজ: ${o.pack}\nটেমপ্লেট: ${o.tpl}\n` +
     (o.lines.length > 1 ? "অ্যাড-অন ও ছাড়:\n" + o.lines.slice(1).map(l => `- ${l.label}: ${l.amt < 0 ? "−" + tk(-l.amt) : tk(l.amt)}`).join("\n") + "\n" : "") +
-    `মোট: ${tk(o.total)}\nপেমেন্ট: ${MNAME[o.method]} · TrxID ${o.trx}\nডেলিভারি: ${BN(o.hours)} ঘণ্টা`;
+    (o.domain ? `ডোমেইন: ${o.domain}\n` : "") + `মোট: ${tk(o.total)}\nপেমেন্ট: ${MNAME[o.method]} · TrxID ${o.trx}\nডেলিভারি: ${BN(o.hours)} ঘণ্টা`;
 }
 function showDone(o){
   $("co").hidden = false; document.body.style.overflow = "hidden";
-  st.step = 5; st.maxStep = 5;
-  document.querySelectorAll(".panel").forEach(p => p.hidden = +p.dataset.step !== 5);
+  st.step = DONE; st.maxStep = DONE;
+  document.querySelectorAll(".panel").forEach(p => p.hidden = +p.dataset.step !== DONE);
   $("coTitle").firstChild.textContent = `অর্ডার ${o.id}`;
   $("coSub").textContent = `${o.stack} · ${o.pack}`;
-  $("stepper").innerHTML = STEPS.map((s,i) => `<li class="${i<4?"done":"on"}"><button type="button" disabled><span class="n">${i<4?"✓":BN(5)}</span><span class="lb">${s}</span></button></li>`).join("");
+  $("stepper").innerHTML = STEPS.map((s,i) => `<li class="${i<DONE-1?"done":"on"}"><button type="button" disabled><span class="n">${i<DONE-1?"✓":BN(DONE)}</span><span class="lb">${s}</span></button></li>`).join("");
   $("coBar").hidden = true;
   $("dId").textContent = o.id;
   $("dWhen").textContent = new Date(o.deadline).toLocaleString("bn-BD", {weekday:"long", day:"numeric", month:"long", hour:"numeric", minute:"2-digit"});
-  $("dFacts").innerHTML = `<dt>প্ল্যাটফর্ম</dt><dd>${o.stack}</dd><dt>প্যাকেজ</dt><dd>${o.pack}</dd><dt>টেমপ্লেট</dt><dd>${o.tpl}</dd><dt>প্রোডাক্ট আপলোড</dt><dd>${BN(o.products)}টা</dd><dt>মোট পেমেন্ট</dt><dd>${tk(o.total)}</dd>`;
+  $("dFacts").innerHTML = (o.domain ? `<dt>ডোমেইন</dt><dd>${esc(o.domain)}</dd>` : "") + `<dt>প্ল্যাটফর্ম</dt><dd>${o.stack}</dd><dt>প্যাকেজ</dt><dd>${o.pack}</dd><dt>টেমপ্লেট</dt><dd>${o.tpl}</dd><dt>প্রোডাক্ট আপলোড</dt><dd>${BN(o.products)}টা</dd><dt>মোট পেমেন্ট</dt><dd>${tk(o.total)}</dd>`;
   $("dWa").href = `${waBase}?text=${encodeURIComponent(orderText(o))}`;
   $("dDash").href = o.oid ? `dashboard.html#o=${o.oid}` : "dashboard.html";
   $("dRef").hidden = !REFCFG;

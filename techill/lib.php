@@ -821,3 +821,127 @@ function after_order_paid(int $orderId): void {
     referral_sync($orderId);
     notify_order_update($orderId, ['অনলাইন পেমেন্ট সফল হয়েছে। ধন্যবাদ! আমরা কাজ শুরু করছি।'], true);
 }
+
+/* ---------- payment gateway documents ---------- */
+
+// True when the order includes a payment gateway (in the package or picked as an add-on). The
+// gateway provider needs the trade licence and the owner's NID to open the merchant account.
+function needs_gateway_docs(string $stackKey, array $pack, array $add): bool {
+    foreach (catalog()['addons'] as $a) {
+        if (empty($a['gw']) || (!empty($a['only']) && $a['only'] !== $stackKey)) continue;
+        if (in_array($a['key'], $pack['incl'] ?? [], true) || !empty($add[$a['key']])) return true;
+    }
+    return false;
+}
+
+function valid_nid(string $v): bool { return (bool)preg_match('/^(\d{10}|\d{13}|\d{17})$/', digits_only($v)); }
+
+// Rejects anything but an image or a PDF for an identity document, before the order is saved.
+function check_doc_upload(string $field, string $label): void {
+    $f = $_FILES[$field] ?? null;
+    if (!$f || ($f['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) fail("$label-এর ছবি বা PDF দিন।");
+    if ($f['error'] !== UPLOAD_ERR_OK) fail("$label আপলোড হয়নি, আবার চেষ্টা করুন।");
+    if ($f['size'] > cfg('max_upload_mb') * 1024 * 1024) fail("$label-এর ফাইল " . cfg('max_upload_mb') . 'MB-এর বেশি বড়।');
+    $ext = strtolower(pathinfo((string)$f['name'], PATHINFO_EXTENSION));
+    $mime = (new finfo(FILEINFO_MIME_TYPE))->file($f['tmp_name']);
+    if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'pdf'], true) || !in_array($mime, ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'], true)) fail("$label-এর জন্য শুধু JPG, PNG, WebP বা PDF দিন।");
+}
+
+/* ---------- domains ---------- */
+
+const TLDS_BASIC = ['shop', 'top', 'store', 'online', 'site', 'website'];
+const TLDS_PREMIUM = ['com'];
+
+// The extensions a package may pick: the basic list, plus .com and friends on packages marked premium.
+// Packages saved before this setting existed count as premium when they include a domain.
+function allowed_tlds(array $pack): array {
+    $cat = catalog();
+    $basic = $cat['tlds_basic'] ?? TLDS_BASIC;
+    $premium = ($pack['premium_tlds'] ?? in_array('domain', $pack['incl'] ?? [], true)) ? ($cat['tlds_premium'] ?? TLDS_PREMIUM) : [];
+    return array_values(array_unique(array_merge($basic, $premium)));
+}
+
+function pack_has_domain(array $pack, array $add): bool { return in_array('domain', $pack['incl'] ?? [], true) || !empty($add['domain']); }
+
+// "My Shop.com", "www.myshop" or "myshop" → "myshop" (ASCII letters, digits, hyphens; no IDN).
+function domain_label(string $v): string {
+    $v = strtolower(trim($v));
+    $v = preg_replace('#^https?://#', '', $v);
+    $v = preg_replace('#^www\.#', '', $v);
+    $v = explode('/', $v)[0];
+    $v = explode('.', $v)[0];
+    $v = preg_replace('/[\s_]+/', '-', $v);
+    return trim(preg_replace('/[^a-z0-9-]/', '', $v), '-');
+}
+
+function valid_label(string $l): bool { return (bool)preg_match('/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/', $l) && !str_contains(substr($l, 2, 2), '--'); }
+
+// "https://www.MyShop.com/page" → "myshop.com"
+function clean_host(string $v): string {
+    $v = preg_replace('#^(https?://)?(www\.)?#', '', strtolower(trim($v)));
+    return rtrim(explode('/', explode('?', $v)[0])[0], '.');
+}
+
+function valid_hostname(string $h): bool {
+    return strlen($h) <= 253 && (bool)preg_match('/^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}$/', $h);
+}
+
+// RDAP server for a TLD, from IANA's bootstrap file (refreshed weekly). The short list below is
+// only a fallback for when IANA cannot be reached.
+function rdap_base(string $tld): ?string {
+    if (cfg('rdap_base_url')) return rtrim(cfg('rdap_base_url'), '/') . "/$tld/";   // local tests only
+    static $map = null;
+    if ($map === null) {
+        $row = q("SELECT v, updated_at > UTC_TIMESTAMP() - INTERVAL 7 DAY fresh FROM settings WHERE k = 'rdap'")->fetch();
+        $map = $row ? (json_decode($row['v'], true) ?: []) : [];
+        if ((!$row || !$row['fresh']) && function_exists('curl_init')) {
+            $ch = curl_init('https://data.iana.org/rdap/dns.json');
+            curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 8, CURLOPT_CONNECTTIMEOUT => 4, CURLOPT_USERAGENT => 'Techill/1.0']);
+            $j = json_decode((string)curl_exec($ch), true);
+            curl_close($ch);
+            if (!empty($j['services'])) {
+                $map = [];
+                foreach ($j['services'] as [$tlds, $urls]) {
+                    $url = current(array_filter($urls, fn($u) => str_starts_with($u, 'https://'))) ?: $urls[0];
+                    foreach ($tlds as $t) $map[strtolower($t)] = rtrim($url, '/') . '/';
+                }
+                settings_store('rdap', $map);
+            }
+        }
+    }
+    $fallback = ['com' => 'https://rdap.verisign.com/com/v1/', 'net' => 'https://rdap.verisign.com/net/v1/', 'top' => 'https://rdap.nic.top/',
+        'shop' => 'https://rdap.gmoregistry.net/rdap/', 'store' => 'https://rdap.centralnic.com/store/', 'online' => 'https://rdap.centralnic.com/online/',
+        'site' => 'https://rdap.centralnic.com/site/', 'website' => 'https://rdap.centralnic.com/website/'];
+    return $map[$tld] ?? $fallback[$tld] ?? null;
+}
+
+// Availability of several full domain names at once (parallel RDAP lookups, 15-minute cache).
+// 404 from the registry = available, 200 = registered, anything else = unknown.
+function domain_lookup(array $domains): array {
+    $out = [];
+    if (!$domains) return $out;
+    $marks = implode(',', array_fill(0, count($domains), '?'));
+    foreach (q("SELECT domain, status FROM domain_cache WHERE domain IN ($marks) AND checked_at > UTC_TIMESTAMP() - INTERVAL 15 MINUTE AND status <> 'unknown'", $domains)->fetchAll() as $r) $out[$r['domain']] = $r['status'];
+    $todo = array_values(array_diff($domains, array_keys($out)));
+    if ($todo && function_exists('curl_multi_init')) {
+        $mh = curl_multi_init(); $hs = [];
+        foreach ($todo as $d) {
+            $base = rdap_base(substr($d, strrpos($d, '.') + 1));
+            if (!$base) { $out[$d] = 'unknown'; continue; }
+            $ch = curl_init($base . 'domain/' . rawurlencode($d));
+            curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 6, CURLOPT_CONNECTTIMEOUT => 3, CURLOPT_FOLLOWLOCATION => true, CURLOPT_MAXREDIRS => 3,
+                CURLOPT_HTTPHEADER => ['Accept: application/rdap+json, application/json'], CURLOPT_USERAGENT => 'Techill/1.0']);
+            curl_multi_add_handle($mh, $ch); $hs[$d] = $ch;
+        }
+        do { $st = curl_multi_exec($mh, $running); if ($running) curl_multi_select($mh, 1); } while ($running && $st === CURLM_OK);
+        foreach ($hs as $d => $ch) {
+            $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $out[$d] = $code === 404 ? 'available' : ($code === 200 ? 'taken' : 'unknown');
+            curl_multi_remove_handle($mh, $ch); curl_close($ch);
+            q('REPLACE INTO domain_cache (domain, status, checked_at) VALUES (?,?, UTC_TIMESTAMP())', [$d, $out[$d]]);
+        }
+        curl_multi_close($mh);
+    }
+    foreach ($domains as $d) $out[$d] = $out[$d] ?? 'unknown';
+    return $out;
+}

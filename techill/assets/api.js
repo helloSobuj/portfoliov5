@@ -24,6 +24,19 @@ window.TechillAPI = (() => {
       products: p.products + 25 * (add.products25 || 0)};
   }
 
+  /* ---------- domains: which extensions a package may pick (api.php has the same rule) ---------- */
+  const TLDS_BASIC = ["shop", "top", "store", "online", "site", "website"], TLDS_PREMIUM = ["com"];
+  function allowedTlds(cat, pack) {
+    const prem = pack.premium_tlds ?? (pack.incl || []).includes("domain");
+    return [...new Set([...(cat.tlds_basic || TLDS_BASIC), ...(prem ? cat.tlds_premium || TLDS_PREMIUM : [])])];
+  }
+  const domainLabel = v => String(v || "").toLowerCase().trim().replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0].split(".")[0].replace(/[\s_]+/g, "-").replace(/[^a-z0-9-]/g, "").replace(/^-+|-+$/g, "");
+  const validLabel = l => /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(l) && l.slice(2, 4) !== "--";
+  const validHost = h => h.length <= 253 && /^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}$/.test(h);
+  function needsGatewayDocs(cat, stackKey, pack, add) {
+    return cat.addons.some(a => a.gw && (!a.only || a.only === stackKey) && ((pack.incl || []).includes(a.key) || add[a.key]));
+  }
+
   /* ---------- visitor id ---------- */
   const vid = (() => {
     try { let v = localStorage.getItem("techill_vid"); if (!/^[a-f0-9]{32}$/.test(v || "")) { v = [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, "0")).join(""); localStorage.setItem("techill_vid", v); } return v; }
@@ -56,14 +69,14 @@ window.TechillAPI = (() => {
     let data;
     try { data = await res.json(); } catch (e) { throw new Error("সার্ভার থেকে উত্তর পাওয়া যায়নি।"); }
     if (data.csrf) csrf = data.csrf;
-    if (!data.ok) { const err = new Error(data.error || "কিছু একটা সমস্যা হয়েছে।"); err.status = res.status; err.ref_invalid = !!data.ref_invalid; err.need_otp = !!data.need_otp; throw err; }
+    if (!data.ok) { const err = new Error(data.error || "কিছু একটা সমস্যা হয়েছে।"); err.status = res.status; err.ref_invalid = !!data.ref_invalid; err.need_otp = !!data.need_otp; err.domain_error = !!data.domain_error; throw err; }
     return data;
   }
   const toForm = obj => { if (obj instanceof FormData) return obj; const f = new FormData(); for (const [k, v] of Object.entries(obj)) if (v != null) f.append(k, v); return f; };
   const post = (action, obj) => http(action, {method: "POST", form: toForm(obj)});
 
   /* ---------- demo backend (browser only) ---------- */
-  const KEY = "techill_demo_db_v4", SKEY = "techill_demo_uid", CKEY = "techill_demo_catalog", PKEY = "techill_demo_payments", MKEY = "techill_demo_marketing";
+  const KEY = "techill_demo_db_v5", SKEY = "techill_demo_uid", CKEY = "techill_demo_catalog", PKEY = "techill_demo_payments", MKEY = "techill_demo_marketing";
   const EKEY = "techill_demo_email", SUPKEY = "techill_demo_support", RKEY = "techill_demo_referral";
   const EMAIL_DEF = {enabled: true, transport: "smtp", host: "mail.techill.top", port: 465, secure: "ssl", username: "noreply@techill.top", password: "demo", from_email: "noreply@techill.top", from_name: "Techill",
     reply_to: "", admin_emails: "", otp_required: true, notify: {new_order: true, status: true, message: true, assign: true, referral: true}};
@@ -131,7 +144,8 @@ window.TechillAPI = (() => {
       orders.push({id, code, user_id: uid, stack, pack, template: tpl, lines, total: lines.reduce((s, l) => s + l.amt, 0), hours, products: 40,
         pay_method: ["bKash", "Nagad", "Rocket"][i % 3], pay_sender: u.phone, pay_trx: "9JK7XQ" + (2000 + i), pay_status: pay,
         info: {admin_name: u.name, whatsapp: u.phone, phone: u.phone, fb_page: "", address: "ঢাকা", business_intro: "অনলাইনে পণ্য বিক্রি করি।", additional_info: ""},
-        stage, progress, site_url: site, developer_id: dev, cancelled, deadline: created + hours * H, created, referrer_id: REFS[i] ? 4 : null});
+        stage, progress, site_url: site, developer_id: dev, cancelled, deadline: created + hours * H, created, referrer_id: REFS[i] ? 4 : null,
+        domain: ["rakibfashion.shop", "glowbysumaiya.com", "mehedigadget.store", "farhanahome.com", null, "arifmegastore.com", null, "glowbeauty.com", "mehedifashion.online"][i]});
       events.push({id: ++seq, order_id: id, stage: 0, progress: 5, note: "অর্ডার ও তথ্য জমা হয়েছে।", by: uid, created});
       if (pay === "verified") events.push({id: ++seq, order_id: id, stage: Math.max(1, Math.min(stage, 1)), progress: 15, note: "পেমেন্ট যাচাই সম্পন্ন।", by: 1, created: created + 2 * H});
       if (dev) events.push({id: ++seq, order_id: id, stage: Math.min(stage, 1), progress: 15, note: `ডেভেলপার ${users.find(x => x.id === dev).name} এই প্রোজেক্টে কাজ করছেন।`, by: 1, created: created + 2.5 * H});
@@ -444,6 +458,17 @@ window.TechillAPI = (() => {
       Object.assign(s, {enabled: !!f.enabled, on_dashboard: !!f.on_dashboard, greeting: String(f.greeting || "").trim().slice(0, 80), messenger: m, whatsapp: wa, wa_text: String(f.wa_text || "").trim().slice(0, 300), tawk_property: tp, tawk_widget: tw});
       ls.set(SUPKEY, s); return mock.support_settings();
     },
+    async domain_check({stack, pack, name}) {
+      const cat = await demoCatalog(), P = cat.stacks[stack]?.packs[+pack]; if (!P) bad("প্যাকেজ পাওয়া যায়নি।");
+      const label = domainLabel(name); if (!validLabel(label)) bad("ইংরেজি অক্ষর, সংখ্যা বা হাইফেন দিয়ে নাম লিখুন (যেমন myshop)।");
+      let tlds = allowedTlds(cat, P); const typed = (String(name).toLowerCase().match(/\.([a-z]{2,24})\s*$/) || [])[1];
+      if (typed && tlds.includes(typed)) tlds = [typed, ...tlds.filter(t => t !== typed)];
+      // Demo: a few famous names are always taken, the rest by a fixed hash so results look real and stay stable.
+      const famous = ["google", "facebook", "daraz", "techill", "amazon", "shop", "bd"];
+      const st = d => { let h = 0; for (const c of d) h = (h * 31 + c.charCodeAt(0)) >>> 0; return famous.includes(label) || (d.endsWith(".com") ? h % 3 === 0 : h % 5 === 0) ? "taken" : "available"; };
+      const prem = cat.tlds_premium || TLDS_PREMIUM;
+      return {name: label, results: tlds.map(t => ({domain: `${label}.${t}`, tld: t, status: st(`${label}.${t}`), premium: prem.includes(t)})), tlds: allowedTlds(cat, P), premium_missing: prem.filter(t => !allowedTlds(cat, P).includes(t))};
+    },
     async ref_check({code}) {
       const d = load(), s = demoRef(), u = meUser(d); code = String(code || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
       if (!s.enabled) return {valid: false, message: "রেফারেল অফার এখন বন্ধ আছে।"};
@@ -586,6 +611,23 @@ window.TechillAPI = (() => {
         discount = Math.min(s.discount, c.total); c.lines = [...c.lines, {label: `রেফারেল ছাড় (${refCode})`, amt: -discount, ref: true}]; c.total -= discount;
       }
       if (g("total") && +g("total") !== c.total) bad("দাম আপডেট হয়েছে, পেজ রিফ্রেশ করে আবার দেখে নিন।", 422);
+      const PK = S.packs[pack], addSel = JSON.parse(g("addons") || "{}"), gwDocs = needsGatewayDocs(cat, sk, PK, addSel);
+      if (gwDocs) {
+        info.trade_license = g("trade_license"); info.nid_number = digits(g("nid_number"));
+        if (info.trade_license.length < 3) bad("ট্রেড লাইসেন্স নম্বর দিন।");
+        if (!/^(\d{10}|\d{13}|\d{17})$/.test(info.nid_number)) bad("সঠিক NID নম্বর দিন (১০, ১৩ বা ১৭ ডিজিট)।");
+        for (const [k, l] of [["trade_license_file", "ট্রেড লাইসেন্স"], ["nid_file", "NID কার্ড"]]) { const f = fd.get(k); if (!f || !f.name) bad(`${l}-এর ছবি বা PDF দিন।`); if (!/\.(jpe?g|png|webp|pdf)$/i.test(f.name)) bad(`${l}-এর জন্য শুধু JPG, PNG, WebP বা PDF দিন।`); }
+      }
+      const dm = ["new", "own"].includes(g("domain_mode")) ? g("domain_mode") : "later"; let domain = null;
+      const db = m => { const e = new Error(m); e.status = 422; e.domain_error = true; throw e; };
+      if (dm === "new") {
+        if (!((PK.incl || []).includes("domain") || addSel.domain)) db("এই অর্ডারে ডোমেইন নেই। অ্যাড-অন থেকে \"ডোমেইন ও হোস্টিং\" যোগ করুন, বা নিজের ডোমেইন দিন।");
+        const d = g("domain").toLowerCase(), t = d.slice(d.lastIndexOf(".") + 1);
+        if (!validLabel(d.slice(0, d.lastIndexOf(".")))) db("ডোমেইনের নাম সঠিক নয়।");
+        if (!allowedTlds(cat, PK).includes(t)) db(`.${t} এই প্যাকেজে নেই।`);
+        domain = d;
+      } else if (dm === "own") { const d = g("domain").toLowerCase().replace(/^(https?:\/\/)?(www\.)?/, "").split(/[/?]/)[0]; if (!validHost(d)) db("আপনার ডোমেইনটা ঠিকভাবে লিখুন, যেমন myshop.com"); domain = d; }
+      info.domain_mode = dm;
       if (!u) {
         let verified = false;
         if (!existing && otpRequired()) { if (!g("otp")) { const e = new Error("ইমেইলে পাঠানো ৬ ডিজিটের কোড দিন।"); e.status = 422; e.need_otp = true; throw e; } demoOtpCheck(d, email, "register", g("otp")); verified = true; }
@@ -594,10 +636,11 @@ window.TechillAPI = (() => {
       const oid = nextId(d), t = now(), code = "TC-" + Math.random().toString(36).slice(2, 8).toUpperCase(), T = S.templates[tpl];
       d.orders.push({id: oid, code, user_id: u.id, stack: S.name, pack: S.packs[pack].name, template: `${T.name} · ${T.code}`, lines: c.lines, total: c.total, hours: c.hours, products: c.products,
         pay_method: g("pay_method"), pay_sender: g("pay_sender"), pay_trx: g("pay_trx"), pay_status: "pending", info, stage: 0, progress: 5, site_url: null,
-        developer_id: null, cancelled: false, deadline: t + c.hours * 3600, created: t, referrer_id: referrer ? referrer.id : null});
+        developer_id: null, cancelled: false, deadline: t + c.hours * 3600, created: t, referrer_id: referrer ? referrer.id : null, domain});
       if (referrer) { d.referrals = d.referrals || []; d.referrals.push({id: nextId(d), order_id: oid, referrer_id: referrer.id, referee_id: u.id, code: refCode, reward: demoRef().reward, discount, status: "pending", created: t, earned: null}); const me2 = d.users.find(x => x.id === u.id); if (!me2.referred_by) me2.referred_by = referrer.id; }
       await addFile(d, oid, u.id, "logo", fd.get("logo"));
       await addFile(d, oid, u.id, "csv", fd.get("product_csv"));
+      if (gwDocs) { await addFile(d, oid, u.id, "license", fd.get("trade_license_file")); await addFile(d, oid, u.id, "nid", fd.get("nid_file")); }
       d.events.push({id: nextId(d), order_id: oid, stage: 0, progress: 5, note: "অর্ডার ও তথ্য জমা হয়েছে।", by: u.id, created: t});
       d.messages.push({id: nextId(d), order_id: oid, user_id: null, from_admin: true, body: `আসসালামু আলাইকুম! অর্ডার ${code} পেয়েছি। পেমেন্ট যাচাই করে কাজ শুরু করছি। কোনো প্রশ্ন বা নতুন তথ্য থাকলে এখানেই লিখুন।`, file_id: null, seen: false, created: t});
       const created = d.orders.find(o => o.id === oid);
@@ -647,7 +690,8 @@ window.TechillAPI = (() => {
     },
     async info_update(data) {
       const d = load(), u = needUser(d), o = orderFor(d, u, data.order_id);
-      for (const k of ["whatsapp", "phone", "fb_page", "address", "business_intro", "additional_info"]) if (k in data) o.info[k] = String(data[k]).trim();
+      for (const k of ["whatsapp", "phone", "fb_page", "address", "business_intro", "additional_info", "trade_license", "nid_number"]) if (k in data) o.info[k] = String(data[k]).trim();
+      if (o.info.nid_number) { o.info.nid_number = digits(o.info.nid_number); if (!/^(\d{10}|\d{13}|\d{17})$/.test(o.info.nid_number)) bad("সঠিক NID নম্বর দিন (১০, ১৩ বা ১৭ ডিজিট)।"); }
       for (const k of ["whatsapp", "phone"]) if (o.info[k] && !phoneOK(o.info[k])) bad("সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন।");
       addEvent(d, o, isStaff(u) ? "ব্যবসার তথ্য আপডেট করা হয়েছে।" : "কাস্টমার ব্যবসার তথ্য আপডেট করেছেন।", u.id);
       save(d); return {info: o.info};
@@ -659,11 +703,14 @@ window.TechillAPI = (() => {
       const pay = isAdmin(u) && data.pay_status ? data.pay_status : o.pay_status;
       const site = String(data.site_url || "").trim();
       if (site && !/^https?:\/\/\S+\.\S+/.test(site)) bad("সাইটের পুরো লিংক দিন (https://...)।");
+      let dom = o.domain || null;
+      if ("domain" in data){ dom = String(data.domain || "").trim().toLowerCase().replace(/^(https?:\/\/)?(www\.)?/, "").split(/[/?]/)[0] || null; if (dom && !validHost(dom)) bad("ডোমেইন সঠিক নয়, যেমন myshop.com"); }
+      if (dom !== (o.domain || null) && dom) notes.push("প্রোজেক্টের ডোমেইন: " + dom);
       if (pay !== o.pay_status) notes.push({pending: "পেমেন্ট যাচাই বাকি।", verified: "পেমেন্ট যাচাই সম্পন্ন।", rejected: "পেমেন্ট পাওয়া যায়নি, যোগাযোগ করুন।"}[pay]);
       if (site && site !== o.site_url) notes.push("সাইটের লিংক যোগ হয়েছে: " + site);
       if (String(data.note || "").trim()) notes.push(String(data.note).trim());
       const changed = notes.length || stage !== o.stage || progress !== o.progress, stageChanged = stage !== o.stage;
-      Object.assign(o, {stage, progress, pay_status: pay, site_url: site || null});
+      Object.assign(o, {stage, progress, pay_status: pay, site_url: site || null, domain: dom});
       if (changed) addEvent(d, o, notes.join("\n") || null, u.id);
       refSync(d, o); demoNotifyUpdate(d, o, notes, stageChanged);
       save(d); return {order: orderOut(d, u, o)};
@@ -855,9 +902,9 @@ window.TechillAPI = (() => {
     exportCSV() {
       const d = load(); needAdmin(d);
       const q = v => `"${String(v ?? "").replace(/"/g, '""')}"`, f = ts => new Date((ts + 6 * 3600) * 1000).toISOString().slice(0, 16).replace("T", " ");
-      const rows = [["code", "created", "customer", "email", "phone", "platform", "package", "template", "total", "pay_method", "pay_sender", "trx", "pay_status", "stage", "progress", "developer", "deadline", "cancelled"],
+      const rows = [["code", "domain", "created", "customer", "email", "phone", "platform", "package", "template", "total", "pay_method", "pay_sender", "trx", "pay_status", "stage", "progress", "developer", "deadline", "cancelled"],
         ...d.orders.slice().sort((a, b) => b.id - a.id).map(o => { const c = d.users.find(x => x.id === o.user_id), dv = d.users.find(x => x.id === o.developer_id);
-          return [o.code, f(o.created), c.name, c.email, c.phone, o.stack, o.pack, o.template, o.total, o.pay_method, o.pay_sender, o.pay_trx, o.pay_status, STAGES[o.stage], o.progress, dv?.name, f(o.deadline), o.cancelled ? "yes" : "no"]; })];
+          return [o.code, o.domain || "", f(o.created), c.name, c.email, c.phone, o.stack, o.pack, o.template, o.total, o.pay_method, o.pay_sender, o.pay_trx, o.pay_status, STAGES[o.stage], o.progress, dv?.name, f(o.deadline), o.cancelled ? "yes" : "no"]; })];
       return URL.createObjectURL(new Blob(["﻿" + rows.map(r => r.map(q).join(",")).join("\r\n")], {type: "text/csv;charset=utf-8"}));
     },
     fileUrl(id) { const f = load().files.find(x => x.id === +id); return f && f.data ? f.data : null; }
@@ -1027,6 +1074,8 @@ window.TechillAPI = (() => {
     emailTest: to => run("email_test", {to}, () => post("email_test", {to: to || ""})),
     supportSettings: () => run("support_settings", {}, () => http("support_settings")),
     saveSupport: data => run("support_save", data, () => post("support_save", data)),
+    domainCheck: (stack, pack, name) => run("domain_check", {stack, pack, name}, () => http("domain_check", {params: {stack, pack, name}})),
+    allowedTlds, domainLabel, validLabel, validHost, needsGatewayDocs,
     refCheck: code => run("ref_check", {code}, () => http("ref_check", {params: {code}})),
     referral: () => run("referral", {}, () => http("referral")),
     payoutRequest: data => run("payout_request", data, () => post("payout_request", data)),

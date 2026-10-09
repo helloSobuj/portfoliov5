@@ -75,7 +75,8 @@
       "৭ দিন সাপোর্ট"
      ],
      "incl": [],
-     "inclQty": {}
+     "inclQty": {},
+     "premium_tlds": false
     },
     {
      "name": "বিজনেস",
@@ -99,7 +100,8 @@
      ],
      "inclQty": {
       "courier": 1
-     }
+     },
+     "premium_tlds": true
     },
     {
      "name": "প্রো",
@@ -129,7 +131,8 @@
      "inclQty": {
       "courier": 1,
       "landing": 1
-     }
+     },
+     "premium_tlds": true
     }
    ]
   },
@@ -194,7 +197,8 @@
       "৭ দিন সাপোর্ট"
      ],
      "incl": [],
-     "inclQty": {}
+     "inclQty": {},
+     "premium_tlds": false
     },
     {
      "name": "গ্রোথ",
@@ -222,7 +226,8 @@
      ],
      "inclQty": {
       "courier": 1
-     }
+     },
+     "premium_tlds": true
     },
     {
      "name": "আল্টিমেট",
@@ -250,7 +255,8 @@
      ],
      "inclQty": {
       "courier": 1
-     }
+     },
+     "premium_tlds": true
     }
    ]
   }
@@ -371,5 +377,16 @@
    "price": 10000,
    "only": "laravel"
   }
+ ],
+ "tlds_basic": [
+  "shop",
+  "top",
+  "store",
+  "online",
+  "site",
+  "website"
+ ],
+ "tlds_premium": [
+  "com"
  ]
 }

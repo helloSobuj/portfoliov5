@@ -381,6 +381,7 @@ function left(t){
 const STAGES = api.STAGES;
 const safeImg = u => /^media\/[a-f0-9]{32}\.(jpg|png|webp)$/.test(u || "") || /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(u || "") ? u : null;
 const avatarHTML = (name, url, cls = "") => `<span class="av ${cls}">${safeImg(url) ? `<img src="${safeImg(url)}" alt="">` : esc(String(name || "?").trim().slice(0, 1) || "?")}</span>`;
+const pname = o => o.domain || o.code;   // a project is known by its domain once there is one
 const PAY = {pending: "যাচাই বাকি", verified: "যাচাই হয়েছে", rejected: "পাওয়া যায়নি"};
 const MNAME = {bKash: "বিকাশ", Nagad: "নগদ", Rocket: "রকেট", PayStation: "অনলাইন (PayStation)"};
 const PSTAT = {initiated: ["শুরু হয়েছে", "b-off"], processing: ["প্রক্রিয়াধীন", "b-pending"], success: ["সফল", "b-done"], failed: ["ব্যর্থ", "b-late"], canceled: ["বাতিল", "b-cancel"], mismatch: ["মেলেনি", "b-late"], error: ["শুরু হয়নি", "b-late"]};
@@ -631,7 +632,7 @@ const devOptions = sel => `<option value="">— অ্যাসাইন কর�
 function renderOrders(){
   const q = oQuery.toLowerCase();
   const list = orders.filter(OF[oFilter][1]).filter(o => !oStack || o.stack === oStack)
-    .filter(o => !q || [o.code, o.pack, o.template, o.customer?.name, o.customer?.email, o.customer?.phone, o.pay_trx].some(v => String(v || "").toLowerCase().includes(q)));
+    .filter(o => !q || [o.code, o.domain, o.pack, o.template, o.customer?.name, o.customer?.email, o.customer?.phone, o.pay_trx].some(v => String(v || "").toLowerCase().includes(q)));
   const sum = list.filter(o => !o.cancelled).reduce((s, o) => s + o.total, 0);
   const focus = document.activeElement?.id === "oq";
   $("main").innerHTML = `
@@ -643,7 +644,7 @@ function renderOrders(){
     <div class="card" style="padding:10px 14px">${list.length ? `<div class="tbl-wrap"><table class="tbl" style="min-width:980px"><thead><tr>
       <th>অর্ডার</th><th>কাস্টমার</th><th>প্যাকেজ</th><th class="r">মোট</th><th>পেমেন্ট</th><th>অবস্থা</th><th>ডেলিভারি</th><th>ডেভেলপার</th></tr></thead><tbody>
       ${list.map(o => `<tr class="click" data-open="${o.id}">
-        <td><b>${esc(o.code)}</b>${o.unread ? ` <span class="badge b-unread">${BN(o.unread)}</span>` : ""}<span class="sub">${when(o.created)}</span></td>
+        <td style="white-space:nowrap"><b>${esc(pname(o))}</b>${o.unread ? ` <span class="badge b-unread">${BN(o.unread)}</span>` : ""}<span class="sub">${o.domain ? esc(o.code) + " · " : ""}${when(o.created)}</span></td>
         <td>${esc(o.customer?.name)}<span class="sub">${esc(o.customer?.phone || o.customer?.email)}</span></td>
         <td>${esc(o.pack)}<span class="sub">${esc(o.stack)} · ${esc(o.template)}</span></td>
         <td class="r num">${tk(o.total)}</td>
@@ -687,12 +688,15 @@ function renderDrawer(d){
   const o = d.order, c = o.customer || {}, i = o.info || {};
   const wa = (c.phone || i.whatsapp || "").replace(/\D/g, "").replace(/^0/, "880");
   $("drawer").innerHTML = `
-    <div class="dr-h"><div><h2 id="drTitle">${esc(o.code)} ${statusBadge(o)}</h2><p>${esc(o.pack)} · ${esc(o.stack)} · ${esc(o.template)}</p></div><button class="icon-btn" type="button" id="drClose" aria-label="বন্ধ করুন">${ic('<path d="M6 6l12 12M18 6L6 18"/>')}</button></div>
+    <div class="dr-h"><div><h2 id="drTitle" style="word-break:break-all">${esc(pname(o))} ${statusBadge(o)}</h2><p>${o.domain ? esc(o.code) + " · " : ""}${esc(o.pack)} · ${esc(o.stack)} · ${esc(o.template)}</p></div><button class="icon-btn" type="button" id="drClose" aria-label="বন্ধ করুন">${ic('<path d="M6 6l12 12M18 6L6 18"/>')}</button></div>
     <div class="dr-b">
       <div class="row2"><a class="btn btn-primary btn-sm" href="dashboard.html#o=${o.id}">চ্যাট ও অগ্রগতি আপডেট</a>${wa ? `<a class="btn btn-ghost btn-sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">হোয়াটসঅ্যাপ</a>` : ""}${o.site_url ? `<a class="btn btn-ghost btn-sm" href="${esc(o.site_url)}" target="_blank" rel="noopener noreferrer">সাইট ↗</a>` : ""}</div>
       <div class="box"><h4>অগ্রগতি · ${BN(o.progress)}%</h4><div class="mini" style="width:100%;height:8px"><i style="width:${o.progress}%"></i></div>
         <dl class="kv" style="margin-top:12px"><dt>ধাপ</dt><dd>${STAGES[o.stage]}</dd><dt>ডেলিভারি</dt><dd class="${isLate(o) ? "late" : ""}">${when(o.deadline)}${o.stage < 4 && !o.cancelled ? " · " + left(o.deadline) : ""}</dd><dt>অর্ডারের সময়</dt><dd>${when(o.created)}</dd></dl></div>
       <div class="box"><h4>ডেভেলপার</h4><select class="inp" data-assign="${o.id}" ${o.cancelled ? "disabled" : ""}>${devOptions(o.developer?.id)}</select></div>
+      <div class="box"><h4>ডোমেইন</h4>${o.domain ? `<p><b style="font-size:1.1rem;word-break:break-all">${esc(o.domain)}</b></p><p class="muted" style="font-size:.86rem">${i.domain_mode === "new" ? "কাস্টমার চেকআউটে বেছেছেন, তার নামে রেজিস্টার করুন।" : "কাস্টমারের নিজের ডোমেইন, DNS আমাদের সার্ভারে আনতে হবে।"}</p>` : '<p class="muted" style="font-size:.88rem">কাস্টমার পরে জানাবেন। ঠিক হলে প্রোজেক্ট চ্যাট থেকে ডোমেইন বসিয়ে দিন।</p>'}</div>
+      ${i.trade_license || i.nid_number || d.files.some(f => f.kind === "license" || f.kind === "nid") ? `<div class="box"><h4>পেমেন্ট গেটওয়ের কাগজপত্র</h4><dl class="kv"><dt>ট্রেড লাইসেন্স</dt><dd>${esc(i.trade_license || "—")}</dd><dt>NID নম্বর</dt><dd>${esc(i.nid_number || "—")}</dd></dl>
+        <div class="row2" style="margin-top:10px">${d.files.filter(f => f.kind === "license" || f.kind === "nid").map(f => `<button class="btn btn-ghost btn-sm" type="button" data-doc="${f.id}" data-name="${esc(f.name)}">${f.kind === "nid" ? "NID কার্ড" : "ট্রেড লাইসেন্স"} খুলুন</button>`).join("") || '<span class="muted" style="font-size:.86rem">ফাইল নেই</span>'}</div></div>` : ""}
       <div class="box"><h4>কাস্টমার</h4><dl class="kv"><dt>নাম</dt><dd>${esc(c.name)}</dd><dt>ইমেইল</dt><dd>${esc(c.email)}</dd><dt>ফোন</dt><dd>${esc(i.phone || c.phone)}</dd><dt>হোয়াটসঅ্যাপ</dt><dd>${esc(i.whatsapp)}</dd>${i.fb_page ? `<dt>ফেসবুক</dt><dd><a href="${esc(i.fb_page)}" target="_blank" rel="noopener noreferrer">${esc(i.fb_page)}</a></dd>` : ""}${i.address ? `<dt>ঠিকানা</dt><dd>${esc(i.address)}</dd>` : ""}</dl>
         ${i.business_intro ? `<p class="muted" style="font-size:.88rem;margin-top:10px;white-space:pre-wrap">${esc(i.business_intro)}</p>` : ""}</div>
       <div class="box"><h4>পেমেন্ট <span class="badge b-${o.pay_status}">${PAY[o.pay_status]}</span></h4>
@@ -716,6 +720,12 @@ function renderDrawer(d){
         ${d.messages.length ? `<p style="font-size:.88rem;margin-top:8px"><b>সর্বশেষ:</b> ${esc(d.messages[d.messages.length - 1].body).slice(0, 160)}</p>` : ""}</div>
     </div>`;
   $("drClose").addEventListener("click", closeDrawer); $("drClose").focus();
+  $("drawer").querySelectorAll("[data-doc]").forEach(b => b.addEventListener("click", () => {
+    const url = api.fileUrl(b.dataset.doc);
+    if (!url) return toast("ডেমো মোডে বড় ফাইল সেভ হয় না। আসল সার্ভারে খুলবে।");
+    if (url.startsWith("data:")){ const a = document.createElement("a"); a.href = url; a.download = b.dataset.name || "file"; a.click(); return; }
+    window.open(url, "_blank", "noopener");
+  }));
   const after = async () => { orders = (await api.orders()).orders; team = (await api.team()).team; stats = await api.stats(days); renderNav(); renderLive(); render(); renderDrawer(await api.order(o.id)); };
   $("drawer").querySelectorAll("[data-pay]").forEach(b => b.addEventListener("click", async () => {
     try { await api.adminUpdate({order_id: o.id, stage: b.dataset.pay === "verified" ? Math.max(1, o.stage) : o.stage, progress: b.dataset.pay === "verified" ? Math.max(15, o.progress) : o.progress, pay_status: b.dataset.pay, site_url: o.site_url || ""}); toast("পেমেন্ট স্ট্যাটাস আপডেট হয়েছে।"); after(); }
@@ -750,7 +760,7 @@ function renderBoard(){
       const more = i === 4 && col.length > 8 ? col.length - 8 : 0; if (i === 4) col = col.sort((a, b) => b.created - a.created).slice(0, 8);
       return `<div class="col"><h3><span>${st}</span><span class="muted">${BN(list.filter(o => o.stage === i).length)}</span></h3>
         ${col.map(o => `<button type="button" class="kc ${isLate(o) ? "late" : ""}" data-open="${o.id}">
-          <span class="t"><b>${esc(o.code)}</b>${o.unread ? `<span class="badge b-unread">${BN(o.unread)}</span>` : o.pay_status !== "verified" ? `<span class="badge b-${o.pay_status}">${PAY[o.pay_status]}</span>` : ""}</span>
+          <span class="t"><b style="word-break:break-all">${esc(pname(o))}</b>${o.unread ? `<span class="badge b-unread">${BN(o.unread)}</span>` : o.pay_status !== "verified" ? `<span class="badge b-${o.pay_status}">${PAY[o.pay_status]}</span>` : ""}</span>
           <span>${esc(o.customer?.name)} · ${esc(o.pack)}</span>
           <small>${o.developer ? esc(o.developer.name) : '<span class="late">ডেভেলপার নেই</span>'}</small>
           <span class="mini"><i style="width:${o.progress}%"></i></span>
@@ -875,6 +885,9 @@ const setP = (o, p, v) => { const ks = p.split("."), last = ks.pop(); ks.reduce(
 function renderCatalog(){
   if (!draft){ $("main").innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; return; }
   const S = draft.stacks[edStack], base = `stacks.${edStack}`;
+  draft.tlds_basic ??= ["shop", "top", "store", "online", "site", "website"]; draft.tlds_premium ??= ["com"];
+  Object.values(draft.stacks).forEach(x => x.packs.forEach(p => { p.premium_tlds ??= (p.incl || []).includes("domain"); }));
+  const words = (p, ph) => `<input class="inp" data-p="${p}" data-t="words" value="${esc((getP(draft, p) || []).map(t => "." + t).join(" "))}" placeholder="${ph}">`;
   const inp = (p, type = "text", extra = "") => `<input class="inp" data-p="${p}" data-t="${type === "number" ? "int" : "str"}" type="${type}" value="${esc(getP(draft, p) ?? "")}" ${extra}>`;
   const simple = draft.addons.filter(a => !a.qty), qtyAdd = draft.addons.filter(a => a.qty);
   $("main").innerHTML = `
@@ -895,11 +908,16 @@ function renderCatalog(){
         <div class="f"><label>গেটওয়ে নিলে বাড়তি সময় <small>(ঘণ্টা)</small></label>${inp("gateway_extra_hours", "number", 'min="0" max="720"')}</div>
       </div></div>
 
+    <div class="card ed-sec"><h3>ডোমেইন এক্সটেনশন</h3>
+      <p class="muted" style="font-size:.88rem;margin-top:-6px">চেকআউটের ডোমেইন ধাপে কাস্টমার এগুলো থেকে বাছতে পারবেন। প্রতিটা প্যাকেজে ".com সহ" টিক দিলে দ্বিতীয় তালিকাও পাবে।</p>
+      <div class="ed-grid"><div class="f w2"><label>সব প্যাকেজে <small>(স্পেস দিয়ে আলাদা)</small></label>${words("tlds_basic", ".shop .top .store")}</div>
+        <div class="f w2"><label>শুধু ".com সহ" প্যাকেজে</label>${words("tlds_premium", ".com")}</div></div></div>
+
     <div class="sec-h" style="margin-bottom:12px"><div class="seg" role="group" aria-label="প্ল্যাটফর্ম">${Object.entries(draft.stacks).map(([k, s]) => `<button type="button" data-ed-stack="${k}" aria-pressed="${edStack === k}">${esc(s.name)}</button>`).join("")}</div>
       <div class="tools"><label class="sw">ডোমেইন ও হোস্টিং (১ বছর) দাম ${inp(base + ".domainPrice", "number", 'min="0" style="width:120px"')}</label></div></div>
 
     <div class="ed-sec"><div class="packs-ed">${S.packs.map((p, i) => { const pb = `${base}.packs.${i}`; return `<div class="pk">
-      <div class="h"><b>প্যাকেজ ${BN(i + 1)}</b><span class="row2"><label class="sw"><input type="checkbox" data-p="${pb}.popular" data-t="bool" ${p.popular ? "checked" : ""}> জনপ্রিয়</label><button class="btn btn-ghost btn-sm" type="button" data-del="${base}.packs" data-i="${i}" aria-label="প্যাকেজ মুছুন">মুছুন</button></span></div>
+      <div class="h"><b>প্যাকেজ ${BN(i + 1)}</b><span class="row2"><label class="sw"><input type="checkbox" data-p="${pb}.popular" data-t="bool" ${p.popular ? "checked" : ""}> জনপ্রিয়</label><label class="sw" title="ডোমেইন ধাপে .com-এর মতো দামি এক্সটেনশনও দেখাবে"><input type="checkbox" data-p="${pb}.premium_tlds" data-t="bool" ${p.premium_tlds ? "checked" : ""}> .com সহ</label><button class="btn btn-ghost btn-sm" type="button" data-del="${base}.packs" data-i="${i}" aria-label="প্যাকেজ মুছুন">মুছুন</button></span></div>
       <div class="g2i"><div class="f"><label>নাম</label>${inp(pb + ".name")}</div><div class="f"><label>ইংরেজি নাম</label>${inp(pb + ".en")}</div></div>
       <div class="f"><label>ট্যাগলাইন</label>${inp(pb + ".tag")}</div>
       <div class="g3i"><div class="f"><label>দাম ৳</label>${inp(pb + ".price", "number", 'min="0"')}</div><div class="f"><label>ঘণ্টা</label>${inp(pb + ".hours", "number", 'min="1"')}</div><div class="f"><label>প্রোডাক্ট</label>${inp(pb + ".products", "number", 'min="0"')}</div></div>
@@ -939,7 +957,7 @@ $("main").addEventListener("input", e => {
   if (sec !== "catalog") return;
   const t = e.target;
   if (t.dataset.p){
-    const v = t.dataset.t === "int" ? (t.value === "" ? "" : +t.value) : t.dataset.t === "bool" ? t.checked : t.dataset.t === "lines" ? t.value.split("\n").map(x => x.trim()).filter(Boolean) : t.value;
+    const v = t.dataset.t === "int" ? (t.value === "" ? "" : +t.value) : t.dataset.t === "bool" ? t.checked : t.dataset.t === "lines" ? t.value.split("\n").map(x => x.trim()).filter(Boolean) : t.dataset.t === "words" ? t.value.split(/[\s,]+/).map(x => x.replace(/^\.+/, "").toLowerCase()).filter(x => /^[a-z]{2,24}$/.test(x)) : t.value;
     if (t.dataset.p.endsWith(".only") && !v) delete getP(draft, t.dataset.p.replace(/\.only$/, "")).only; else setP(draft, t.dataset.p, v);
     markDirty();
   }

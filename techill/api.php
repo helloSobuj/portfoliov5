@@ -65,6 +65,7 @@ try {
         case 'marketing_save': $isPost || fail('POST only', 405); marketing_save();
         case 'capi_test':    $isPost || fail('POST only', 405); capi_test();
         case 'export_orders': export_orders();
+        case 'domain_check': domain_check();
         case 'otp_send':     $isPost || fail('POST only', 405); otp_send();
         case 'password_reset': $isPost || fail('POST only', 405); password_reset();
         case 'email_verify': $isPost || fail('POST only', 405); email_verify();
@@ -170,7 +171,7 @@ function order_out(array $o, ?array $viewer = null): array {
         'lines' => json_decode($o['lines_json'], true) ?: [], 'total' => (int)$o['total'], 'hours' => (int)$o['hours'],
         'products' => (int)$o['products'], 'pay_method' => $o['pay_method'], 'pay_sender' => $o['pay_sender'],
         'pay_trx' => $o['pay_trx'], 'pay_status' => $o['pay_status'], 'info' => json_decode($o['info_json'], true) ?: [],
-        'stage' => (int)$o['stage'], 'progress' => (int)$o['progress'], 'site_url' => $o['site_url'],
+        'stage' => (int)$o['stage'], 'progress' => (int)$o['progress'], 'site_url' => $o['site_url'], 'domain' => $o['domain'] ?? null,
         'deadline' => strtotime($o['deadline_at'] . ' UTC'), 'created' => strtotime($o['created_at'] . ' UTC'),
     ];
     $r['cancelled'] = (bool)($o['cancelled'] ?? false);
@@ -207,7 +208,9 @@ function order_create(): void {
     // The browser sends only what was picked; prices come from the server's catalog.
     $add = json_decode((string)($_POST['addons'] ?? '{}'), true);
     if (!is_array($add)) fail('অ্যাড-অনের তথ্য সঠিক নয়।');
-    $priced = price_order(str_in('stack_key', 20), (int)($_POST['pack'] ?? -1), (int)($_POST['tpl'] ?? -1), $add);
+    $stackKey = str_in('stack_key', 20); $packIdx = (int)($_POST['pack'] ?? -1);
+    $priced = price_order($stackKey, $packIdx, (int)($_POST['tpl'] ?? -1), $add);
+    $PK = catalog()['stacks'][$stackKey]['packs'][$packIdx];
     ['stack' => $stack, 'pack' => $pack, 'template' => $template, 'lines' => $clean, 'total' => $total, 'hours' => $hours, 'products' => $products] = $priced;
 
     $method = str_in('pay_method', 20);
@@ -228,6 +231,36 @@ function order_create(): void {
     if (!valid_phone($info['whatsapp']) || !valid_phone($info['phone'])) fail('সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন।');
     if ($info['business_intro'] === '') fail('ব্যবসার পরিচিতি লিখুন।');
     if (empty($_FILES['product_csv']['name'])) fail('প্রোডাক্ট CSV ফাইল দিন।');
+
+    // Payment gateway: the provider needs the trade licence and the owner's NID.
+    $gwDocs = needs_gateway_docs($stackKey, $PK, $add);
+    if ($gwDocs) {
+        $info['trade_license'] = str_in('trade_license', 40);
+        $info['nid_number'] = digits_only(str_in('nid_number', 25));
+        if (mb_strlen($info['trade_license']) < 3) fail('ট্রেড লাইসেন্স নম্বর দিন।');
+        if (!valid_nid($info['nid_number'])) fail('সঠিক NID নম্বর দিন (১০, ১৩ বা ১৭ ডিজিট)।');
+        check_doc_upload('trade_license_file', 'ট্রেড লাইসেন্স');
+        check_doc_upload('nid_file', 'NID কার্ড');
+    }
+
+    // Domain: a new one from the package's extensions, the customer's own, or decided later.
+    $domMode = in_array($_POST['domain_mode'] ?? '', ['new', 'own'], true) ? $_POST['domain_mode'] : 'later';
+    $domain = null;
+    $domFail = fn(string $m, int $c = 422) => out(['error' => $m, 'domain_error' => true], $c);
+    if ($domMode === 'new') {
+        if (!pack_has_domain($PK, $add)) $domFail('এই অর্ডারে ডোমেইন নেই। অ্যাড-অন থেকে "ডোমেইন ও হোস্টিং" যোগ করুন, বা নিজের ডোমেইন দিন।');
+        $d = strtolower(str_in('domain', 253));
+        $tld = substr($d, strrpos($d, '.') + 1);
+        if (!valid_label(substr($d, 0, strrpos($d, '.') ?: 0))) $domFail('ডোমেইনের নাম সঠিক নয়।');
+        if (!in_array($tld, allowed_tlds($PK), true)) $domFail(".$tld এই প্যাকেজে নেই। পাওয়া যাবে: ." . implode(', .', allowed_tlds($PK)));
+        if (domain_lookup([$d])[$d] === 'taken') $domFail("$d এর মধ্যে অন্য কেউ নিয়ে নিয়েছে, আরেকটা বাছুন।", 409);
+        $domain = $d;
+    } elseif ($domMode === 'own') {
+        $d = clean_host(str_in('domain', 253));
+        if (!valid_hostname($d)) $domFail('আপনার ডোমেইনটা ঠিকভাবে লিখুন, যেমন myshop.com');
+        $domain = $d;
+    }
+    $info['domain_mode'] = $domMode;
 
     // Referral discount: checked before the account is created, against the email the order is for.
     $u = current_user();
@@ -258,10 +291,10 @@ function order_create(): void {
     db()->beginTransaction();
     do { $code = 'TC-' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 6)); }
     while (q('SELECT 1 FROM orders WHERE code = ?', [$code])->fetch());
-    q('INSERT INTO orders (code, user_id, stack, pack, template, lines_json, total, hours, products, pay_method, pay_sender, pay_trx, info_json, referrer_id, deadline_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?, UTC_TIMESTAMP() + INTERVAL ? HOUR)',
+    q('INSERT INTO orders (code, user_id, stack, pack, template, lines_json, total, hours, products, pay_method, pay_sender, pay_trx, info_json, referrer_id, domain, deadline_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, UTC_TIMESTAMP() + INTERVAL ? HOUR)',
       [$code, $u['id'], $stack, $pack, $template, json_encode($clean, JSON_UNESCAPED_UNICODE), $total, $hours, $products,
-       $method, $sender, $trx, json_encode($info, JSON_UNESCAPED_UNICODE), $referrer ? $referrer['id'] : null, $hours]);
+       $method, $sender, $trx, json_encode($info, JSON_UNESCAPED_UNICODE), $referrer ? $referrer['id'] : null, $domain, $hours]);
     $oid = (int)db()->lastInsertId();
     if ($referrer) {
         q('INSERT INTO referrals (order_id, referrer_id, referee_id, code, reward, discount) VALUES (?,?,?,?,?,?)', [$oid, $referrer['id'], $u['id'], $refCode, (int)referral_settings()['reward'], $discount]);
@@ -269,6 +302,7 @@ function order_create(): void {
     }
     save_upload('logo', $oid, $u['id'], 'logo');
     save_upload('product_csv', $oid, $u['id'], 'csv');
+    if ($gwDocs) { save_upload('trade_license_file', $oid, $u['id'], 'license'); save_upload('nid_file', $oid, $u['id'], 'nid'); }
     q('INSERT INTO order_events (order_id, stage, progress, note, created_by) VALUES (?,0,5,?,?)', [$oid, 'অর্ডার ও তথ্য জমা হয়েছে।', $u['id']]);
     q('INSERT INTO messages (order_id, from_admin, body) VALUES (?,1,?)',
       [$oid, $online ? "আসসালামু আলাইকুম! অর্ডার $code পেয়েছি। অনলাইন পেমেন্ট সম্পন্ন হলেই কাজ শুরু হবে। কোনো প্রশ্ন বা নতুন তথ্য থাকলে এখানেই লিখুন।"
@@ -371,9 +405,10 @@ function info_update(): void {
     $u = require_user();
     $o = order_for($u, (int)($_POST['order_id'] ?? 0));
     $info = json_decode($o['info_json'], true) ?: [];
-    foreach (['whatsapp' => 20, 'phone' => 20, 'fb_page' => 255, 'address' => 255, 'business_intro' => 3000, 'additional_info' => 3000] as $k => $max) {
+    foreach (['whatsapp' => 20, 'phone' => 20, 'fb_page' => 255, 'address' => 255, 'business_intro' => 3000, 'additional_info' => 3000, 'trade_license' => 40, 'nid_number' => 25] as $k => $max) {
         if (isset($_POST[$k])) $info[$k] = str_in($k, $max);
     }
+    if (($info['nid_number'] ?? '') !== '') { $info['nid_number'] = digits_only($info['nid_number']); if (!valid_nid($info['nid_number'])) fail('সঠিক NID নম্বর দিন (১০, ১৩ বা ১৭ ডিজিট)।'); }
     foreach (['whatsapp', 'phone'] as $k) if (($info[$k] ?? '') !== '' && !valid_phone($info[$k])) fail('সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন।');
     q('UPDATE orders SET info_json = ? WHERE id = ?', [json_encode($info, JSON_UNESCAPED_UNICODE), $o['id']]);
     q('INSERT INTO order_events (order_id, stage, progress, note, created_by) VALUES (?,?,?,?,?)',
@@ -393,9 +428,15 @@ function staff_update(): void {
     $site = str_in('site_url', 255);
     if ($site !== '' && !preg_match('#^https?://\S+\.\S+#', $site)) fail('সাইটের পুরো লিংক দিন (https://...)।');
     $note = str_in('note', 2000);
+    $domain = $o['domain'];
+    if (isset($_POST['domain'])) {
+        $domain = clean_host(str_in('domain', 253)) ?: null;
+        if ($domain !== null && !valid_hostname($domain)) fail('ডোমেইন সঠিক নয়, যেমন myshop.com');
+    }
 
-    q('UPDATE orders SET stage = ?, progress = ?, pay_status = ?, site_url = ? WHERE id = ?', [$stage, $progress, $pay, $site ?: null, $o['id']]);
+    q('UPDATE orders SET stage = ?, progress = ?, pay_status = ?, site_url = ?, domain = ? WHERE id = ?', [$stage, $progress, $pay, $site ?: null, $domain, $o['id']]);
     $notes = [];
+    if ($domain !== $o['domain'] && $domain) $notes[] = 'প্রোজেক্টের ডোমেইন: ' . $domain;
     if ($pay !== $o['pay_status']) $notes[] = ['pending' => 'পেমেন্ট যাচাই বাকি।', 'verified' => 'পেমেন্ট যাচাই সম্পন্ন।', 'rejected' => 'পেমেন্ট পাওয়া যায়নি, যোগাযোগ করুন।'][$pay];
     if ($site !== '' && $site !== $o['site_url']) $notes[] = 'সাইটের লিংক যোগ হয়েছে: ' . $site;
     if ($note !== '') $notes[] = $note;
@@ -601,10 +642,10 @@ function export_orders(): void {
     header('Cache-Control: no-store');
     $f = fopen('php://output', 'w');
     fwrite($f, "\xEF\xBB\xBF");
-    fputcsv($f, ['code', 'created', 'customer', 'email', 'phone', 'platform', 'package', 'template', 'total', 'pay_method', 'pay_sender', 'trx', 'pay_status', 'stage', 'progress', 'developer', 'deadline', 'cancelled']);
+    fputcsv($f, ['code', 'domain', 'created', 'customer', 'email', 'phone', 'platform', 'package', 'template', 'total', 'pay_method', 'pay_sender', 'trx', 'pay_status', 'stage', 'progress', 'developer', 'deadline', 'cancelled']);
     $fmt = fn($t) => date('Y-m-d H:i', strtotime($t . ' UTC') + 6 * 3600);
     foreach (q(ORDER_SELECT . ' ORDER BY o.id DESC')->fetchAll() as $o) {
-        fputcsv($f, [$o['code'], $fmt($o['created_at']), $o['c_name'], $o['c_email'], $o['c_phone'], $o['stack'], $o['pack'], $o['template'], $o['total'],
+        fputcsv($f, [$o['code'], $o['domain'], $fmt($o['created_at']), $o['c_name'], $o['c_email'], $o['c_phone'], $o['stack'], $o['pack'], $o['template'], $o['total'],
             $o['pay_method'], $o['pay_sender'], $o['pay_trx'], $o['pay_status'], $stages[(int)$o['stage']] ?? '', $o['progress'], $o['d_name'], $fmt($o['deadline_at']), $o['cancelled'] ? 'yes' : 'no']);
     }
     exit;
@@ -720,6 +761,7 @@ function catalog_save(): void {
                   'price' => $int($p['price'] ?? -1, 0, 10000000), 'products' => $int($p['products'] ?? -1, 0, 5000), 'hours' => $int($p['hours'] ?? 0, 1, 720),
                   'feat' => array_values(array_filter(array_map(fn($f) => $str($f, 160), (array)($p['feat'] ?? [])))), 'incl' => $incl, 'inclQty' => (object)$inclQty];
             if (!empty($p['popular'])) $x['popular'] = true;
+            $x['premium_tlds'] = (bool)($p['premium_tlds'] ?? in_array('domain', $incl, true));
             $packs[] = $x;
         }
         if (!$tpls || !$packs) fail('প্রতিটা প্ল্যাটফর্মে অন্তত একটা প্যাকেজ আর একটা টেমপ্লেট লাগবে।');
@@ -727,7 +769,14 @@ function catalog_save(): void {
     }
     $pay = [];
     foreach (['bKash', 'Nagad', 'Rocket'] as $m) $pay[$m] = $str($in['pay_numbers'][$m] ?? '', 20);
+    $tldList = function ($v, array $def) {
+        $l = array_values(array_unique(array_filter(array_map(fn($t) => strtolower(trim((string)$t, " .")), (array)($v ?? $def)), fn($t) => preg_match('/^[a-z]{2,24}$/', $t))));
+        return $l;
+    };
+    $tb = $tldList($in['tlds_basic'] ?? null, TLDS_BASIC);
+    if (!$tb) fail('অন্তত একটা ডোমেইন এক্সটেনশন দিন (যেমন shop)।');
     $cat = ['whatsapp' => preg_replace('/\D/', '', (string)($in['whatsapp'] ?? '')), 'pay_numbers' => $pay,
+            'tlds_basic' => $tb, 'tlds_premium' => $tldList($in['tlds_premium'] ?? null, TLDS_PREMIUM),
             'gateway_extra_hours' => $int($in['gateway_extra_hours'] ?? 48, 0, 720), 'groups' => $groups, 'stacks' => $stacks, 'addons' => $addons];
     q("INSERT INTO settings (k, v) VALUES ('catalog', ?) ON DUPLICATE KEY UPDATE v = VALUES(v)", [json_encode($cat, JSON_UNESCAPED_UNICODE)]);
     out(['catalog' => $cat]);
@@ -1099,7 +1148,7 @@ function notify_new_order(array $o, array $u, array $info): void {
     if (!notify_on('new_order')) return;
     $online = $o['pay_method'] === 'PayStation';
     $lines = json_decode($o['lines_json'], true) ?: [];
-    $rows = ['অর্ডার' => $o['code'], 'প্যাকেজ' => $o['pack'] . ' · ' . $o['stack'], 'টেমপ্লেট' => $o['template']];
+    $rows = ['অর্ডার' => $o['code'], 'প্যাকেজ' => $o['pack'] . ' · ' . $o['stack'], 'টেমপ্লেট' => $o['template']] + ($o['domain'] ? ['ডোমেইন' => $o['domain']] : []);
     foreach (array_slice($lines, 1) as $l) $rows[$l['label']] = ($l['amt'] < 0 ? '−' : '') . taka(abs((int)$l['amt']));
     $rows['মোট'] = taka((int)$o['total']);
     $rows['পেমেন্ট'] = $online ? 'অনলাইন (PayStation)' : $o['pay_method'] . ' · TrxID ' . $o['pay_trx'];
@@ -1107,7 +1156,7 @@ function notify_new_order(array $o, array $u, array $info): void {
     notify_user((int)$u['id'], "অর্ডার {$o['code']} পেয়েছি, ধন্যবাদ!", mail_layout('আপনার অর্ডার পেয়েছি',
         '<p>আসসালামু আলাইকুম ' . h($info['admin_name'] ?: $u['name']) . ', Techill-এ অর্ডার করার জন্য ধন্যবাদ।</p>' . mail_kv($rows) . '<p>' . h($next) . '</p>',
         'ড্যাশবোর্ডে প্রোজেক্ট দেখুন', site_url('dashboard.html#o=' . $o['id'])), 'new_order', (int)$o['id'], true);
-    $adm = ['কাস্টমার' => $info['admin_name'] ?: $u['name'], 'ইমেইল' => $u['email'], 'ফোন' => $info['phone'], 'প্যাকেজ' => $o['pack'] . ' · ' . $o['stack'], 'মোট' => taka((int)$o['total']), 'পেমেন্ট' => $rows['পেমেন্ট']];
+    $adm = ($o['domain'] ? ['ডোমেইন' => $o['domain']] : []) + ['কাস্টমার' => $info['admin_name'] ?: $u['name'], 'ইমেইল' => $u['email'], 'ফোন' => $info['phone'], 'প্যাকেজ' => $o['pack'] . ' · ' . $o['stack'], 'মোট' => taka((int)$o['total']), 'পেমেন্ট' => $rows['পেমেন্ট']];
     $html = mail_layout("নতুন অর্ডার {$o['code']}", '<p>সাইটে নতুন একটা অর্ডার এসেছে।</p>' . mail_kv($adm) . ($online ? '' : '<p>বিকাশ/নগদে টাকা এসেছে কিনা মিলিয়ে অ্যাডমিন প্যানেল থেকে পেমেন্ট যাচাই করুন।</p>'), 'অ্যাডমিন প্যানেলে দেখুন', site_url('admin.html#orders'));
     foreach (admin_emails() as $to) mail_queue($to, "নতুন অর্ডার {$o['code']} · " . taka((int)$o['total']), $html, 'new_order', (int)$o['id']);
 }
@@ -1461,4 +1510,28 @@ function payout_op(): void {
             : '<p>' . h($note) . '</p><p>টাকাটা আপনার ব্যালেন্সে ফিরে গেছে। প্রশ্ন থাকলে আমাদের জানান।</p>', 'ড্যাশবোর্ডে দেখুন', site_url('dashboard.html#referral')), 'payout', null, true);
     }
     out(referral_admin_out());
+}
+
+/* ---------- domain search ---------- */
+
+// Checks one name against every extension this package allows. Public (checkout), rate limited per IP.
+function domain_check(): void {
+    $cat = catalog();
+    $PK = $cat['stacks'][$_GET['stack'] ?? '']['packs'][(int)($_GET['pack'] ?? -1)] ?? null;
+    if (!$PK) fail('প্যাকেজ পাওয়া যায়নি।');
+    $raw = (string)($_GET['name'] ?? '');
+    $label = domain_label($raw);
+    if (!valid_label($label)) fail('ইংরেজি অক্ষর, সংখ্যা বা হাইফেন দিয়ে নাম লিখুন (যেমন myshop)।');
+    $tlds = allowed_tlds($PK);
+    q('DELETE FROM domain_searches WHERE created_at < UTC_TIMESTAMP() - INTERVAL 1 DAY');
+    if ((int)q('SELECT COUNT(*) FROM domain_searches WHERE ip = ? AND created_at > UTC_TIMESTAMP() - INTERVAL 1 HOUR', [client_ip()])->fetchColumn() >= 60) fail('অনেকবার খোঁজা হয়েছে, কিছুক্ষণ পরে চেষ্টা করুন।', 429);
+    q('INSERT INTO domain_searches (ip) VALUES (?)', [client_ip()]);
+    // A typed extension the package allows goes first.
+    $typed = preg_match('/\.([a-z]{2,24})$/', strtolower(trim(explode('/', preg_replace('#^https?://#', '', trim($raw)))[0])), $m) ? $m[1] : '';
+    if (in_array($typed, $tlds, true)) $tlds = array_values(array_unique(array_merge([$typed], $tlds)));
+    $names = array_map(fn($t) => "$label.$t", $tlds);
+    $st = domain_lookup($names);
+    $premium = $cat['tlds_premium'] ?? TLDS_PREMIUM;
+    out(['name' => $label, 'results' => array_map(fn($d, $t) => ['domain' => $d, 'tld' => $t, 'status' => $st[$d], 'premium' => in_array($t, $premium, true)], $names, $tlds),
+         'tlds' => allowed_tlds($PK), 'premium_missing' => array_values(array_diff($premium, allowed_tlds($PK)))]);
 }

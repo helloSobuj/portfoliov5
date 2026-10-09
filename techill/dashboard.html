@@ -512,8 +512,10 @@ const MNAME = {bKash: "বিকাশ", Nagad: "নগদ", Rocket: "রকে�
 // Avatar circle: the photo when there is one (server media path, or a data URL in demo mode), else the initial.
 const safeImg = u => /^media\/[a-f0-9]{32}\.(jpg|png|webp)$/.test(u || "") || /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(u || "") ? u : null;
 const avatarHTML = (name, url, cls = "") => `<span class="av ${cls}">${safeImg(url) ? `<img src="${safeImg(url)}" alt="">` : esc(String(name || "?").trim().slice(0, 1) || "?")}</span>`;
+// Projects are known by their domain once one is chosen; the order code stays as the reference.
+const pname = o => o.domain || o.code;
 const awaitingOnline = o => o.pay_method === "PayStation" && o.pay_status !== "verified" && !o.cancelled;
-const INFO_LABELS = {whatsapp: "হোয়াটসঅ্যাপ নম্বর", phone: "ফোন নম্বর (ওয়েবসাইটে দেখাবে)", fb_page: "ফেসবুক পেজের লিংক", address: "ঠিকানা", business_intro: "ব্যবসার পরিচিতি", additional_info: "অতিরিক্ত তথ্য"};
+const INFO_LABELS = {whatsapp: "হোয়াটসঅ্যাপ নম্বর", phone: "ফোন নম্বর (ওয়েবসাইটে দেখাবে)", fb_page: "ফেসবুক পেজের লিংক", address: "ঠিকানা", business_intro: "ব্যবসার পরিচিতি", additional_info: "অতিরিক্ত তথ্য", trade_license: "ট্রেড লাইসেন্স নম্বর", nid_number: "NID নম্বর"};
 const FILE_IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>';
 const CLIP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5l-8.6 8.6a5 5 0 0 1-7.1-7.1l8.6-8.6a3.3 3.3 0 0 1 4.7 4.7l-8.6 8.6a1.7 1.7 0 0 1-2.4-2.4l7.9-7.9"/></svg>';
 
@@ -661,7 +663,7 @@ const ofTest = {all: () => true, running: o => !o.cancelled && o.stage < 4, late
 function renderOrders(){
   const box = $("ordersView");
   const q = ($("oq")?.value || "").trim().toLowerCase();
-  const list = orders.filter(ofTest[ofilter]).filter(o => !q || [o.code, o.pack, o.template, o.customer?.name, o.customer?.email, o.customer?.phone].some(v => String(v || "").toLowerCase().includes(q)));
+  const list = orders.filter(ofTest[ofilter]).filter(o => !q || [o.code, o.domain, o.pack, o.template, o.customer?.name, o.customer?.email, o.customer?.phone].some(v => String(v || "").toLowerCase().includes(q)));
   const act = orders.filter(o => !o.cancelled);
   const paid = act.filter(o => o.pay_status === "verified").reduce((s, o) => s + o.total, 0);
   const stats = isStaff()
@@ -676,7 +678,7 @@ function renderOrders(){
     ${list.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr>
       <th>অর্ডার</th>${isStaff() ? "<th>কাস্টমার</th>" : ""}<th>প্যাকেজ</th><th class="r">মোট</th><th>পেমেন্ট</th><th>অবস্থা</th><th>ডেলিভারি</th>${isStaff() ? "<th>ডেভেলপার</th>" : "<th></th>"}
     </tr></thead><tbody>${list.map(o => `<tr data-id="${o.id}">
-      <td><b>${esc(o.code)}</b>${o.unread ? ` <span class="badge b-unread">${BN(o.unread)}</span>` : ""}<span class="sub">${when(o.created)}</span></td>
+      <td><b>${esc(pname(o))}</b>${o.unread ? ` <span class="badge b-unread">${BN(o.unread)}</span>` : ""}<span class="sub">${o.domain ? esc(o.code) + " · " : ""}${when(o.created)}</span></td>
       ${isStaff() ? `<td>${esc(o.customer?.name)}<span class="sub">${esc(o.customer?.phone || o.customer?.email)}</span></td>` : ""}
       <td>${esc(o.pack)}<span class="sub">${esc(o.stack)} · ${esc(o.template)}</span></td>
       <td class="r num">${tk(o.total)}</td>
@@ -702,7 +704,7 @@ function showInvoice(o){
     <div class="inv-top"><img src="assets/logo-light.png" alt="Techill by RedBolt IT"><div><h2>ইনভয়েস</h2><p>${esc(o.code)} · ${when(o.created)}</p></div></div>
     <div class="inv-meta">
       <div><h4>বিল প্রাপক</h4><b>${esc(i.admin_name || me.name)}</b><br>${esc(i.phone || "")}<br>${esc(me.email)}${i.address ? "<br>" + esc(i.address) : ""}</div>
-      <div><h4>প্রোজেক্ট</h4>${esc(o.stack)} · ${esc(o.pack)} প্যাকেজ<br>টেমপ্লেট: ${esc(o.template)}<br>ডেলিভারি: ${BN(o.hours)} ঘণ্টা · ${BN(o.products)}টা প্রোডাক্ট</div>
+      <div><h4>প্রোজেক্ট</h4>${o.domain ? esc(o.domain) + "<br>" : ""}${esc(o.stack)} · ${esc(o.pack)} প্যাকেজ<br>টেমপ্লেট: ${esc(o.template)}<br>ডেলিভারি: ${BN(o.hours)} ঘণ্টা · ${BN(o.products)}টা প্রোডাক্ট</div>
     </div>
     <table><thead><tr><th>বিবরণ</th><th class="r">টাকা</th></tr></thead><tbody>
       ${o.lines.map(l => `<tr><td>${esc(l.label)}</td><td class="r">${l.amt < 0 ? "−" : ""}${tk(Math.abs(l.amt))}</td></tr>`).join("")}
@@ -719,14 +721,14 @@ addEventListener("keydown", e => { if (e.key === "Escape"){ $("invModal").hidden
 
 function renderList(){
   const q = $("search").value.trim().toLowerCase();
-  const list = orders.filter(o => !q || [o.code, o.pack, o.customer?.name, o.customer?.email, o.customer?.phone].some(v => String(v || "").toLowerCase().includes(q)));
+  const list = orders.filter(o => !q || [o.code, o.domain, o.pack, o.customer?.name, o.customer?.email, o.customer?.phone].some(v => String(v || "").toLowerCase().includes(q)));
   if (!orders.length){
     $("olist").innerHTML = `<li class="empty"><p>${isStaff() ? "এখনো কোনো অর্ডার আসেনি।" : "আপনার এখনো কোনো অর্ডার নেই।"}</p>${isStaff() ? "" : '<a class="btn btn-primary btn-sm" href="index.html#packages">প্যাকেজ দেখুন</a>'}</li>`;
     return;
   }
   $("olist").innerHTML = list.map(o => `<li><button class="oitem" type="button" data-id="${o.id}" aria-current="${cur && cur.order.id === o.id}">
-    <span class="t"><b>${esc(o.code)}</b>${o.unread ? `<span class="badge b-unread" aria-label="${BN(o.unread)}টা নতুন মেসেজ">${BN(o.unread)}</span>` : statusBadge(o)}</span>
-    <small>${esc(o.pack)} · ${esc(o.stack)}${o.customer ? " · " + esc(o.customer.name) : ""}</small>
+    <span class="t"><b style="word-break:break-all">${esc(pname(o))}</b>${o.unread ? `<span class="badge b-unread" aria-label="${BN(o.unread)}টা নতুন মেসেজ">${BN(o.unread)}</span>` : statusBadge(o)}</span>
+    <small>${o.domain ? esc(o.code) + " · " : ""}${esc(o.pack)} · ${esc(o.stack)}${o.customer ? " · " + esc(o.customer.name) : ""}</small>
     <span class="mini"><i style="width:${o.progress}%"></i></span>
   </button></li>`).join("") || '<li class="empty"><p>কিছু পাওয়া যায়নি।</p></li>';
 }
@@ -758,8 +760,8 @@ function renderDetail(){
       <div class="d-head">
         <div>
           <button class="btn btn-ghost btn-sm back" type="button" id="backBtn" style="margin-bottom:12px">← সব অর্ডার</button>
-          <h2>${esc(o.code)} <span class="badge b-${o.pay_status}">${PAY[o.pay_status]}</span>${o.cancelled ? ' <span class="badge b-cancel">বাতিল</span>' : ""}</h2>
-          <p>${esc(o.pack)} প্যাকেজ · ${esc(o.stack)} · ${esc(o.template)}</p>
+          <h2 style="word-break:break-all">${esc(pname(o))} <span class="badge b-${o.pay_status}">${PAY[o.pay_status]}</span>${o.cancelled ? ' <span class="badge b-cancel">বাতিল</span>' : ""}</h2>
+          <p>${o.domain ? `অর্ডার ${esc(o.code)} · ` : ""}${esc(o.pack)} প্যাকেজ · ${esc(o.stack)} · ${esc(o.template)}</p>
           ${isStaff() ? (o.developer ? `<p>ডেভেলপার: <b>${esc(o.developer.name)}</b></p>` : '<p class="late">এখনো কোনো ডেভেলপার দেওয়া হয়নি</p>') : `<div class="row-btns">${awaitingOnline(o) || (o.pay_status === "rejected" && !o.cancelled) ? `<button class="btn btn-primary btn-sm" type="button" id="payBtn">${tk(o.total)} অনলাইনে পেমেন্ট করুন</button>` : ""}<button class="btn btn-ghost btn-sm" type="button" id="invBtn">ইনভয়েস দেখুন</button></div>`}
         </div>
         <div class="clock" id="clock"></div>
@@ -803,6 +805,7 @@ function adminPanel(o){
       <div class="f"><label for="a-stage">ধাপ</label><select id="a-stage" name="stage">${STAGES.map((s, i) => `<option value="${i}" ${i === o.stage ? "selected" : ""}>${BN(i + 1)}. ${s}</option>`).join("")}</select></div>
       ${isAdmin() ? `<div class="f"><label for="a-pay">পেমেন্ট</label><select id="a-pay" name="pay_status">${Object.entries(PAY).map(([k, l]) => `<option value="${k}" ${k === o.pay_status ? "selected" : ""}>${l}</option>`).join("")}</select></div>` : `<div class="f"><label>পেমেন্ট</label><p style="padding-top:8px"><span class="badge b-${o.pay_status}">${PAY[o.pay_status]}</span></p></div>`}
       <div class="f"><label for="a-prog">অগ্রগতি</label><div class="range"><input type="range" id="a-prog" name="progress" min="0" max="100" step="5" value="${o.progress}"><output id="a-progOut">${BN(o.progress)}%</output></div></div>
+      <div class="f full"><label for="a-dom">ডোমেইন <small>(${o.info?.domain_mode === "own" ? "কাস্টমারের নিজের" : o.info?.domain_mode === "new" ? "চেকআউটে বাছাই করা, রেজিস্টার করুন" : "এখনো ঠিক হয়নি"})</small></label><input id="a-dom" name="domain" value="${esc(o.domain || "")}" placeholder="myshop.com"></div>
       <div class="f full"><label for="a-site">ওয়েবসাইটের লিংক <small>(তৈরি হলে দিন)</small></label><input type="url" id="a-site" name="site_url" value="${esc(o.site_url || "")}" placeholder="https://"></div>
       <div class="f full"><label for="a-note">কাস্টমারের জন্য নোট <small>(অগ্রগতি ট্যাবে দেখাবে)</small></label><textarea id="a-note" name="note" placeholder="যেমন: প্রোডাক্ট আপলোড শেষ, এখন পেমেন্ট টেস্ট চলছে।"></textarea></div>
     </div>
@@ -897,7 +900,7 @@ function timelineHTML(){
 }
 
 /* files */
-const KIND = {logo: "লোগো", csv: "প্রোডাক্ট CSV", attachment: "সংযুক্তি"};
+const KIND = {logo: "লোগো", csv: "প্রোডাক্ট CSV", attachment: "সংযুক্তি", license: "ট্রেড লাইসেন্স", nid: "NID কার্ড"};
 function filesHTML(){
   return `<form class="up" id="upForm">
       <div class="f"><label for="u-file">ফাইল <small>(সর্বোচ্চ 10MB)</small></label><input type="file" id="u-file" name="file" required></div>
@@ -932,7 +935,7 @@ function infoHTML(){
       <ul class="lines">${o.lines.map(l => `<li><span>${esc(l.label)}</span><span>${tk(l.amt)}</span></li>`).join("")}</ul>
       <div class="tot"><span>মোট</span><span>${tk(o.total)}</span></div>
       <dl class="facts">
-        <dt>প্ল্যাটফর্ম</dt><dd>${esc(o.stack)}</dd><dt>টেমপ্লেট</dt><dd>${esc(o.template)}</dd>
+        ${o.domain ? `<dt>ডোমেইন</dt><dd>${esc(o.domain)}</dd>` : ""}<dt>প্ল্যাটফর্ম</dt><dd>${esc(o.stack)}</dd><dt>টেমপ্লেট</dt><dd>${esc(o.template)}</dd>
         <dt>প্রোডাক্ট আপলোড</dt><dd>${BN(o.products)}টা</dd><dt>ডেলিভারি</dt><dd>${BN(o.hours)} ঘণ্টা</dd>
         <dt>পেমেন্ট</dt><dd>${MNAME[o.pay_method] || esc(o.pay_method)} · ${esc(o.pay_trx)}</dd><dt>অর্ডারের সময়</dt><dd>${when(o.created)}</dd>
       </dl>
@@ -941,6 +944,7 @@ function infoHTML(){
       <h3 class="sm">ব্যবসার তথ্য <small style="font-weight:400;color:var(--muted);font-size:.85rem">· কিছু বদলাতে বা যোগ করতে চাইলে এখানে লিখে সেভ করুন</small></h3>
       <div class="fgrid">
         ${["whatsapp", "phone", "fb_page", "address"].map(k => `<div class="f"><label for="in-${k}">${INFO_LABELS[k]}</label><input id="in-${k}" name="${k}" type="${k === "fb_page" ? "url" : k === "address" ? "text" : "tel"}" value="${esc(i[k])}"></div>`).join("")}
+        ${"trade_license" in i || "nid_number" in i ? `<div class="f full" style="margin:4px 0 0"><p class="hint">পেমেন্ট গেটওয়ে রেজিস্ট্রেশনের তথ্য। কাগজের ছবি বদলাতে ফাইল ট্যাব থেকে নতুনটা পাঠান।</p></div>` + ["trade_license", "nid_number"].map(k => `<div class="f"><label for="in-${k}">${INFO_LABELS[k]}</label><input id="in-${k}" name="${k}" type="text" value="${esc(i[k])}"></div>`).join("") : ""}
         ${["business_intro", "additional_info"].map(k => `<div class="f full"><label for="in-${k}">${INFO_LABELS[k]}</label><textarea id="in-${k}" name="${k}">${esc(i[k])}</textarea></div>`).join("")}
       </div>
       <button class="btn btn-primary" type="submit">তথ্য সেভ করুন</button>
