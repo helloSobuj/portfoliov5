@@ -1,4 +1,5 @@
 {
+ "rev": 2,
  "whatsapp": "",
  "pay_numbers": {
   "bKash": "01XXXXXXXXX",
@@ -271,7 +272,7 @@
   {
    "key": "gateway",
    "g": 0,
-   "name": "PayStation পেমেন্ট গেটওয়ে",
+   "name": "Automated Payment Gateway - PayStation",
    "price": 3000,
    "gw": true,
    "note": "বিকাশ, নগদ, রকেট, কার্ড — সব এক গেটওয়েতে"

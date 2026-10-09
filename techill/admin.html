@@ -353,7 +353,7 @@ textarea.inp{resize:vertical;min-height:84px}
 <div class="tip" id="tip" hidden></div>
 <div class="toast" id="toast" role="status" hidden></div>
 
-<script src="assets/api.js"></script>
+<script src="assets/api.js?v=10"></script>
 <script>
 const api = window.TechillAPI;
 const $ = id => document.getElementById(id);
@@ -911,7 +911,9 @@ function renderCatalog(){
     <div class="card ed-sec"><h3>ডোমেইন এক্সটেনশন</h3>
       <p class="muted" style="font-size:.88rem;margin-top:-6px">চেকআউটের ডোমেইন ধাপে কাস্টমার এগুলো থেকে বাছতে পারবেন। প্রতিটা প্যাকেজে ".com সহ" টিক দিলে দ্বিতীয় তালিকাও পাবে।</p>
       <div class="ed-grid"><div class="f w2"><label>সব প্যাকেজে <small>(স্পেস দিয়ে আলাদা)</small></label>${words("tlds_basic", ".shop .top .store")}</div>
-        <div class="f w2"><label>শুধু ".com সহ" প্যাকেজে</label>${words("tlds_premium", ".com")}</div></div></div>
+        <div class="f w2"><label>শুধু ".com সহ" প্যাকেজে</label>${words("tlds_premium", ".com")}</div></div>
+      <div class="row2" style="margin-top:12px;flex-wrap:wrap;gap:10px"><button class="btn btn-ghost btn-sm" type="button" id="domDiag">লাইভ ডোমেইন চেক টেস্ট করুন</button><span class="muted" style="font-size:.85rem">সার্ভার আর ব্রাউজার রেজিস্ট্রি/DNS-এ পৌঁছাতে পারছে কিনা দেখায়</span></div>
+      <div id="domDiagOut"></div></div>
 
     <div class="sec-h" style="margin-bottom:12px"><div class="seg" role="group" aria-label="প্ল্যাটফর্ম">${Object.entries(draft.stacks).map(([k, s]) => `<button type="button" data-ed-stack="${k}" aria-pressed="${edStack === k}">${esc(s.name)}</button>`).join("")}</div>
       <div class="tools"><label class="sw">ডোমেইন ও হোস্টিং (১ বছর) দাম ${inp(base + ".domainPrice", "number", 'min="0" style="width:120px"')}</label></div></div>
@@ -990,6 +992,15 @@ $("main").addEventListener("click", async e => {
     pick.click(); return;
   }
   const td = e.target.closest("[data-tplimg-del]"); if (td){ delete getP(draft, td.dataset.tplimgDel).image; markDirty(); return renderCatalog(); }
+  if (e.target.closest("#domDiag")){
+    const b = $("domDiag"), o = $("domDiagOut"); b.disabled = true; o.innerHTML = '<p class="muted" style="margin-top:10px">চেক করছি...</p>';
+    try {
+      const rows = await api.domainDiag(), any = rows.some(r => r.ok);
+      o.innerHTML = `<ul style="list-style:none;padding:0;margin:12px 0 0;display:grid;gap:6px">${rows.map(r => `<li style="display:flex;gap:10px;align-items:center"><span class="badge ${r.ok ? "b-done" : "b-late"}">${r.ok ? "ঠিক আছে" : "সমস্যা"}</span><b>${esc(r.name)}</b><span class="muted" style="font-size:.85rem">${esc(r.detail)}</span></li>`).join("")}</ul>
+        <p class="muted" style="font-size:.85rem;margin-top:8px">${any ? "অন্তত একটা পথ খোলা আছে, ডোমেইন সার্চ লাইভ ফল দেখাবে।" : "কোনো পথই খোলা নেই, তাই সার্চে সব \"অজানা\" দেখাবে। হোস্টিং প্রোভাইডারকে বলুন সার্ভার থেকে বাইরের HTTPS (port 443) কল চালু করতে।"}</p>`;
+    } catch(err){ o.innerHTML = `<p class="err" style="margin-top:10px">${esc(err.message)}</p>`; }
+    b.disabled = false; return;
+  }
   if (e.target.closest("#catUndo")){ draft = structuredClone(cat); dirty = false; return renderCatalog(); }
   if (e.target.closest("#catReset")){
     if (!confirm("সব প্যাকেজ, দাম আর অ্যাড-অন শুরুর মানে ফিরে যাবে। নিশ্চিত?")) return;

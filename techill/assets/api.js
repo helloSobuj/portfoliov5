@@ -84,6 +84,15 @@ window.TechillAPI = (() => {
       const n = await dnsStatus(d); return [d, n ? {status: n, src: "dns"} : {status: "unknown", src: null}];
     })));
   }
+  // The same reachability check as domain_diag in api.php, run from this browser.
+  async function browserDiag() {
+    const probe = async (name, url, good, opts) => { try { const r = await timed(url, opts, 6000); return {name, ok: good(r.status), detail: "HTTP " + r.status}; } catch (e) { return {name, ok: false, detail: "সংযোগ হয়নি (ব্রাউজার বা পেজ বাইরের কল আটকাচ্ছে)"}; } };
+    return Promise.all([
+      probe("ব্রাউজার → রেজিস্ট্রি: .com (Verisign)", RDAP_FALLBACK.com + "domain/google.com", c => c === 200, {headers: {accept: "application/rdap+json"}}),
+      probe("ব্রাউজার → রেজিস্ট্রি: .store ইত্যাদি", RDAP_FALLBACK.store + "domain/google.store", c => c === 200 || c === 404, {headers: {accept: "application/rdap+json"}}),
+      probe("ব্রাউজার → DNS: Google", "https://dns.google/resolve?name=google.com&type=NS", c => c === 200),
+      probe("ব্রাউজার → DNS: Cloudflare", "https://cloudflare-dns.com/dns-query?name=google.com&type=NS&ct=application/dns-json", c => c === 200)]);
+  }
 
   /* ---------- visitor id ---------- */
   const vid = (() => {
@@ -152,10 +161,22 @@ window.TechillAPI = (() => {
   const wait = ms => new Promise(r => setTimeout(r, ms));
   const dayKey = t => new Date((t + 6 * 3600) * 1000).toISOString().slice(0, 10);   // Bangladesh date
   async function loadFileCatalog() {
-    if (!fileCatalog) fileCatalog = await (await fetch("assets/catalog.json")).json();
+    if (!fileCatalog) fileCatalog = await (await fetch("assets/catalog.json", {cache: "no-cache"})).json();
     return fileCatalog;
   }
-  const demoCatalog = async () => ls.get(CKEY) || loadFileCatalog();
+  // Same one-time upgrade as upgrade_catalog() in lib.php, for a catalog saved in the demo admin.
+  function upgradeCatalog(c) {
+    if ((c.rev || 1) < 2) {
+      c.addons = (c.addons || []).filter(a => a.key !== "bkash");
+      c.addons.forEach(a => { if (a.key === "gateway") Object.assign(a, {name: "Automated Payment Gateway - PayStation", note: "বিকাশ, নগদ, রকেট, কার্ড — সব এক গেটওয়েতে"}); });
+      Object.values(c.stacks).forEach(S => S.packs.forEach(P => {
+        if (!(P.incl || []).includes("domain")) { P.incl = ["domain", ...(P.incl || [])]; P.premium_tlds = false; P.feat.splice(Math.min(1, P.feat.length), 0, "১ বছরের ডোমেইন (.shop, .store, .online ইত্যাদি) ও হোস্টিং"); }
+        P.feat = P.feat.map(f => f === "১টা পেমেন্ট গেটওয়ে" ? "PayStation পেমেন্ট গেটওয়ে" : f);
+      }));
+    }
+    c.rev = 2; return c;
+  }
+  const demoCatalog = async () => { const c = ls.get(CKEY); if (c && (c.rev || 1) < 2) ls.set(CKEY, upgradeCatalog(c)); return ls.get(CKEY) || loadFileCatalog(); };
 
   function seed() {
     const t = now(), H = 3600, D = 86400;
@@ -513,7 +534,7 @@ window.TechillAPI = (() => {
       if (typed && tlds.includes(typed)) tlds = [typed, ...tlds.filter(t => t !== typed)];
       const st = await liveDomainStatus(tlds.map(t => `${label}.${t}`)), booked = new Set(load().orders.filter(o => !o.cancelled && o.domain).map(o => o.domain));
       const prem = cat.tlds_premium || TLDS_PREMIUM;
-      return {name: label, checked_at: new Date().toISOString(), tlds: allowedTlds(cat, P), premium_missing: prem.filter(t => !allowedTlds(cat, P).includes(t)),
+      return {name: label, checked_at: new Date().toISOString(), offline: Object.values(st).every(x => x.status === "unknown"), tlds: allowedTlds(cat, P), premium_missing: prem.filter(t => !allowedTlds(cat, P).includes(t)),
         results: tlds.map(t => { const d = `${label}.${t}`; return {domain: d, tld: t, premium: prem.includes(t), ...(booked.has(d) ? {status: "taken", src: "order"} : st[d])}; })};
     },
     async ref_check({code}) {
@@ -633,7 +654,7 @@ window.TechillAPI = (() => {
     async catalog_save({catalog, reset}) {
       const d = load(); needAdmin(d);
       if (reset) { ls.del(CKEY); return {catalog: await loadFileCatalog()}; }
-      const c = JSON.parse(catalog); ls.set(CKEY, c); return {catalog: c};
+      const c = JSON.parse(catalog); c.rev = 2; ls.set(CKEY, c); return {catalog: c};
     },
     async order_create(fd) {
       const d = load(); let u = meUser(d);
@@ -1128,7 +1149,12 @@ window.TechillAPI = (() => {
       const r = await run("domain_check", {stack, pack, name}, () => http("domain_check", {params: {stack, pack, name}}));
       const miss = r.results.filter(x => x.status === "unknown").map(x => x.domain);
       if (miss.length && !demo) { const st = await liveDomainStatus(miss); r.results.forEach(x => { if (st[x.domain]) Object.assign(x, st[x.domain]); }); }
+      r.offline = r.results.every(x => x.status === "unknown");
       return r;
+    },
+    domainDiag: async () => {
+      const server = demo ? [] : (await http("domain_diag")).rows.map(x => ({...x, name: "সার্ভার → " + x.name}));
+      return [...server, ...await browserDiag()];
     },
     allowedTlds, domainLabel, validLabel, validHost, needsGatewayDocs,
     refCheck: code => run("ref_check", {code}, () => http("ref_check", {params: {code}})),

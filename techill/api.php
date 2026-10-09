@@ -66,6 +66,7 @@ try {
         case 'capi_test':    $isPost || fail('POST only', 405); capi_test();
         case 'export_orders': export_orders();
         case 'domain_check': domain_check();
+        case 'domain_diag': domain_diag();
         case 'otp_send':     $isPost || fail('POST only', 405); otp_send();
         case 'password_reset': $isPost || fail('POST only', 405); password_reset();
         case 'email_verify': $isPost || fail('POST only', 405); email_verify();
@@ -776,7 +777,7 @@ function catalog_save(): void {
     };
     $tb = $tldList($in['tlds_basic'] ?? null, TLDS_BASIC);
     if (!$tb) fail('অন্তত একটা ডোমেইন এক্সটেনশন দিন (যেমন shop)।');
-    $cat = ['whatsapp' => preg_replace('/\D/', '', (string)($in['whatsapp'] ?? '')), 'pay_numbers' => $pay,
+    $cat = ['rev' => CATALOG_REV, 'whatsapp' => preg_replace('/\D/', '', (string)($in['whatsapp'] ?? '')), 'pay_numbers' => $pay,
             'tlds_basic' => $tb, 'tlds_premium' => $tldList($in['tlds_premium'] ?? null, TLDS_PREMIUM),
             'gateway_extra_hours' => $int($in['gateway_extra_hours'] ?? 48, 0, 720), 'groups' => $groups, 'stacks' => $stacks, 'addons' => $addons];
     q("INSERT INTO settings (k, v) VALUES ('catalog', ?) ON DUPLICATE KEY UPDATE v = VALUES(v)", [json_encode($cat, JSON_UNESCAPED_UNICODE)]);
@@ -1538,6 +1539,26 @@ function domain_check(): void {
          'results' => array_map(fn($d, $t) => ['domain' => $d, 'tld' => $t, 'premium' => in_array($t, $premium, true)]
              + (in_array($d, $booked, true) ? ['status' => 'taken', 'src' => 'order'] : $st[$d]), $names, $tlds),
          'tlds' => allowed_tlds($PK), 'premium_missing' => array_values(array_diff($premium, allowed_tlds($PK)))]);
+}
+
+// Admin check: can this server reach the registries and the DNS services the domain search uses?
+function domain_diag(): void {
+    require_admin();
+    $rows = [['name' => 'PHP cURL', 'ok' => function_exists('curl_multi_init'), 'detail' => function_exists('curl_multi_init') ? 'আছে' : 'নেই — হোস্টিং থেকে PHP cURL চালু করুন']];
+    if (!$rows[0]['ok']) out(['rows' => $rows]);
+    $doh = cfg('doh_base_url') ? rtrim(cfg('doh_base_url'), '/') . '/resolve?' : 'https://dns.google/resolve?';
+    $t = microtime(true);
+    $res = http_multi(['iana' => 'https://data.iana.org/rdap/dns.json', 'com' => rdap_base('com') . 'domain/google.com',
+        'store' => rdap_base('store') . 'domain/google.store', 'dns' => $doh . 'name=google.com&type=NS',
+        'cf' => 'https://cloudflare-dns.com/dns-query?ct=application/dns-json&name=google.com&type=NS'], ['Accept: application/rdap+json, application/dns-json, application/json']);
+    $ms = (int)round((microtime(true) - $t) * 1000);
+    $show = fn($c) => $c ? "HTTP $c" : 'সংযোগ হয়নি';
+    $rows[] = ['name' => 'IANA-র RDAP তালিকা', 'ok' => $res['iana'][0] === 200, 'detail' => $show($res['iana'][0])];
+    $rows[] = ['name' => 'রেজিস্ট্রি: .com (Verisign)', 'ok' => $res['com'][0] === 200, 'detail' => $show($res['com'][0])];
+    $rows[] = ['name' => 'রেজিস্ট্রি: .store .online .site .website', 'ok' => in_array($res['store'][0], [200, 404], true), 'detail' => $show($res['store'][0])];
+    $rows[] = ['name' => 'DNS: Google', 'ok' => $res['dns'][0] === 200, 'detail' => $show($res['dns'][0])];
+    $rows[] = ['name' => 'DNS: Cloudflare', 'ok' => $res['cf'][0] === 200, 'detail' => $show($res['cf'][0])];
+    out(['rows' => $rows, 'ms' => $ms]);
 }
 
 // New domains already picked by another live order (not yet registered, so the registry still says free).

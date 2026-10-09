@@ -123,7 +123,32 @@ function catalog(): array {
     if ($c === null) {
         $row = q("SELECT v FROM settings WHERE k = 'catalog'")->fetch();
         $c = ($row ? json_decode($row['v'], true) : null) ?: json_decode((string)file_get_contents(__DIR__ . '/assets/catalog.json'), true);
+        if ($row && (int)($c['rev'] ?? 1) < CATALOG_REV) {
+            $c = upgrade_catalog($c);
+            q("UPDATE settings SET v = ? WHERE k = 'catalog'", [json_encode($c, JSON_UNESCAPED_UNICODE)]);
+        }
     }
+    return $c;
+}
+
+const CATALOG_REV = 2;
+
+// Brings a catalog the admin saved under an older version up to the current rules, once:
+// rev 2 = every package includes domain + hosting (.com only on the bigger ones) and the only
+// payment gateway is PayStation. Same steps as upgradeCatalog() in assets/api.js.
+function upgrade_catalog(array $c): array {
+    if ((int)($c['rev'] ?? 1) < 2) {
+        $c['addons'] = array_values(array_filter($c['addons'] ?? [], fn($a) => ($a['key'] ?? '') !== 'bkash'));
+        foreach ($c['addons'] as &$a) if (($a['key'] ?? '') === 'gateway') { $a['name'] = 'Automated Payment Gateway - PayStation'; $a['note'] = 'বিকাশ, নগদ, রকেট, কার্ড — সব এক গেটওয়েতে'; }
+        unset($a);
+        foreach ($c['stacks'] as &$S) foreach ($S['packs'] as &$P) {
+            $basic = !in_array('domain', $P['incl'] ?? [], true);   // packages without a domain were the small ones
+            if ($basic) { array_unshift($P['incl'], 'domain'); $P['premium_tlds'] = false; array_splice($P['feat'], min(1, count($P['feat'])), 0, ['১ বছরের ডোমেইন (.shop, .store, .online ইত্যাদি) ও হোস্টিং']); }
+            $P['feat'] = array_map(fn($f) => $f === '১টা পেমেন্ট গেটওয়ে' ? 'PayStation পেমেন্ট গেটওয়ে' : $f, $P['feat']);
+        }
+        unset($S, $P);
+    }
+    $c['rev'] = CATALOG_REV;
     return $c;
 }
 

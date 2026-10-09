@@ -3,3 +3,10 @@
   Require all denied
 </FilesMatch>
 Options -Indexes
+
+# Pages, scripts and the catalog change with each update: make browsers check for a new copy.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|js|json)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>
