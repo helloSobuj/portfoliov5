@@ -129,11 +129,47 @@ section{padding-block:104px}
 
 /* problem */
 .grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
-.prob{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:32px;display:grid;gap:10px}
+/* Problem cards: hover, focus or tap turns each pain into its fix. The fix layer grows out of
+   the icon as a circle; both layers share one grid cell so the card fits the taller one. */
+.probs{counter-reset:prob}
+.prob{--cx:54px;position:relative;display:grid;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;cursor:pointer;isolation:isolate;
+  transition:border-color .25s,transform .25s,box-shadow .25s;outline:none}
+.prob:hover,.prob:focus-visible,.prob.on{border-color:var(--ok);transform:translateY(-4px);box-shadow:var(--shadow)}
+.prob:focus-visible{box-shadow:0 0 0 3px var(--ok-soft),var(--shadow)}
+.prob .face{grid-area:1/1;padding:32px;display:grid;gap:10px;align-content:start}
 .prob .ic{width:44px;height:44px;border-radius:12px;background:var(--warn-soft);color:var(--warn);display:grid;place-items:center;margin-bottom:6px}
 .prob .ic svg{width:22px;height:22px}
 .prob h3{font-size:1.3rem}
 .prob p{color:var(--muted)}
+.prob .pain::before{counter-increment:prob;content:"০" counter(prob, bengali);position:absolute;right:22px;top:12px;font-family:var(--display);font-size:3.4rem;line-height:1;color:var(--line);pointer-events:none}
+.prob .pain{grid-template-rows:auto auto auto 1fr}
+.prob .peek{align-self:end;justify-self:start;display:inline-flex;align-items:center;gap:6px;margin-top:6px;font-size:.88rem;font-weight:700;color:var(--blue-ink)}
+.prob .peek svg{width:16px;height:16px;transition:transform .25s}
+.prob:hover .peek svg{transform:translateX(4px)}
+.prob .fix{background:radial-gradient(120% 90% at 0 0,var(--ok-soft),var(--surface) 72%);clip-path:circle(0 at var(--cx) var(--cx));transition:clip-path .6s cubic-bezier(.6,0,.2,1);z-index:1}
+.prob:hover .fix,.prob:focus-visible .fix,.prob.on .fix{clip-path:circle(160% at var(--cx) var(--cx))}
+.prob .fix .ic{background:var(--ok);color:#fff;transform:scale(.6) rotate(-90deg);transition:transform .45s .15s cubic-bezier(.3,1.6,.5,1)}
+.prob:hover .fix .ic,.prob:focus-visible .fix .ic,.prob.on .fix .ic{transform:none}
+.prob .tag{font-size:.78rem;font-weight:700;letter-spacing:.02em;color:var(--ok)}
+.prob .fix h3{color:var(--ink)}
+.prob .fix p{color:var(--ink);opacity:.8}
+.prob .gain{justify-self:start;display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:6px 14px 6px 10px;border-radius:999px;background:var(--surface);border:1.5px solid var(--ok);color:var(--ok);font-weight:700;font-size:.9rem}
+.prob .gain svg{width:16px;height:16px}
+.prob-hint{display:flex;align-items:center;justify-content:center;gap:8px;margin:-18px 0 26px;font-size:.92rem;color:var(--muted);text-align:center}
+.prob-hint .hand{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 var(--ok);animation:ping 1.8s infinite}
+@keyframes ping{70%{box-shadow:0 0 0 10px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.prob-cta{margin-top:26px;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:22px 26px;border-radius:var(--r);background:var(--blue-soft);border:1px solid var(--line)}
+.prob-cta b{display:block;font-family:var(--display);font-size:1.25rem;color:var(--blue-ink)}
+.prob-cta span{color:var(--muted);font-size:.95rem}
+/* Cards rise in one after another the first time they scroll into view. */
+.rv-on .prob{opacity:0;transform:translateY(24px)}
+.rv-on .prob.seen{opacity:1;transform:none;transition:opacity .6s var(--d,0s),transform .6s var(--d,0s),border-color .25s,box-shadow .25s}
+.rv-on .prob.seen:hover,.rv-on .prob.seen:focus-visible,.rv-on .prob.seen.on{transform:translateY(-4px)}
+@media (prefers-reduced-motion:reduce){
+  .prob,.prob .fix,.prob .fix .ic,.prob .peek svg{transition:none!important}
+  .prob-hint .hand{animation:none}
+  .rv-on .prob{opacity:1;transform:none}
+}
 
 /* money */
 .money{background:var(--surface);border-block:1px solid var(--line)}
@@ -457,7 +493,10 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
   section{padding-block:72px}
   .container{padding-inline:16px}
   .grid-2,.feats{grid-template-columns:1fr}
-  .prob{padding:26px}
+  .prob{--cx:48px}
+  .prob .face{padding:26px}
+  .prob .pain::before{font-size:2.6rem}
+  .prob-cta{padding:20px}
   .fgrid{grid-template-columns:1fr}
   .hdr-cta{display:none}
   .timeline{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -530,12 +569,30 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
         <h2>ব্যবসা যেখানে আটকে যাচ্ছে</h2>
         <p>বেশিরভাগ অনলাইন ব্যবসা পণ্যের জন্য না, সিস্টেমের অভাবে বিক্রি হারায়।</p>
       </div>
-      <div class="grid-2">
-        <article class="prob"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4z"/><path d="M9 10h6"/></svg></span><h3>ইনবক্সে অর্ডার হারিয়ে যায়</h3><p>রাত ২টায় আসা মেসেজের উত্তর সকালে দিলে কাস্টমার ততক্ষণে অন্য পেজ থেকে কিনে ফেলে।</p></article>
-        <article class="prob"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v4h4"/></svg></span><h3>ফেক অর্ডার আর রিটার্নে লোকসান</h3><p>যে কাস্টমার আগে পাঁচবার পার্সেল ফেরত দিয়েছে, তাকে চেনার উপায় নেই। কুরিয়ার চার্জ গুনতে হয় আপনাকেই।</p></article>
-        <article class="prob"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><h3>ওয়েবসাইট মানেই মাসের পর মাস</h3><p>এজেন্সি দেরি করে, বাজেট বাড়ায়। শেষে যা হাতে আসে, সেটা চালাতে আবার আলাদা লোক লাগে।</p></article>
-        <article class="prob"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 5.1A9.8 9.8 0 0 1 12 5c5 0 9 5 9 7a10 10 0 0 1-2.4 3.4M6.6 6.6C4.4 8 3 10.3 3 12c0 2 4 7 9 7 1.6 0 3-.4 4.3-1.1"/></svg></span><h3>Ad-এর টাকা অন্ধকারে খরচ হয়</h3><p>Pixel ছাড়া ফেসবুক জানে না কে আসলে কিনছে। তাই একই বাজেটে অর্ডার আসে কম।</p></article>
+      <p class="prob-hint"><span class="hand"></span>প্রতিটা কার্ডে কার্সর রাখুন বা ট্যাপ করুন, সমাধান দেখুন</p>
+      <div class="grid-2 probs">
+        <article class="prob" tabindex="0">
+          <div class="face pain"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4z"/><path d="M9 10h6"/></svg></span><h3>ইনবক্সে অর্ডার হারিয়ে যায়</h3><p>রাত ২টায় আসা মেসেজের উত্তর সকালে দিলে কাস্টমার ততক্ষণে অন্য পেজ থেকে কিনে ফেলে।</p><span class="peek">সমাধান দেখুন <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+          <div class="face fix"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span><small class="tag">Techill-এর সমাধান</small><h3>ওয়েবসাইট ২৪/৭ নিজেই অর্ডার নেয়</h3><p>রাত ২টায় কাস্টমার নিজেই প্রোডাক্ট বেছে অর্ডার কনফার্ম করে। অর্ডার এলেই আপনার কাছে নোটিফিকেশন যায়, অসম্পূর্ণ অর্ডারও ধরা পড়ে।</p><span class="gain"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>একটা অর্ডারও মিস হবে না</span></div>
+        </article>
+        <article class="prob" tabindex="0">
+          <div class="face pain"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v4h4"/></svg></span><h3>ফেক অর্ডার আর রিটার্নে লোকসান</h3><p>যে কাস্টমার আগে পাঁচবার পার্সেল ফেরত দিয়েছে, তাকে চেনার উপায় নেই। কুরিয়ার চার্জ গুনতে হয় আপনাকেই।</p><span class="peek">সমাধান দেখুন <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+          <div class="face fix"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span><small class="tag">Techill-এর সমাধান</small><h3>ফ্রড চেকার আগেই সতর্ক করে</h3><p>কাস্টমারের কুরিয়ার সাকসেস রেট দেখে বুঝবেন কে পার্সেল নেয় আর কে ফেরত দেয়। সন্দেহজনক অর্ডার পাঠানোর আগেই আটকান।</p><span class="gain"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>রিটার্নের লোকসান কমান</span></div>
+        </article>
+        <article class="prob" tabindex="0">
+          <div class="face pain"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><h3>ওয়েবসাইট মানেই মাসের পর মাস</h3><p>এজেন্সি দেরি করে, বাজেট বাড়ায়। শেষে যা হাতে আসে, সেটা চালাতে আবার আলাদা লোক লাগে।</p><span class="peek">সমাধান দেখুন <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+          <div class="face fix"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span><small class="tag">Techill-এর সমাধান</small><h3>২৪ ঘণ্টা থেকে লাইভ, ফিক্সড দামে</h3><p>প্যাকেজের দাম আগেই ঠিক, পরে বাড়ে না। ড্যাশবোর্ডে কাউন্টডাউন আর প্রোগ্রেস লাইভ দেখবেন, আর চালাতে আলাদা লোক লাগবে না।</p><span class="gain"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>মাস না, ঘণ্টার হিসাবে</span></div>
+        </article>
+        <article class="prob" tabindex="0">
+          <div class="face pain"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 5.1A9.8 9.8 0 0 1 12 5c5 0 9 5 9 7a10 10 0 0 1-2.4 3.4M6.6 6.6C4.4 8 3 10.3 3 12c0 2 4 7 9 7 1.6 0 3-.4 4.3-1.1"/></svg></span><h3>Ad-এর টাকা অন্ধকারে খরচ হয়</h3><p>Pixel ছাড়া ফেসবুক জানে না কে আসলে কিনছে। তাই একই বাজেটে অর্ডার আসে কম।</p><span class="peek">সমাধান দেখুন <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></div>
+          <div class="face fix"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span><small class="tag">Techill-এর সমাধান</small><h3>Pixel + Conversion API সেটআপ</h3><p>ফেসবুক জানবে আসলে কে কিনছে, তাই Ad দেখাবে সেরকম মানুষকেই। একই বাজেটে বেশি অর্ডার আসার সুযোগ বাড়ে।</p><span class="gain"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>Ad-এর প্রতিটা টাকার হিসাব</span></div>
+        </article>
       </div>
+      <div class="prob-cta">
+        <div><b>এই চারটা সমস্যার সমাধান এক প্যাকেজেই</b><span>ওয়েবসাইট, পেমেন্ট, কুরিয়ার, ফ্রড চেকার আর Pixel, সব সেটআপ করে দিই।</span></div>
+        <a class="btn btn-primary" href="#packages">প্যাকেজ দেখুন</a>
+      </div>
+    </div>
     </div>
   </section>
 
@@ -1379,5 +1436,23 @@ $("otpSend").addEventListener("click", async () => {
 $("i-email").addEventListener("input", () => { if (otpSkip || otpFor){ otpSkip = false; otpFor = ""; $("i-otp").value = ""; syncAccount(); } });
 </script>
 
+
+<script>
+/* Problem cards: tap toggles the fix on touch screens; cards rise in on first view. */
+(() => {
+  const cards = [...document.querySelectorAll(".prob")];
+  cards.forEach((c, i) => {
+    c.style.setProperty("--d", (i * 0.12) + "s");
+    c.addEventListener("transitionend", () => c.style.setProperty("--d", "0s"), {once: true});   // later hovers react at once
+    const flip = () => { const on = !c.classList.contains("on"); cards.forEach(x => x.classList.remove("on")); c.classList.toggle("on", on); };
+    c.addEventListener("click", () => { if (matchMedia("(hover: none)").matches) flip(); });
+    c.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip(); } });
+  });
+  if (!("IntersectionObserver" in window) || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  document.documentElement.classList.add("rv-on");
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("seen"); io.unobserve(e.target); } }), {threshold: .2});
+  cards.forEach(c => io.observe(c));
+})();
+</script>
 </body>
 </html>
