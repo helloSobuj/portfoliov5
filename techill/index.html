@@ -68,7 +68,35 @@ button,input,textarea,select{font:inherit;color:inherit}
 
 /* header */
 .hdr{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);border-bottom:1px solid transparent;transition:border-color .2s}
-.hdr.scrolled{border-bottom-color:var(--line)}
+:root{--hdr-h:72px}
+.hdr.scrolled{border-bottom-color:var(--line);box-shadow:0 8px 30px -18px rgb(16 24 40 / .35)}
+.hdr::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,var(--blue),var(--ok),#a54bb8,var(--blue));background-size:300% 100%;animation:hdrFlow 8s linear infinite}
+@keyframes hdrFlow{to{background-position:300% 0}}
+.hdr .container{transition:height .25s}
+.hdr.scrolled .container{height:62px}
+.hdr .logo{transition:height .25s}.hdr.scrolled .logo{height:34px}
+.hdr-prog{position:absolute;left:0;right:0;bottom:-1px;height:2px;pointer-events:none}
+.hdr-prog i{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--blue),var(--ok));transform-origin:left;transform:scaleX(0)}
+.nav{position:relative;align-items:center;padding:4px;border-radius:999px;background:color-mix(in srgb,var(--surface) 70%,transparent);border:1px solid var(--line);gap:2px!important}
+.nav a{position:relative;z-index:1;padding:7px 16px;border-radius:999px;transition:color .25s}
+.nav a.on{color:var(--blue-ink)}
+.nav-ind{position:absolute;z-index:0;top:4px;bottom:4px;left:0;width:0;border-radius:999px;background:var(--blue-soft);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--blue) 25%,transparent);opacity:0;transition:transform .35s cubic-bezier(.4,1.3,.5,1),width .35s cubic-bezier(.4,1.3,.5,1),opacity .2s}
+.shine{position:relative;overflow:hidden;box-shadow:0 6px 18px -8px var(--blue)}
+.shine::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,rgb(255 255 255 / .45) 50%,transparent 65%);transform:translateX(-120%);animation:shine 3.6s ease-in-out infinite}
+@keyframes shine{0%,60%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+.shine svg{width:16px;height:16px;transition:transform .2s}.shine:hover svg{transform:translateX(3px)}
+.menu-btn{display:none;width:42px;height:42px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);cursor:pointer;padding:0 11px;flex-direction:column;justify-content:center;gap:4px}
+.menu-btn span{display:block;height:2px;border-radius:2px;background:var(--ink);transition:transform .25s,opacity .25s}
+.menu-btn[aria-expanded="true"] span:nth-child(1){transform:translateY(6px) rotate(45deg)}
+.menu-btn[aria-expanded="true"] span:nth-child(2){opacity:0}
+.menu-btn[aria-expanded="true"] span:nth-child(3){transform:translateY(-6px) rotate(-45deg)}
+.mnav{display:grid;gap:4px;padding:10px 16px 18px;border-top:1px solid var(--line);background:var(--surface);animation:mnavIn .25s ease}
+.mnav[hidden]{display:none}
+.mnav a:not(.btn){padding:12px 10px;border-radius:10px;text-decoration:none;font-weight:600;color:var(--ink)}
+.mnav a:not(.btn):hover,.mnav a.on{background:var(--blue-soft);color:var(--blue-ink)}
+.mnav .btn{margin-top:8px}
+@keyframes mnavIn{from{opacity:0;transform:translateY(-6px)}}
+@media (prefers-reduced-motion:reduce){.hdr::before,.shine::after{animation:none}}
 .hdr .container{display:flex;align-items:center;justify-content:space-between;gap:16px;height:72px}
 .nav{display:flex;gap:32px;font-weight:500;font-size:.98rem}
 .nav a{text-decoration:none;color:var(--muted)}
@@ -570,15 +598,40 @@ section{padding-block:104px}
 .btn-light{background:var(--on-blue);color:var(--blue)}
 .btn-outline-light{border-color:color-mix(in srgb,var(--on-blue) 50%,transparent);color:var(--on-blue)}
 
-/* footer */
-footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(--surface)}
-.f-grid{display:grid;grid-template-columns:minmax(0,1.6fr) repeat(2,minmax(0,1fr));gap:40px}
-.f-grid p{color:var(--muted);font-size:.95rem;margin-top:16px;max-width:40ch}
-.f-grid h4{font-size:1rem;margin-bottom:14px}
-.f-grid ul{list-style:none;padding:0;margin:0;display:grid;gap:8px;font-size:.95rem;color:var(--muted)}
-.f-grid ul a{text-decoration:none}
-.f-grid ul a:hover{color:var(--ink)}
-.f-bottom{margin-top:48px;padding-top:24px;border-top:1px solid var(--line);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;color:var(--muted);font-size:.88rem}
+/* footer: always dark, with a soft colour aura, contact card, payment chips and a big wordmark */
+.ft{--fbg:#0a1020;--fsurf:#111a2e;--fline:#1e2a44;--fink:#eef2f8;--fmut:#9aa7bd;position:relative;overflow:hidden;background:var(--fbg);color:var(--fink);padding-block:72px 28px;isolation:isolate}
+.ft::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,var(--blue),#2fb36b,#a54bb8,var(--blue));background-size:300% 100%;animation:hdrFlow 8s linear infinite}
+.ft-aura{position:absolute;inset:-20% -10% auto;height:520px;z-index:-1;pointer-events:none;background:radial-gradient(40% 60% at 15% 0,rgb(26 115 232 / .35),transparent 70%),radial-gradient(35% 55% at 85% 10%,rgb(47 179 107 / .22),transparent 70%)}
+.ft-hero{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:32px;align-items:center;padding-bottom:44px;border-bottom:1px solid var(--fline)}
+.ft-logo{height:44px;width:auto;display:block}
+.ft-tag{color:var(--fmut);margin-top:16px;max-width:46ch;font-size:1rem}
+.ft-trust{list-style:none;padding:0;margin:18px 0 0;display:flex;flex-wrap:wrap;gap:8px}
+.ft-trust li{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:rgb(255 255 255 / .06);border:1px solid var(--fline);font-size:.86rem;font-weight:600}
+.ft-trust svg{width:14px;height:14px;color:#2fb36b}
+.ft-talk{background:linear-gradient(160deg,rgb(255 255 255 / .08),rgb(255 255 255 / .02));border:1px solid var(--fline);border-radius:20px;padding:24px;display:grid;gap:6px;backdrop-filter:blur(6px)}
+.ft-talk b{font-family:var(--display);font-size:1.3rem}
+.ft-talk span{color:var(--fmut);font-size:.92rem}
+.ft-wa{margin-top:12px;justify-self:start;background:#25d366;color:#06301a;font-weight:700;box-shadow:0 10px 26px -10px #25d366}
+.ft-wa:hover{transform:translateY(-2px)}
+.ft-wa svg{width:20px;height:20px}
+.ft .f-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:32px;padding-top:40px}
+.ft .f-grid h4{font-size:.82rem;letter-spacing:.06em;text-transform:uppercase;color:var(--fmut);margin-bottom:14px}
+.ft .f-grid ul{list-style:none;padding:0;margin:0;display:grid;gap:10px;font-size:.95rem}
+.ft .f-grid a{color:var(--fink);text-decoration:none;background:linear-gradient(currentColor,currentColor) 0 100%/0 1px no-repeat;transition:background-size .25s,color .2s}
+.ft .f-grid a:hover{background-size:100% 1px;color:#fff}
+.ft-contact li{display:flex;align-items:center;gap:8px;color:var(--fmut)}
+.ft-contact svg{width:16px;height:16px;flex:none;color:#7fb4ff}
+.ft-pay{display:flex;flex-wrap:wrap;gap:8px}
+.ft-pay span{padding:6px 12px;border-radius:10px;font-weight:700;font-size:.82rem;color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent);border:1px solid color-mix(in srgb,var(--c) 35%,transparent);transition:transform .2s}
+.ft-pay span:hover{transform:translateY(-2px)}
+.ft-word{margin-top:40px;font-family:var(--display);font-weight:800;line-height:.8;font-size:clamp(4rem,17vw,13rem);letter-spacing:-.04em;text-align:center;user-select:none;
+  background:linear-gradient(180deg,rgb(255 255 255 / .14),rgb(255 255 255 / 0) 85%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ft .f-bottom{margin-top:0;padding-top:20px;border-top:1px solid var(--fline);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;color:var(--fmut);font-size:.88rem}
+.ft-up{width:40px;height:40px;border-radius:12px;border:1px solid var(--fline);background:var(--fsurf);color:var(--fink);display:grid;place-items:center;cursor:pointer;transition:transform .2s,background .2s}
+.ft-up:hover{transform:translateY(-3px);background:var(--blue)}
+.ft-up svg{width:18px;height:18px}
+@media (max-width:880px){.ft{padding-bottom:104px}.ft-hero{grid-template-columns:1fr}.ft .f-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (prefers-reduced-motion:reduce){.ft::before{animation:none}}
 
 /* order chip */
 .chip{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:25;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:10px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;font-size:.9rem}
@@ -809,7 +862,8 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
   .groups{grid-template-columns:1fr}
 }
 @media (max-width:880px){
-  .nav{display:none}
+  .nav{display:none!important}
+  .menu-btn{display:flex}
   .hero .container{grid-template-columns:1fr;gap:48px}
   .packs{grid-template-columns:1fr;max-width:480px;margin-inline:auto}
   .hw{padding:18px 12px 20px}
@@ -863,7 +917,8 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
 <header class="hdr" id="hdr">
   <div class="container">
     <a href="#top" aria-label="Techill হোম"><img class="logo logo-l" src="assets/logo-light.png" alt="Techill by RedBolt IT"><img class="logo logo-d" src="assets/logo-dark.png" alt="Techill by RedBolt IT"></a>
-    <nav class="nav" aria-label="প্রধান মেনু">
+    <nav class="nav" id="nav" aria-label="প্রধান মেনু">
+      <span class="nav-ind" id="navInd" aria-hidden="true"></span>
       <a href="#problem">সমস্যা</a>
       <a href="#features">ফিচার</a>
       <a href="#how">কীভাবে কাজ করে</a>
@@ -875,9 +930,15 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
         <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
       </button>
       <a href="dashboard.html" class="btn btn-ghost btn-sm" id="dashLink">লগইন</a>
-      <a href="#packages" class="btn btn-primary btn-sm hdr-cta">অর্ডার করুন</a>
+      <a href="#packages" class="btn btn-primary btn-sm hdr-cta shine">অর্ডার করুন <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      <button class="menu-btn" id="menuBtn" type="button" aria-label="মেনু" aria-expanded="false" aria-controls="mnav"><span></span><span></span><span></span></button>
     </div>
   </div>
+  <div class="mnav" id="mnav" hidden>
+    <a href="#problem">সমস্যা</a><a href="#features">ফিচার</a><a href="#how">কীভাবে কাজ করে</a><a href="#packages">প্যাকেজ</a>
+    <a href="#packages" class="btn btn-primary shine">অর্ডার করুন <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+  </div>
+  <span class="hdr-prog" aria-hidden="true"><i id="hdrProg"></i></span>
 </header>
 <div class="ref-bar" id="refBar" hidden><div class="container"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M12 8c-1.5-3-5-3.5-5-1.2C7 8 12 8 12 8zm0 0c1.5-3 5-3.5 5-1.2C17 8 12 8 12 8z"/></svg><p id="refBarText"></p><button type="button" id="refBarX" aria-label="বন্ধ করুন">×</button></div></div>
 
@@ -1122,23 +1183,41 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
   </section>
 </main>
 
-<footer>
+<footer class="ft">
+  <div class="ft-aura" aria-hidden="true"></div>
   <div class="container">
+    <div class="ft-hero">
+      <div>
+        <img class="ft-logo" src="assets/logo-dark.png" alt="Techill by RedBolt IT">
+        <p class="ft-tag">বাংলাদেশের ছোট ও মাঝারি অনলাইন ব্যবসার জন্য দ্রুত, সাশ্রয়ী ই-কমার্স ওয়েবসাইট।</p>
+        <ul class="ft-trust"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>৳৬,৯৯৯ থেকে শুরু</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>২৪ ঘণ্টা থেকে লাইভ</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>কোনো মাসিক চার্জ নেই</li></ul>
+      </div>
+      <div class="ft-talk">
+        <b>প্রশ্ন আছে? সরাসরি কথা বলুন</b>
+        <span>সাধারণত কয়েক মিনিটের মধ্যে উত্তর দিই।</span>
+        <a class="btn ft-wa" id="ftWaBtn" href="https://wa.me/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7a2.8 2.8 0 0 0 1.8-1.3 2.3 2.3 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3z"/></svg>হোয়াটসঅ্যাপে মেসেজ দিন</a>
+      </div>
+    </div>
     <div class="f-grid">
       <div>
-        <img class="logo logo-l" src="assets/logo-light.png" alt="Techill by RedBolt IT"><img class="logo logo-d" src="assets/logo-dark.png" alt="Techill by RedBolt IT">
-        <p>বাংলাদেশের ছোট ও মাঝারি অনলাইন ব্যবসার জন্য দ্রুত, সাশ্রয়ী ই-কমার্স ওয়েবসাইট।</p>
+        <h4>পেজ</h4>
+        <ul><li><a href="#problem">সমস্যা ও সমাধান</a></li><li><a href="#features">ফিচার</a></li><li><a href="#how">কীভাবে কাজ করে</a></li><li><a href="#packages">প্যাকেজ</a></li></ul>
       </div>
       <div>
-        <h4>লিংক</h4>
-        <ul><li><a href="#features">ফিচার</a></li><li><a href="#how">কীভাবে কাজ করে</a></li><li><a href="#packages">প্যাকেজ</a></li></ul>
+        <h4>অ্যাকাউন্ট</h4>
+        <ul><li><a href="dashboard.html">লগইন / ড্যাশবোর্ড</a></li><li><a href="dashboard.html">প্রোজেক্টের অগ্রগতি দেখুন</a></li><li><a href="#packages">নতুন অর্ডার</a></li></ul>
       </div>
       <div>
         <h4>যোগাযোগ</h4>
-        <ul><li>হোয়াটসঅ্যাপ: <span id="ftWa">+৮৮০ ১XXX-XXXXXX</span></li><li>ইমেইল: hello@techill.top</li><li>সকাল ১০টা থেকে রাত ১০টা</li></ul>
+        <ul class="ft-contact"><li><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7a2.8 2.8 0 0 0 1.8-1.3 2.3 2.3 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3z"/></svg><a id="ftWaA" href="https://wa.me/" target="_blank" rel="noopener"><span id="ftWa">+৮৮০ ১XXX-XXXXXX</span></a></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><a href="mailto:hello@techill.top">hello@techill.top</a></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>সকাল ১০টা থেকে রাত ১০টা</li></ul>
+      </div>
+      <div>
+        <h4>পেমেন্ট নিই</h4>
+        <div class="ft-pay"><span style="--c:#e2136e">বিকাশ</span><span style="--c:#f6921e">নগদ</span><span style="--c:#a54bb8">রকেট</span><span style="--c:#3b9cff">PayStation</span><span style="--c:#2fb36b">কার্ড</span></div>
       </div>
     </div>
-    <div class="f-bottom"><span>© ২০২৬ Techill.top</span><span>সব দাম বাংলাদেশি টাকায়</span></div>
+    <div class="ft-word" aria-hidden="true">techill</div>
+    <div class="f-bottom"><span>© ২০২৬ Techill.top · by RedBolt IT</span><span>সব দাম বাংলাদেশি টাকায়</span><button type="button" class="ft-up" id="ftUp" aria-label="উপরে যান"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button></div>
   </div>
 </footer>
 
@@ -1298,7 +1377,7 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
   </div>
 </div>
 
-<script src="assets/api.js?v=10"></script>
+<script src="assets/api.js?v=11"></script>
 <script>
 /* ===== প্যাকেজ, দাম, অ্যাড-অন, পেমেন্ট নম্বর: admin.html → "প্যাকেজ ও দাম" থেকে বদলান =====
    ডিফল্ট মান assets/catalog.json-এ। পেজ লোড হলে সার্ভার থেকে সর্বশেষ ক্যাটালগ আসে। */
@@ -1349,6 +1428,7 @@ function applyContact(){
   waBase = WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}` : "https://wa.me/";
   $("ctaWa").href = waBase;
   if (WHATSAPP_NUMBER) $("ftWa").textContent = "+" + BN(WHATSAPP_NUMBER);
+  $("ftWaA").href = $("ftWaBtn").href = waBase;
 }
 
 /* ---------- packages ---------- */
@@ -2022,6 +2102,41 @@ $("i-email").addEventListener("input", () => { if (otpSkip || otpFor){ otpSkip =
   }), {threshold: .35});
   cards.forEach(c => io.observe(c));
   if (touch) cards.forEach(c => c.addEventListener("click", () => { c.classList.remove("play"); void c.offsetWidth; c.classList.add("play"); }));
+})();
+</script>
+
+<script>
+/* Header: scroll progress, active-section pill in the nav, mobile menu. Footer: back to top. */
+(() => {
+  const hdr = document.getElementById("hdr"), prog = document.getElementById("hdrProg"), nav = document.getElementById("nav"), ind = document.getElementById("navInd");
+  const links = [...nav.querySelectorAll("a")], mlinks = [...document.querySelectorAll("#mnav a:not(.btn)")];
+  let ticking = false;
+  const onScroll = () => { if (ticking) return; ticking = true; requestAnimationFrame(() => {
+    const max = document.documentElement.scrollHeight - innerHeight; prog.style.transform = `scaleX(${max > 0 ? Math.min(1, scrollY / max) : 0})`; ticking = false; }); };
+  addEventListener("scroll", onScroll, {passive: true}); onScroll();
+  function mark(id) {
+    links.forEach(a => a.classList.toggle("on", a.hash === "#" + id)); mlinks.forEach(a => a.classList.toggle("on", a.hash === "#" + id));
+    const a = links.find(x => x.hash === "#" + id);
+    if (!a) { ind.style.opacity = 0; return; }
+    ind.style.opacity = 1; ind.style.width = a.offsetWidth + "px"; ind.style.transform = `translateX(${a.offsetLeft}px)`;
+  }
+  const secs = links.map(a => document.querySelector(a.hash)).filter(Boolean);
+  if ("IntersectionObserver" in window) {
+    const seen = new Map();
+    const io = new IntersectionObserver(es => {
+      es.forEach(e => seen.set(e.target.id, e.isIntersecting));
+      const cur = secs.find(x => seen.get(x.id)); mark(cur ? cur.id : "");
+    }, {rootMargin: "-40% 0px -55% 0px"});
+    secs.forEach(x => io.observe(x));
+  }
+  addEventListener("resize", () => { const a = nav.querySelector("a.on"); if (a) mark(a.hash.slice(1)); });
+  const btn = document.getElementById("menuBtn"), m = document.getElementById("mnav");
+  const close = () => { m.hidden = true; btn.setAttribute("aria-expanded", "false"); };
+  btn.addEventListener("click", () => { const open = m.hidden; m.hidden = !open; btn.setAttribute("aria-expanded", open); });
+  m.addEventListener("click", e => { if (e.target.closest("a")) close(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !m.hidden) { close(); btn.focus(); } });
+  document.addEventListener("click", e => { if (!m.hidden && !hdr.contains(e.target)) close(); });
+  document.getElementById("ftUp").addEventListener("click", () => scrollTo({top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"}));
 })();
 </script>
 </body>

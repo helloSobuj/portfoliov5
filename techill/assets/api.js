@@ -982,7 +982,7 @@ window.TechillAPI = (() => {
 
 
   /* ---------- floating sales-support button: Messenger, WhatsApp, tawk.to live chat ---------- */
-  const SW_CSS = `.tsw{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:45;display:flex;flex-direction:column;align-items:flex-end;gap:12px;font-family:inherit;line-height:1.3}
+  const SW_CSS = `.tsw{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:45;display:flex;flex-direction:column;align-items:flex-end;gap:12px;font-family:inherit;line-height:1.3;pointer-events:none}.tsw.open,.tsw-fab,.tsw-demo{pointer-events:auto}
 .tsw.gone{display:none}
 .tsw.open::before{content:"";position:fixed;inset:0;background:rgb(10 14 22 / .28);z-index:-1;animation:tswf .2s}
 @keyframes tswf{from{opacity:0}}
