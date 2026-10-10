@@ -82,6 +82,11 @@ try {
         case 'site_save':    $isPost || fail('POST only', 405); site_save();
         case 'favicon_upload': $isPost || fail('POST only', 405); favicon_upload();
         case 'favicon_reset': $isPost || fail('POST only', 405); favicon_reset();
+        case 'seo_settings': seo_get();
+        case 'seo_save':     $isPost || fail('POST only', 405); seo_save();
+        case 'og_upload':    $isPost || fail('POST only', 405); og_upload();
+        case 'og_reset':     $isPost || fail('POST only', 405); og_reset();
+        case 'seo_ping':     $isPost || fail('POST only', 405); seo_ping();
         case 'support_save': $isPost || fail('POST only', 405); support_save();
         case 'ref_check':    ref_check();
         case 'referral':     referral_me();
@@ -1354,7 +1359,7 @@ function support_out(): array {
 function site_save(): void {
     require_admin();
     $s = site_settings();
-    $limits = ['name' => 60, 'seo_title' => 90, 'seo_desc' => 300, 'hero_eyebrow' => 80, 'hero_title' => 80, 'hero_highlight' => 60, 'hero_sub' => 400,
+    $limits = ['name' => 60, 'hero_eyebrow' => 80, 'hero_title' => 80, 'hero_highlight' => 60, 'hero_sub' => 400,
         'trust1' => 50, 'trust2' => 50, 'trust3' => 50, 'cta_title' => 100, 'cta_text' => 200, 'footer_text' => 300,
         'hours' => 80, 'address' => 300, 'company' => 120, 'invoice_note' => 400];
     foreach ($limits as $k => $max) $s[$k] = str_in($k, $max);
@@ -1407,6 +1412,111 @@ function favicon_reset(): void {
     $s['favicon'] = $s['favicon_sm'] = null;
     settings_store('site', $s);
     out(['site' => site_settings(true)]);
+}
+
+/* ---------- SEO ---------- */
+
+function seo_out(): array {
+    $seo = seo_settings(); $site = site_settings(); $base = seo_base();
+    return $seo + ['title' => $site['seo_title'], 'description' => $site['seo_desc'], 'name' => $site['name'],
+        'base' => $base, 'detected' => preg_replace('#[^/]*$#', '', site_url('')),
+        'og_url' => seo_abs($seo['og_image'] ?: 'assets/og-card.jpg'), 'sitemap' => $base . 'sitemap.xml', 'robots' => $base . 'robots.txt',
+        'gd' => function_exists('imagecreatefromstring'), 'site' => $site];
+}
+
+function seo_get(): void { require_admin(); out(['settings' => seo_out()]); }
+
+// Search Console, Bing and Facebook give a whole <meta> tag to copy; keep just its content value.
+function verify_code(string $k): string {
+    $v = str_in($k, 400);
+    if (preg_match('/content\s*=\s*["\']([^"\']+)["\']/i', $v, $m)) $v = $m[1];
+    $v = trim($v);
+    if ($v !== '' && !preg_match('/^[A-Za-z0-9_\-=.:+\/]{6,120}$/', $v)) fail('ভেরিফিকেশন কোড সঠিক নয়। পুরো <meta> ট্যাগ বা শুধু content-এর মান দিন।');
+    return $v;
+}
+
+function seo_save(): void {
+    require_admin();
+    $seo = seo_settings(); $site = site_settings();
+    $title = str_in('title', 90); $desc = str_in('description', 300);
+    if ($title === '' || $desc === '') fail('টাইটেল আর বিবরণ ফাঁকা রাখা যাবে না।');
+    $url = str_in('site_url', 255);
+    if ($url !== '') {
+        if (!preg_match('#^https?://#i', $url)) $url = 'https://' . $url;
+        $parts = parse_url($url);
+        if (!filter_var($url, FILTER_VALIDATE_URL) || empty($parts['host']) || isset($parts['query']) || isset($parts['fragment'])) fail('সাইটের ঠিকানা সঠিক নয় (যেমন https://techill.top)।');
+        $url = strtolower($parts['scheme']) . '://' . strtolower($parts['host']) . (isset($parts['port']) ? ':' . $parts['port'] : '') . rtrim($parts['path'] ?? '', '/') . '/';
+    }
+    $seo['site_url'] = $url;
+    $seo['keywords'] = implode(', ', array_slice(array_filter(array_map('trim', preg_split('/[,،\n]+/u', str_in('keywords', 500)))), 0, 20));
+    $seo['index'] = !empty($_POST['index']);
+    foreach (['og_title' => 90, 'og_desc' => 300, 'og_alt' => 200] as $k => $max) $seo[$k] = str_in($k, $max);
+    $tw = ltrim(str_in('twitter_site', 60), '@');
+    if (preg_match('#(?:twitter|x)\.com/([A-Za-z0-9_]+)#i', $tw, $m)) $tw = $m[1];
+    if ($tw !== '' && !preg_match('/^[A-Za-z0-9_]{1,15}$/', $tw)) fail('X (Twitter) username সঠিক নয়।');
+    $seo['twitter_site'] = $tw;
+    $app = digits_only(str_in('fb_app_id', 30));
+    if ($app !== '' && strlen($app) < 8) fail('Facebook App ID সঠিক নয় (শুধু সংখ্যা)।');
+    $seo['fb_app_id'] = $app;
+    foreach (['google_verify', 'bing_verify', 'fb_verify'] as $k) $seo[$k] = verify_code($k);
+    $ga = strtoupper(str_in('ga4_id', 30)); $gtm = strtoupper(str_in('gtm_id', 30));
+    if ($ga !== '' && !preg_match('/^G-[A-Z0-9]{4,15}$/', $ga)) fail('GA4 Measurement ID সঠিক নয় (যেমন G-AB12CD34EF)।');
+    if ($gtm !== '' && !preg_match('/^GTM-[A-Z0-9]{4,10}$/', $gtm)) fail('Tag Manager ID সঠিক নয় (যেমন GTM-AB12CD3)।');
+    $seo['ga4_id'] = $ga; $seo['gtm_id'] = $gtm;
+    $type = str_in('schema_type', 40);
+    $seo['schema_type'] = in_array($type, SEO_SCHEMA_TYPES, true) ? $type : 'ProfessionalService';
+    $seo['head_code'] = str_in('head_code', 5000);
+    if (isset($_POST['card']) && strlen((string)$_POST['card']) < 4000) { $card = json_decode((string)$_POST['card'], true); $seo['card'] = is_array($card) ? array_slice($card, 0, 20) : null; }
+    if ($seo['indexnow_key'] === '') $seo['indexnow_key'] = bin2hex(random_bytes(16));
+    $seo['updated_at'] = time();
+    $site['seo_title'] = $title; $site['seo_desc'] = $desc;
+    settings_store('site', $site); site_settings(true);
+    settings_store('seo', $seo); seo_settings(true);
+    out(['settings' => seo_out()]);
+}
+
+function og_upload(): void {
+    require_admin();
+    $f = $_FILES['image'] ?? null;
+    if (!$f || ($f['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) fail('ছবি আপলোড হয়নি, আবার চেষ্টা করুন।');
+    if ($f['size'] > 5 * 1024 * 1024) fail('ছবি 5MB-এর বেশি বড়।');
+    $seo = seo_settings(); $old = $seo['og_image'];
+    $seo['og_image'] = save_og_image($f['tmp_name']);
+    if (isset($_POST['card']) && strlen((string)$_POST['card']) < 4000) { $card = json_decode((string)$_POST['card'], true); $seo['card'] = is_array($card) ? array_slice($card, 0, 20) : null; }
+    $seo['updated_at'] = time();
+    settings_store('seo', $seo); seo_settings(true);
+    delete_media($old);
+    out(['settings' => seo_out()]);
+}
+
+function og_reset(): void {
+    require_admin();
+    $seo = seo_settings(); delete_media($seo['og_image']);
+    $seo['og_image'] = null; $seo['updated_at'] = time();
+    settings_store('seo', $seo); seo_settings(true);
+    out(['settings' => seo_out()]);
+}
+
+// Tells Bing, Yandex, Naver and Seznam (IndexNow) that the page changed. Google does not take pings; it reads the sitemap from Search Console.
+function seo_ping(): void {
+    require_admin();
+    $seo = seo_settings();
+    if (!$seo['index']) fail('ইনডেক্সিং বন্ধ আছে, আগে চালু করে সেভ করুন।');
+    if ($seo['site_url'] === '') fail('আগে "সাইটের ঠিকানা" দিয়ে সেভ করুন (যেমন https://techill.top)।');
+    if (!function_exists('curl_init')) fail('সার্ভারে PHP cURL চালু নেই।');
+    if ($seo['indexnow_key'] === '') { $seo['indexnow_key'] = bin2hex(random_bytes(16)); settings_store('seo', $seo); }
+    $base = seo_base();
+    $body = json_encode(['host' => parse_url($base, PHP_URL_HOST), 'key' => $seo['indexnow_key'], 'keyLocation' => $base . 'seo.php?f=indexnow', 'urlList' => [$base]], JSON_UNESCAPED_SLASHES);
+    // 'indexnow_base_url' in config.php is only for testing against a local mock.
+    $ch = curl_init((cfg('indexnow_base_url') ?: 'https://api.indexnow.org') . '/indexnow');
+    curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => $body, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json; charset=utf-8']]);
+    $res = curl_exec($ch); $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE); $err = curl_error($ch); curl_close($ch);
+    $msg = [200 => 'জমা হয়েছে।', 202 => 'জমা হয়েছে, কী-ফাইল যাচাই চলছে।', 400 => 'অনুরোধ সঠিক হয়নি।', 403 => 'কী-ফাইল পাওয়া যায়নি বা মেলেনি। seo.php সার্ভারে আছে কিনা দেখুন।',
+        422 => 'সাইটের ঠিকানা আর কী-ফাইলের ঠিকানা মেলেনি। "সাইটের ঠিকানা" ঠিক দিন।', 429 => 'অনেকবার পাঠানো হয়েছে, পরে আবার চেষ্টা করুন।'][$code] ?? ($res === false ? "সংযোগ হয়নি: $err" : "উত্তর এসেছে HTTP $code");
+    $seo['last_ping'] = ['at' => time(), 'ok' => $code === 200 || $code === 202, 'msg' => $msg];
+    settings_store('seo', $seo); seo_settings(true);
+    out(['settings' => seo_out()]);
 }
 
 function support_get(): void { require_admin(); out(['settings' => support_out()]); }

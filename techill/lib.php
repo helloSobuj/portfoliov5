@@ -878,6 +878,131 @@ function save_icon(string $tmp, int $size): string {
     return $name;
 }
 
+/* ---------- SEO: meta tags, social card, robots.txt, sitemap.xml ---------- */
+
+const SEO_DEFAULTS = [
+    'site_url' => '', 'keywords' => '', 'index' => true,
+    'og_title' => '', 'og_desc' => '', 'og_image' => null, 'og_alt' => '', 'card' => null,
+    'twitter_site' => '', 'fb_app_id' => '',
+    'google_verify' => '', 'bing_verify' => '', 'fb_verify' => '',
+    'ga4_id' => '', 'gtm_id' => '', 'schema_type' => 'ProfessionalService', 'head_code' => '',
+    'indexnow_key' => '', 'last_ping' => null, 'updated_at' => 0,
+];
+const SEO_SCHEMA_TYPES = ['Organization', 'LocalBusiness', 'ProfessionalService', 'OnlineStore'];
+
+function seo_settings(bool $reload = false): array { return settings_load('seo', SEO_DEFAULTS, $reload); }
+
+// Public address of the landing page, always ending in "/". The admin can pin it (best for Google); otherwise it is read from the request.
+function seo_base(): string {
+    $u = seo_settings()['site_url'];
+    if ($u !== '') return rtrim($u, '/') . '/';
+    return preg_replace('#[^/]*$#', '', site_url(''));
+}
+
+function seo_abs(?string $path): ?string {
+    if (!$path) return null;
+    return preg_match('#^https?://#', $path) ? $path : seo_base() . ltrim($path, '/');
+}
+
+// Everything the landing page puts in <head> for search engines and link previews.
+function seo_head(): string {
+    $seo = seo_settings(); $site = site_settings(); $base = seo_base();
+    $title = $site['seo_title'] ?: $site['name'];
+    $desc = $site['seo_desc'];
+    $ogTitle = $seo['og_title'] ?: $title; $ogDesc = $seo['og_desc'] ?: $desc;
+    $img = seo_abs($seo['og_image'] ?: 'assets/og-card.jpg');
+    $tags = ['<title>' . h($title) . '</title>', '<meta name="description" content="' . h($desc) . '">'];
+    $meta = fn(string $attr, string $k, ?string $v) => $v !== null && $v !== '' ? "<meta $attr=\"$k\" content=\"" . h($v) . '">' : null;
+    $tags[] = $meta('name', 'keywords', $seo['keywords']);
+    $tags[] = $meta('name', 'robots', $seo['index'] ? 'index, follow, max-image-preview:large' : 'noindex, nofollow');
+    $tags[] = '<link rel="canonical" href="' . h($base) . '">';
+    $tags[] = '<link rel="sitemap" type="application/xml" href="' . h($base . 'sitemap.xml') . '">';
+    foreach (['og:type' => 'website', 'og:site_name' => $site['name'], 'og:locale' => 'bn_BD', 'og:url' => $base, 'og:title' => $ogTitle, 'og:description' => $ogDesc,
+              'og:image' => $img, 'og:image:secure_url' => str_starts_with($img, 'https://') ? $img : null, 'og:image:width' => '1200', 'og:image:height' => '630',
+              'og:image:alt' => $seo['og_alt'] ?: $ogTitle, 'fb:app_id' => $seo['fb_app_id']] as $k => $v) $tags[] = $meta('property', $k, $v);
+    foreach (['twitter:card' => 'summary_large_image', 'twitter:site' => $seo['twitter_site'] ? '@' . $seo['twitter_site'] : null, 'twitter:title' => $ogTitle,
+              'twitter:description' => $ogDesc, 'twitter:image' => $img,
+              'google-site-verification' => $seo['google_verify'], 'msvalidate.01' => $seo['bing_verify'], 'facebook-domain-verification' => $seo['fb_verify'],
+              'theme-color' => '#0a84f0'] as $k => $v) $tags[] = $meta('name', $k, $v);
+    if ($site['favicon_sm']) $tags[] = '<link rel="icon" href="' . h($site['favicon_sm']) . '" sizes="32x32" type="image/png">';
+    else $tags[] = '<link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">';
+    $tags[] = '<link rel="apple-touch-icon" href="' . h($site['favicon'] ?: 'assets/favicon.png') . '">';
+    $tags[] = '<script type="application/ld+json">' . json_encode(seo_schema($seo, $site, $base, $img, $desc), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) . '</script>';
+    if ($seo['gtm_id']) $tags[] = "<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','" . $seo['gtm_id'] . "');</script>";
+    if ($seo['ga4_id']) $tags[] = '<script async src="https://www.googletagmanager.com/gtag/js?id=' . $seo['ga4_id'] . '"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","' . $seo['ga4_id'] . '");</script>';
+    if (trim($seo['head_code']) !== '') $tags[] = $seo['head_code'];
+    return "<!--seo-->\n" . implode("\n", array_filter($tags)) . "\n<!--/seo-->";
+}
+
+// schema.org data: the business, the website, and the packages with their prices (Google can show them in results).
+function seo_schema(array $seo, array $site, string $base, string $img, string $desc): array {
+    $org = ['@type' => $seo['schema_type'], '@id' => $base . '#org', 'name' => $site['name'], 'url' => $base,
+        'logo' => seo_abs($site['favicon'] ?: 'assets/favicon.png'), 'image' => $img, 'description' => $desc];
+    if ($site['phone'] !== '' || $site['whatsapp'] !== '') $org['telephone'] = $site['phone'] ?: '+' . $site['whatsapp'];
+    if ($site['email'] !== '') $org['email'] = $site['email'];
+    if ($site['address'] !== '') $org['address'] = ['@type' => 'PostalAddress', 'streetAddress' => $site['address'], 'addressCountry' => 'BD'];
+    $same = array_values(array_filter([$site['facebook'], $site['instagram'], $site['youtube']]));
+    if ($same) $org['sameAs'] = $same;
+    $offers = []; $min = null;
+    foreach ((catalog()['stacks'] ?? []) as $st) foreach ($st['packs'] ?? [] as $p) {
+        if (empty($p['price'])) continue;
+        $min = $min === null ? (int)$p['price'] : min($min, (int)$p['price']);
+        $offers[] = ['@type' => 'Offer', 'name' => trim(($st['name'] ?? '') . ' ' . ($p['en'] ?? $p['name'] ?? '')), 'price' => (string)(int)$p['price'], 'priceCurrency' => 'BDT', 'url' => $base . '#packages'];
+    }
+    if (in_array($seo['schema_type'], ['LocalBusiness', 'ProfessionalService', 'OnlineStore'], true) && $min) $org['priceRange'] = '৳' . number_format($min) . '+';
+    if ($offers) $org['makesOffer'] = $offers;
+    return ['@context' => 'https://schema.org', '@graph' => [$org,
+        ['@type' => 'WebSite', '@id' => $base . '#web', 'name' => $site['name'], 'url' => $base, 'inLanguage' => 'bn-BD', 'publisher' => ['@id' => $base . '#org']]]];
+}
+
+function seo_robots(): string {
+    $seo = seo_settings(); $base = seo_base();
+    $dir = rtrim((string)parse_url($base, PHP_URL_PATH), '/');
+    $lines = ['User-agent: *'];
+    if (!$seo['index']) $lines[] = 'Disallow: /';
+    else foreach (['admin.html', 'dashboard.html', 'api.php', 'install.php', 'uploads/'] as $p) $lines[] = "Disallow: $dir/$p";
+    return implode("\n", $lines) . "\n\nSitemap: {$base}sitemap.xml\n";
+}
+
+function seo_sitemap(): string {
+    $seo = seo_settings();
+    $mod = max((int)$seo['updated_at'], (int)@filemtime(__DIR__ . '/index.html'));
+    return '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n"
+        . ($seo['index'] ? '  <url><loc>' . h(seo_base()) . '</loc><lastmod>' . gmdate('Y-m-d', $mod) . "</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>\n" : '')
+        . "</urlset>\n";
+}
+
+// Link-preview image, 1200×630. The card made in the admin panel arrives as an exact-size JPG and is kept as is;
+// any other image is centre-cropped to 1.91:1 and saved as JPG (WhatsApp skips previews over about 300 KB).
+function save_og_image(string $tmp): string {
+    $dim = @getimagesize($tmp);
+    $mime = (new finfo(FILEINFO_MIME_TYPE))->file($tmp);
+    if (!$dim || !in_array($mime, ['image/png', 'image/jpeg', 'image/webp'], true)) fail('শুধু PNG, JPG বা WebP ছবি দিন।');
+    if ($dim[0] < 600 || $dim[1] < 315) fail('ছবি কমপক্ষে ৬০০×৩১৫ পিক্সেল দিন (১২০০×৬৩০ সবচেয়ে ভালো)।');
+    if (!is_dir(__DIR__ . '/media')) @mkdir(__DIR__ . '/media', 0755, true);
+    $name = 'media/' . bin2hex(random_bytes(16));
+    $exact = $dim[0] === 1200 && $dim[1] === 630;
+    $gd = function_exists('imagecreatefromstring');
+    if ($exact && ($mime === 'image/jpeg' || ($mime === 'image/png' && (filesize($tmp) < 400 * 1024 || !$gd)))) {
+        $ext = $mime === 'image/jpeg' ? 'jpg' : 'png';
+        if (!copy($tmp, __DIR__ . "/$name.$ext")) fail('ছবি সেভ করা যায়নি।', 500);
+        return "$name.$ext";
+    }
+    if (!$gd) fail('সার্ভারে PHP GD নেই। ঠিক ১২০০×৬৩০ পিক্সেলের JPG দিন, অথবা নিচের কার্ড মেকার ব্যবহার করুন।');
+    $src = @imagecreatefromstring((string)file_get_contents($tmp));
+    if (!$src) fail('ছবিটা পড়া যায়নি, অন্য একটা ছবি দিন।');
+    [$w, $h] = [imagesx($src), imagesy($src)];
+    $r = 1200 / 630;
+    if ($w / $h > $r) { $sh = $h; $sw = (int)round($h * $r); } else { $sw = $w; $sh = (int)round($w / $r); }
+    $dst = imagecreatetruecolor(1200, 630);
+    imagefill($dst, 0, 0, imagecolorallocate($dst, 255, 255, 255));
+    imagecopyresampled($dst, $src, 0, 0, intdiv($w - $sw, 2), intdiv($h - $sh, 2), 1200, 630, $sw, $sh);
+    $ok = imagejpeg($dst, __DIR__ . "/$name.jpg", 88);
+    imagedestroy($src); imagedestroy($dst);
+    if (!$ok) fail('ছবি সেভ করা যায়নি।', 500);
+    return "$name.jpg";
+}
+
 /* ---------- order emails ---------- */
 
 const STAGE_NAMES = ['তথ্য জমা', 'পেমেন্ট যাচাই', 'সেটআপ চলছে', 'রিভিউ', 'ডেলিভারি'];

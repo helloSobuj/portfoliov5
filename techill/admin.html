@@ -69,6 +69,7 @@ button,input,textarea,select{font:inherit;color:inherit}
 .hdr{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
 .hdr-in{display:flex;align-items:center;justify-content:space-between;gap:12px;height:64px;padding-inline:24px;max-width:1440px;margin:0 auto}
 .hdr-l,.hdr-r{display:flex;align-items:center;gap:12px;min-width:0}
+@media (max-width:420px){.hdr-l,.hdr-r{gap:6px}}
 .tag{font-size:.8rem;font-weight:600;color:var(--blue-ink);background:var(--blue-soft);border-radius:8px;padding:2px 10px}
 .live-pill{display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 14px;font-size:.9rem;cursor:pointer}
 .live-pill b{font-variant-numeric:tabular-nums}
@@ -216,6 +217,84 @@ table.tbl{width:100%;border-collapse:collapse;font-size:.9rem}
 .fav-tab img{width:16px;height:16px}
 .ss-save{position:sticky;bottom:12px;z-index:5;display:flex;gap:10px;align-items:center;justify-content:flex-end;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 14px;box-shadow:var(--shadow);margin-top:18px}
 @media (max-width:900px){.ss-grid{grid-template-columns:1fr}.ss-grid .two{grid-template-columns:1fr}}
+/* SEO */
+.seo-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:18px;align-items:start}
+.seo-grid form{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}
+.seo-grid .card{display:grid;gap:12px;align-content:start}
+.seo-grid .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seo-side{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}
+.seo-cnt{font-size:.78rem;color:var(--muted);justify-self:end;margin-top:-2px}
+.seo-cnt.ok{color:var(--ok)}.seo-cnt.warn{color:var(--warn)}
+.seo-hint{font-size:.82rem;color:var(--muted)}
+.seo-hero{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.seo-ring{--p:0;width:92px;height:92px;border-radius:50%;flex:none;display:grid;place-items:center;background:conic-gradient(var(--c,var(--ok)) calc(var(--p)*1%),var(--sunk) 0);transition:--p .6s}
+.seo-ring b{width:72px;height:72px;border-radius:50%;background:var(--surface);display:grid;place-items:center;font-size:1.45rem;line-height:1}
+.seo-ring b small{display:block;font-size:.66rem;color:var(--muted);font-weight:400;margin-top:-10px}
+.seo-list{list-style:none;margin:0;padding:0;display:grid;gap:7px;font-size:.88rem}
+.seo-list li{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:start}
+.seo-list i{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:.72rem;font-weight:700;color:#fff;background:var(--ok);margin-top:1px}
+.seo-list li.no i{background:var(--warn)}
+.seo-list li.off i{background:var(--line);color:var(--muted)}
+.seo-list small{display:block;color:var(--muted);font-size:.8rem}
+.seo-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.seo-tabs button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 13px;font-size:.86rem;cursor:pointer;color:var(--muted)}
+.seo-tabs button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.sp{border-radius:14px;background:var(--sunk);padding:16px;min-height:150px}
+.sp-g{background:#fff;color:#202124;border-radius:12px;padding:16px 18px;font-family:Arial,"Noto Sans Bengali",sans-serif;box-shadow:0 1px 3px rgb(0 0 0 / .08)}
+.sp-g-site{display:flex;gap:10px;align-items:center;margin-bottom:6px}
+.sp-g-site img{width:28px;height:28px;border-radius:50%;background:#f1f3f4;padding:5px;object-fit:contain}
+.sp-g-site b{display:block;font-size:14px;font-weight:400;color:#202124}
+.sp-g-site small{display:block;font-size:12px;color:#4d5156}
+.sp-g-t{display:block;color:#1a0dab;font-size:20px;line-height:1.3;margin-bottom:4px;text-decoration:none}
+.sp-g p{margin:0;font-size:14px;line-height:1.58;color:#4d5156}
+.sp-fb{background:#fff;color:#050505;border-radius:10px;overflow:hidden;border:1px solid #dadde1;font-family:Helvetica,Arial,"Noto Sans Bengali",sans-serif}
+.sp-img{width:100%;aspect-ratio:1.91/1;object-fit:cover;display:block;background:#e4e6eb}
+.sp-fb div{background:#f0f2f5;padding:10px 12px;border-top:1px solid #dadde1}
+.sp-fb small{display:block;color:#65676b;font-size:12px;text-transform:uppercase}
+.sp-fb b{display:block;font-size:16px;line-height:1.3;margin:2px 0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.sp-fb p{margin:0;color:#65676b;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-wa{background:#efeae2 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Ccircle cx='4' cy='4' r='1.4' fill='%23d9d2c5'/%3E%3C/svg%3E");border-radius:12px;padding:14px;display:grid;justify-items:end}
+.sp-wa-b{background:#d9fdd3;border-radius:10px 2px 10px 10px;padding:4px;max-width:330px;width:100%;color:#111b21;font-family:Helvetica,Arial,"Noto Sans Bengali",sans-serif;box-shadow:0 1px .5px rgb(11 20 26 / .13)}
+.sp-wa-c{background:#c8f0c0;border-radius:7px;overflow:hidden}
+.sp-wa-c div{padding:7px 10px}
+.sp-wa-c b{display:block;font-size:14px;line-height:1.3}
+.sp-wa-c p{margin:2px 0 0;font-size:12.5px;color:#54656f;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.sp-wa-c small{display:block;font-size:12px;color:#667781;margin-top:3px}
+.sp-wa-b > span{display:block;padding:6px 6px 2px;font-size:14px;color:#027eb5;word-break:break-all}
+.sp-wa-b > em{display:block;text-align:right;font-style:normal;font-size:11px;color:#667781;padding:0 6px 2px}
+.sp-x{background:#fff;color:#0f1419;border-radius:14px;padding:12px;font-family:-apple-system,Arial,"Noto Sans Bengali",sans-serif}
+.sp-x-i{position:relative;border-radius:16px;overflow:hidden;border:1px solid #cfd9de}
+.sp-x-i span{position:absolute;left:12px;bottom:12px;background:rgb(0 0 0 / .77);color:#fff;font-size:13px;border-radius:4px;padding:1px 6px;max-width:80%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-x small{display:block;color:#536471;font-size:13px;margin-top:4px}
+.seo-img{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.seo-img img{width:220px;aspect-ratio:1.91/1;object-fit:cover;border-radius:10px;border:1px solid var(--line);background:var(--sunk)}
+.seo-steps{counter-reset:s;list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.seo-steps li{counter-increment:s;display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;font-size:.9rem}
+.seo-steps li::before{content:counter(s);width:28px;height:28px;border-radius:50%;background:var(--blue-soft,#e8f3ff);color:var(--blue,#0a84f0);display:grid;place-items:center;font-weight:700}
+.seo-steps p{margin:2px 0 6px;color:var(--muted);font-size:.84rem}
+.seo-copy{display:flex;gap:6px;align-items:center;background:var(--sunk);border:1px solid var(--line);border-radius:10px;padding:4px 4px 4px 10px;font-size:.84rem}
+.seo-copy code{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seo-tools{display:flex;gap:6px;flex-wrap:wrap}
+.seo-adv summary{cursor:pointer;font-weight:600;font-size:.9rem}
+.seo-adv[open] summary{margin-bottom:10px}
+/* social card maker */
+.cm{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:20px;align-items:start;margin-top:18px}
+.cm-stage{background:repeating-conic-gradient(var(--sunk) 0 25%,var(--surface) 0 50%) 0 0/18px 18px;border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;place-items:center}
+.cm-stage canvas{width:100%;height:auto;border-radius:10px;box-shadow:0 18px 40px -18px rgb(16 24 40 / .45);display:block}
+.cm-stage canvas.tall{width:auto;max-height:560px;max-width:100%}
+.cm-ctl{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+.cm-chips{display:flex;gap:6px;flex-wrap:wrap}
+.cm-chips button{border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:6px 12px;font-size:.86rem;cursor:pointer;display:flex;gap:7px;align-items:center}
+.cm-chips button[aria-pressed="true"]{border-color:var(--blue,#0a84f0);box-shadow:0 0 0 3px rgb(10 132 240 / .15)}
+.cm-chips .sw{width:16px;height:16px;border-radius:5px;display:inline-block}
+.cm-col{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.cm-col button{width:30px;height:30px;border-radius:50%;border:3px solid var(--surface);box-shadow:0 0 0 1.5px var(--line);cursor:pointer}
+.cm-col button[aria-pressed="true"]{box-shadow:0 0 0 2.5px var(--ink)}
+.cm-col input[type=color]{width:34px;height:34px;border:0;background:none;padding:0;cursor:pointer}
+.cm-tg{display:flex;gap:16px;flex-wrap:wrap;font-size:.9rem}
+.cm-tg label{display:flex;gap:7px;align-items:center;cursor:pointer}
+@media (max-width:1100px){.seo-grid,.cm{grid-template-columns:1fr}}
+@media (max-width:600px){.seo-grid .two{grid-template-columns:1fr}}
 .drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100%);background:var(--bg);z-index:41;overflow-y:auto;box-shadow:var(--shadow);border-left:1px solid var(--line)}
 .dr-h{position:sticky;top:0;background:var(--surface);border-bottom:1px solid var(--line);padding:16px 20px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;z-index:2}
 .dr-h h2{font-size:1.3rem;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -374,7 +453,7 @@ textarea.inp{resize:vertical;min-height:84px}
 <div class="tip" id="tip" hidden></div>
 <div class="toast" id="toast" role="status" hidden></div>
 
-<script src="assets/api.js?v=13"></script>
+<script src="assets/api.js?v=14"></script>
 <script>
 const api = window.TechillAPI;
 const $ = id => document.getElementById(id);
@@ -410,6 +489,7 @@ const pstat = st => `<span class="badge ${(PSTAT[st] || ["", "b-off"])[1]}">${(P
 const DEV = {mobile: "মোবাইল", desktop: "ডেস্কটপ", tablet: "ট্যাবলেট"};
 const ic = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 const I = {
+  seo: ic('<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/><path d="M7.5 11.5l2 2 3.5-4"/>'),
   site: ic('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/>'),
   home: ic('<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/>'),
   orders: ic('<path d="M6 3h12l2 4v13H4V7z"/><path d="M4 7h16M9 11h6"/>'),
@@ -433,7 +513,7 @@ const I = {
   support: ic('<path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="2.5" y="12.5" width="4" height="6" rx="1.6"/><rect x="17.5" y="12.5" width="4" height="6" rx="1.6"/><path d="M19.5 18.5c0 1.6-2.2 2.5-5.5 2.5h-1.5"/>'),
   gift: ic('<rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M12 8c-1.5-3-5-3.5-5-1.2C7 8 12 8 12 8zm0 0c1.5-3 5-3.5 5-1.2C17 8 12 8 12 8z"/>')
 };
-const SECTIONS = [["overview", "ওভারভিউ", I.home], ["orders", "অর্ডার", I.orders], ["board", "প্রোজেক্ট বোর্ড", I.board], ["analytics", "অ্যানালিটিক্স", I.chart], ["catalog", "প্যাকেজ ও দাম", I.catalog], ["site", "সাইট সেটিং", I.site], ["payments", "পেমেন্ট গেটওয়ে", I.money], ["email", "ইমেইল", I.mail], ["marketing", "Facebook Pixel", I.fb], ["support", "সাপোর্ট বাটন", I.support], ["referral", "রেফারেল", I.gift], ["customers", "কাস্টমার", I.customers], ["team", "টিম ও ডেভেলপার", I.team]];
+const SECTIONS = [["overview", "ওভারভিউ", I.home], ["orders", "অর্ডার", I.orders], ["board", "প্রোজেক্ট বোর্ড", I.board], ["analytics", "অ্যানালিটিক্স", I.chart], ["catalog", "প্যাকেজ ও দাম", I.catalog], ["site", "সাইট সেটিং", I.site], ["seo", "SEO ও সোশ্যাল কার্ড", I.seo], ["payments", "পেমেন্ট গেটওয়ে", I.money], ["email", "ইমেইল", I.mail], ["marketing", "Facebook Pixel", I.fb], ["support", "সাপোর্ট বাটন", I.support], ["referral", "রেফারেল", I.gift], ["customers", "কাস্টমার", I.customers], ["team", "টিম ও ডেভেলপার", I.team]];
 
 let me = null, sec = "overview", days = 30, stats = null, orders = [], team = [], customers = [], cat = null, draft = null, dirty = false;
 let oFilter = "all", oQuery = "", oStack = "", boardDev = "", custQ = "", custF = "all", edStack = "woo", drawerId = null;
@@ -510,6 +590,7 @@ function go(s){
   if (s === "analytics") loadAnalytics();
   if (s === "payments") loadPayments();
   if (s === "email") api.emailSettings().then(r => { eset = r.settings; if (sec === "email") render(); }).catch(e => toast(e.message));
+  if (s === "seo") api.seoSettings().then(r => { seoSet = r.settings; seoLive = null; if (sec === "seo") render(); }).catch(e => toast(e.message));
   if (s === "site") api.catalog().then(r => { siteSet = r.site; if (sec === "site") render(); }).catch(e => toast(e.message));
   if (s === "support") api.supportSettings().then(r => { sset = r.settings; if (sec === "support") render(); }).catch(e => toast(e.message));
   if (s === "referral") api.referralAdmin().then(r => { rdata = r; if (sec === "referral") render(); }).catch(e => toast(e.message));
@@ -524,7 +605,7 @@ $("livePill").addEventListener("click", () => { aTab = "visitors"; go("analytics
 function render(){
   const m = $("main");
   if (!stats){ m.innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; return; }
-  ({overview: renderOverview, orders: renderOrders, board: renderBoard, analytics: renderAnalytics, catalog: renderCatalog, payments: renderPayments, marketing: renderMarketing, email: renderEmail, support: renderSupport, site: renderSite, referral: renderReferral, team: renderTeam, customers: renderCustomers})[sec]();
+  ({overview: renderOverview, orders: renderOrders, board: renderBoard, analytics: renderAnalytics, catalog: renderCatalog, payments: renderPayments, marketing: renderMarketing, email: renderEmail, support: renderSupport, site: renderSite, seo: renderSeo, referral: renderReferral, team: renderTeam, customers: renderCustomers})[sec]();
 }
 const rangeSeg = () => `<div class="seg" role="group" aria-label="সময়সীমা">${[7, 30, 90].map(d => `<button type="button" data-days="${d}" aria-pressed="${days === d}">${BN(d)} দিন</button>`).join("")}</div>`;
 $("main").addEventListener("click", async e => {
@@ -1322,10 +1403,9 @@ function renderSite(){
           ${ta("invoice_note", "ইনভয়েসের নিচের নোট", 400, 2)}
           <button class="btn btn-ghost btn-sm" type="button" id="invSample" style="justify-self:start">নমুনা ইনভয়েস দেখুন</button>
         </div>
-        <div class="card"><h3>সার্চ ইঞ্জিন (SEO)</h3>
+        <div class="card"><h3>ব্র্যান্ড</h3>
           ${inp("name", "সাইটের নাম", "Techill", "text", 60)}
-          ${inp("seo_title", "পেজের টাইটেল (ব্রাউজার ট্যাবে)", "", "text", 90)}
-          ${ta("seo_desc", "পেজের বিবরণ (Google-এ দেখায়)", 300, 2)}
+          <small class="muted" style="font-size:.82rem">Google-এর টাইটেল, বিবরণ আর শেয়ার ছবি এখন <a href="#seo" data-go="seo">SEO ও সোশ্যাল কার্ড</a> সেকশনে।</small>
         </div>
       </div>
     </div>
@@ -1344,12 +1424,308 @@ function renderSite(){
   $("favReset")?.addEventListener("click", async () => {
     try { siteSet = SITE = (await api.faviconReset()).site; renderSite(); toast("ডিফল্ট আইকন ফিরে এসেছে। ব্রাউজার রিফ্রেশ করলে ট্যাবে দেখাবে।"); } catch(err){ toast(err.message); }
   });
+  $("main").querySelector("[data-go]").addEventListener("click", e => { e.preventDefault(); go("seo"); });
   $("invSample").addEventListener("click", () => {
     const f = Object.fromEntries(new FormData($("siteForm")));
     showInvoice({code: "TC-NAMUNA", created: Math.floor(Date.now() / 1000), stack: "WooCommerce", pack: "বিজনেস", template: "ফ্যাশন হাউস", hours: 48, products: 40, domain: "rakibfashion.com",
       lines: [{label: "বিজনেস প্যাকেজ", amt: 11999}, {label: "কুরিয়ার API ×১", amt: 2000}, {label: "রেফারেল ছাড়", amt: -1000}], total: 12999, pay_method: "bKash", pay_sender: "01711000000", pay_trx: "AB12CD34EF", pay_status: "verified", info: {admin_name: "রাকিব হাসান", phone: "01711000000"}},
       {name: "রাকিব হাসান", email: "rakib@example.com"}, {...siteSet, ...f});
   });
+}
+
+/* ---------- SEO & social card ---------- */
+let seoSet = null, seoTab = "google", seoLive = null, scard = null;
+const SCHEMA_T = [["ProfessionalService", "সার্ভিস ব্যবসা (প্রস্তাবিত)"], ["OnlineStore", "অনলাইন স্টোর"], ["LocalBusiness", "দোকান/অফিস আছে"], ["Organization", "প্রতিষ্ঠান"]];
+const CARD_TPL = [["aurora", "অরোরা", "linear-gradient(135deg,#071a3d,#0a84f0)"], ["clean", "ক্লিন", "linear-gradient(135deg,#f7f9fc,#dbeafe)"], ["bold", "বোল্ড", "#0a84f0"], ["night", "নাইট", "linear-gradient(135deg,#0b1220,#1e293b)"]];
+const CARD_FMT = {og: [1200, 630, "শেয়ার কার্ড", "১২০০×৬৩০ · লিংক শেয়ারে"], sq: [1080, 1080, "ফেসবুক পোস্ট", "১০৮০×১০৮০"], story: [1080, 1920, "স্টোরি/রিল", "১০৮০×১৯২০"]};
+const ACCENTS = ["#0a84f0", "#12a150", "#a54bb8", "#e8590c", "#d6336c", "#0f766e"];
+const clen = s => [...String(s || "")].length;
+const cut = (s, n) => { const a = [...String(s || "")]; return a.length > n ? a.slice(0, n - 1).join("") + "…" : a.join(""); };
+const hostOf = u => { try { return new URL(u).host; } catch(e){ return ""; } };
+// Share image as this admin page can load it (the public address may not point to this server yet).
+const ogSrc = s => !s.og_image ? "assets/og-card.jpg" : s.og_image.startsWith("data:") ? s.og_image : s.og_image + "?v=" + (s.updated_at || 0);
+
+function cardDefault(){
+  const s = seoSet.site;
+  return {tpl: "aurora", fmt: "og", title: s.hero_title, hi: s.hero_highlight, sub: [s.trust2, s.trust3].filter(Boolean).join(" · "), badge: s.trust1, foot: hostOf(seoSet.base), accent: "#0a84f0", logo: true, shot: true};
+}
+
+// Current form values merged over the saved settings, so previews and the score follow typing.
+function seoForm(){
+  const f = $("seoForm") ? Object.fromEntries(new FormData($("seoForm"))) : {};
+  return {...seoSet, ...f, index: $("seoForm") ? !!f.index : seoSet.index};
+}
+
+function seoChecks(v){
+  const tl = clen(v.title), dl = clen(v.description), s = seoSet.site, url = v.site_url || "";
+  const L = [
+    [tl >= 20 && tl <= 65, "টাইটেল ২০–৬৫ অক্ষরের মধ্যে", `এখন ${BN(tl)} অক্ষর। বেশি লম্বা হলে Google কেটে দেয়।`],
+    [dl >= 70 && dl <= 170, "বিবরণ ৭০–১৭০ অক্ষরের মধ্যে", `এখন ${BN(dl)} অক্ষর। কী সার্ভিস, দাম আর সুবিধা এক লাইনে বলুন।`],
+    [/^https:\/\//i.test(url), "সাইটের ঠিকানা https দিয়ে সেট করা", url ? "SSL (https) চালু করে ঠিকানাটা https:// দিয়ে দিন।" : "Google যেন একটাই ঠিকানা চেনে, তাই নিজের ডোমেইন দিন।"],
+    [!!v.index, "Google-কে ইনডেক্স করতে দেওয়া হচ্ছে", "বন্ধ থাকলে সাইট Google-এ আসবে না।"],
+    [!!seoSet.og_image, "নিজের সোশ্যাল কার্ড ছবি", "নিচের কার্ড মেকারে ১ ক্লিকে বানান।"],
+    [!!v.google_verify, "Google Search Console ভেরিফাই কোড", "ডানের ধাপ ১ দেখুন।"],
+    [!!(v.ga4_id || v.gtm_id), "Google Analytics বা Tag Manager", "কত ভিজিটর Google থেকে আসছে জানতে।"],
+    [!!(s.phone || s.whatsapp || s.email), "যোগাযোগের তথ্য (Google বিজনেস ডেটায় যায়)", "সাইট সেটিং থেকে ফোন বা WhatsApp দিন।"],
+    [!!(s.facebook || s.instagram || s.youtube), "সোশ্যাল পেজের লিংক", "সাইট সেটিং থেকে Facebook পেজের লিংক দিন। Google এটা দিয়ে ব্র্যান্ড চেনে।"]
+  ];
+  if (seoLive) seoLive.forEach(x => L.push(x));
+  return L;
+}
+
+function seoScore(){
+  const L = seoChecks(seoForm()).filter(x => x[0] !== null), ok = L.filter(x => x[0]).length;
+  return Math.round(ok / L.length * 100);
+}
+
+function seoPreview(){
+  const v = seoForm(), s = seoSet.site, base = v.site_url || seoSet.base, host = hostOf(base) || "example.com";
+  const t = v.og_title || v.title, d = v.og_desc || v.description, img = ogSrc(seoSet);
+  const fav = s.favicon_sm || s.favicon || "assets/favicon-32.png";
+  const crumbs = host + (new URL(base, location.href).pathname.replace(/\/$/, "").split("/").filter(Boolean).map(x => " › " + x).join(""));
+  if (seoTab === "google") return `<div class="sp-g"><div class="sp-g-site"><img src="${esc(fav)}" alt=""><div><b>${esc(s.name)}</b><small>https://${esc(crumbs)}</small></div></div>
+    <a class="sp-g-t">${esc(cut(v.title, 62))}</a><p>${esc(cut(v.description, 160))}</p></div>`;
+  if (seoTab === "facebook") return `<div class="sp-fb"><img class="sp-img" src="${esc(img)}" alt=""><div><small>${esc(host)}</small><b>${esc(t)}</b><p>${esc(d)}</p></div></div>`;
+  if (seoTab === "whatsapp") return `<div class="sp-wa"><div class="sp-wa-b"><div class="sp-wa-c"><img class="sp-img" src="${esc(img)}" alt=""><div><b>${esc(cut(t, 70))}</b><p>${esc(d)}</p><small>${esc(host)}</small></div></div><span>${esc(base)}</span><em>১০:৪২ ✓✓</em></div></div>`;
+  return `<div class="sp-x"><div class="sp-x-i"><img class="sp-img" src="${esc(img)}" alt=""><span>${esc(cut(t, 60))}</span></div><small>${esc(host)} থেকে</small></div>`;
+}
+
+function seoLiveUpdate(){
+  const L = seoChecks(seoForm()), sc = seoScore();
+  const ring = $("seoRing"); if (ring){ ring.style.setProperty("--p", sc); ring.style.setProperty("--c", sc >= 80 ? "var(--ok)" : sc >= 50 ? "#e8a400" : "var(--danger,#d93025)"); ring.querySelector("span").textContent = BN(sc); }
+  const sl = $("seoScoreTxt"); if (sl) sl.textContent = sc >= 80 ? "চমৎকার! Google-এর জন্য প্রায় তৈরি।" : sc >= 50 ? "ভালো শুরু। নিচের হলুদ কাজগুলো সেরে ফেলুন।" : "কয়েকটা জরুরি জিনিস বাকি।";
+  $("seoList") && ($("seoList").innerHTML = L.map(([ok, l, hint]) => `<li class="${ok === null ? "off" : ok ? "" : "no"}"><i>${ok === null ? "–" : ok ? "✓" : "!"}</i><div>${l}${ok ? "" : `<small>${hint}</small>`}</div></li>`).join(""));
+  $("seoPrev") && ($("seoPrev").innerHTML = seoPreview());
+  document.querySelectorAll("[data-cnt]").forEach(el => {
+    const inp = $(el.dataset.cnt), n = clen(inp.value || inp.placeholder), [lo, hi] = el.dataset.range.split("-").map(Number);
+    el.textContent = `${BN(n)} অক্ষর · ভালো ${BN(lo)}–${BN(hi)}`; el.className = "seo-cnt " + (n >= lo && n <= hi ? "ok" : "warn");
+  });
+}
+
+function renderSeo(){
+  if (!seoSet){ $("main").innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; return; }
+  const s = seoSet, v = k => esc(s[k] || "");
+  scard = scard || {...cardDefault(), ...(s.card || {})};
+  const inp = (k, label, ph = "", max = 120, extra = "") => `<div class="f"><label for="so-${k}">${label}</label><input class="inp" id="so-${k}" name="${k}" maxlength="${max}" value="${v(k)}" placeholder="${esc(ph)}" autocomplete="off" ${extra}></div>`;
+  const ta = (k, label, ph = "", max = 300, rows = 2) => `<div class="f"><label for="so-${k}">${label}</label><textarea class="inp" id="so-${k}" name="${k}" maxlength="${max}" rows="${rows}" placeholder="${esc(ph)}" style="min-height:0">${v(k)}</textarea></div>`;
+  const cnt = (id, range) => `<span class="seo-cnt" data-cnt="${id}" data-range="${range}"></span>`;
+  const enc = encodeURIComponent(s.base), ping = s.last_ping;
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>SEO ও সোশ্যাল কার্ড</h1><p>Google সার্চে সাইট কেমন দেখাবে, Facebook/WhatsApp-এ লিংক শেয়ার করলে কোন ছবি আর লেখা আসবে, আর Google-এ ইনডেক্স করার সব কিছু এক জায়গায়।</p></div>
+      <div class="tools"><a class="btn btn-ghost btn-sm" href="https://search.google.com/search-console" target="_blank" rel="noopener">Search Console ↗</a></div></div>
+    <div class="seo-grid">
+      <form id="seoForm" novalidate>
+        <div class="card"><div class="ch" style="margin:0"><h3>Google সার্চ রেজাল্ট</h3><label class="switch"><input type="checkbox" name="index" ${s.index ? "checked" : ""}><span></span>Google-এ দেখান</label></div>
+          ${inp("site_url", "সাইটের ঠিকানা <small>(যে ঠিকানায় মানুষ সাইটে আসে)</small>", s.detected, 255, 'inputmode="url"')}
+          ${inp("title", "টাইটেল <small>(Google-এ নীল লেখা, ব্রাউজার ট্যাবেও)</small>", "", 90)}${cnt("so-title", "20-65")}
+          ${ta("description", "বিবরণ <small>(টাইটেলের নিচের ধূসর লেখা)</small>", "", 300, 3)}${cnt("so-description", "70-170")}
+          ${inp("keywords", "কি-ওয়ার্ড <small>(কমা দিয়ে, যেমন: ই-কমার্স ওয়েবসাইট, অনলাইন দোকান)</small>", "ই-কমার্স ওয়েবসাইট, WooCommerce বাংলাদেশ, অনলাইন দোকান", 500)}
+          <div class="f"><label for="so-schema_type">ব্যবসার ধরন <small>(Google-কে বলে দেয় আপনি কী)</small></label><select class="inp" id="so-schema_type" name="schema_type">${SCHEMA_T.map(([k, l]) => `<option value="${k}" ${s.schema_type === k ? "selected" : ""}>${l}</option>`).join("")}</select></div>
+          <small class="seo-hint">যোগাযোগ, ঠিকানা, সোশ্যাল লিংক আর প্যাকেজের দাম স্বয়ংক্রিয়ভাবে Google-এর structured data (schema.org) হিসেবে যায়, আলাদা কিছু করতে হবে না।</small>
+        </div>
+        <div class="card"><h3>সোশ্যাল শেয়ার (Facebook, WhatsApp, Messenger, X)</h3>
+          <div class="seo-img"><img src="${esc(ogSrc(s))}" alt="শেয়ার ছবি"><div style="display:grid;gap:8px">
+            <b style="font-size:.92rem">${s.og_image ? "আপনার শেয়ার ছবি" : "ডিফল্ট Techill কার্ড"}</b>
+            <div class="row2"><a class="btn btn-primary btn-sm" href="#cardMaker" id="toMaker">কার্ড মেকারে বানান</a><label class="btn btn-ghost btn-sm" style="cursor:pointer">নিজের ছবি দিন<input type="file" id="ogFile" accept="image/png,image/jpeg,image/webp" hidden></label>${s.og_image ? '<button class="btn btn-ghost btn-sm" type="button" id="ogReset">ডিফল্টে ফেরান</button>' : ""}</div>
+            <small class="seo-hint">১২০০×৬৩০ পিক্সেল। অন্য মাপের ছবি মাঝখান থেকে কেটে নেওয়া হবে।</small></div></div>
+          ${inp("og_title", "শেয়ার টাইটেল <small>(খালি রাখলে উপরের টাইটেল)</small>", s.title, 90)}
+          ${ta("og_desc", "শেয়ার বিবরণ <small>(খালি রাখলে উপরের বিবরণ)</small>", s.description, 300, 2)}
+          ${inp("og_alt", "ছবির বর্ণনা <small>(চোখে কম দেখেন এমন মানুষের জন্য)</small>", "Techill-এর ই-কমার্স ওয়েবসাইট প্যাকেজ", 200)}
+          <div class="two">${inp("twitter_site", "X (Twitter) username", "@techillbd", 60)}${inp("fb_app_id", "Facebook App ID <small>(ঐচ্ছিক)</small>", "", 30, 'inputmode="numeric"')}</div>
+        </div>
+        <div class="card"><h3>ভেরিফিকেশন ও অ্যানালিটিক্স</h3>
+          ${inp("google_verify", "Google Search Console কোড", '<meta name="google-site-verification" content="..."> পুরোটা পেস্ট করুন', 400)}
+          <div class="two">${inp("bing_verify", "Bing Webmaster কোড", "msvalidate.01-এর কোড", 400)}${inp("fb_verify", "Facebook ডোমেইন ভেরিফিকেশন", "facebook-domain-verification", 400)}</div>
+          <div class="two">${inp("ga4_id", "Google Analytics 4 ID", "G-AB12CD34EF", 30)}${inp("gtm_id", "Google Tag Manager ID", "GTM-AB12CD3", 30)}</div>
+          <small class="seo-hint">পুরো &lt;meta&gt; ট্যাগ পেস্ট করলেও চলবে, কোডটা নিজেই বের করে নেবে। Facebook ডোমেইন ভেরিফাই করলে Pixel-এর ইভেন্ট নিয়ন্ত্রণে থাকে।</small>
+          <details class="seo-adv"${s.head_code ? " open" : ""}><summary>অ্যাডভান্সড: &lt;head&gt;-এ নিজের কোড</summary>
+            ${ta("head_code", "অন্য কোনো সার্ভিসের ট্যাগ (Hotjar, Clarity, Pinterest ইত্যাদি)", "<script>...<\/script>", 5000, 4)}
+            <small class="seo-hint">শুধু বিশ্বস্ত সার্ভিসের কোড দিন। ভুল কোডে হোমপেজ ভেঙে যেতে পারে।</small></details>
+        </div>
+        <div class="ss-save" style="margin-top:0"><p class="err" id="soErr" role="alert" style="margin:0 auto 0 0"></p><button class="btn btn-primary" type="submit">সেভ করুন</button></div>
+      </form>
+      <div class="seo-side">
+        <div class="card"><div class="seo-hero"><div class="seo-ring" id="seoRing"><b><span>০</span><small>/১০০</small></b></div><div style="flex:1;min-width:180px"><h3>SEO স্কোর</h3><p class="muted" id="seoScoreTxt" style="font-size:.9rem"></p>
+          <button class="btn btn-ghost btn-sm" type="button" id="seoLiveBtn" style="margin-top:8px">লাইভ সাইট চেক করুন</button></div></div>
+          <ul class="seo-list" id="seoList"></ul></div>
+        <div class="card"><div class="ch" style="margin:0 0 10px;gap:10px;flex-wrap:wrap"><h3>প্রিভিউ</h3><div class="seo-tabs" id="seoTabs">${[["google", "Google"], ["facebook", "Facebook"], ["whatsapp", "WhatsApp"], ["x", "X"]].map(([k, l]) => `<button type="button" data-tab="${k}" aria-pressed="${seoTab === k}">${l}</button>`).join("")}</div></div>
+          <div class="sp" id="seoPrev"></div>
+          <small class="seo-hint" style="display:block;margin-top:8px">Facebook আর WhatsApp পুরনো ছবি মনে রাখে। ছবি বদলের পর <a href="https://developers.facebook.com/tools/debug/?q=${enc}" target="_blank" rel="noopener">Sharing Debugger</a>-এ "Scrape Again" চাপুন।</small></div>
+        <div class="card"><h3>Google-এ ইনডেক্স করুন</h3>
+          <ol class="seo-steps">
+            <li><div><b>Search Console-এ সাইট যোগ করুন</b><p><a href="https://search.google.com/search-console/welcome" target="_blank" rel="noopener">Search Console</a> → "URL prefix"-এ আপনার ঠিকানা দিন → "HTML tag" বেছে কোডটা বাম দিকের "Google Search Console কোড" ঘরে দিয়ে সেভ করুন → Verify।</p></div></li>
+            <li><div><b>Sitemap জমা দিন</b><p>Search Console → Sitemaps → নিচের ঠিকানা দিয়ে Submit।</p>
+              <div class="seo-copy"><code>${esc(s.sitemap)}</code><button class="btn btn-ghost btn-sm" type="button" data-copy="${esc(s.sitemap)}">কপি</button></div></div></li>
+            <li><div><b>ইনডেক্সের অনুরোধ</b><p>Search Console-এর উপরের সার্চ বারে হোমপেজের ঠিকানা দিয়ে "Request indexing"। সাধারণত ২ থেকে ৭ দিনে Google-এ আসে।</p></div></li>
+            <li><div><b>Bing, Yandex (IndexNow)</b><p>এক ক্লিকে জানিয়ে দিন। Bing Webmaster-এ Search Console থেকে import করলে আলাদা ভেরিফাই লাগে না।</p>
+              <div class="row2"><button class="btn btn-ghost btn-sm" type="button" id="seoPing">এখনই জানান</button>${ping ? `<small class="${ping.ok ? "" : "err"}" style="font-size:.82rem">${ping.ok ? "✓ " : ""}${esc(ping.msg)} · ${esc(new Date(ping.at * 1000).toLocaleString("bn-BD", {dateStyle: "medium", timeStyle: "short"}))}</small>` : ""}</div></div></li>
+          </ol>
+          <div class="seo-tools" style="margin-top:12px"><a class="btn btn-ghost btn-sm" href="${esc(s.robots)}" target="_blank" rel="noopener">robots.txt ↗</a><a class="btn btn-ghost btn-sm" href="${esc(s.sitemap)}" target="_blank" rel="noopener">sitemap.xml ↗</a>
+            <a class="btn btn-ghost btn-sm" href="https://search.google.com/test/rich-results?url=${enc}" target="_blank" rel="noopener">Rich Results টেস্ট ↗</a><a class="btn btn-ghost btn-sm" href="https://pagespeed.web.dev/analysis?url=${enc}" target="_blank" rel="noopener">PageSpeed ↗</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="cardMaker" style="margin-top:18px"><div class="ch" style="margin:0"><div><h3>সোশ্যাল কার্ড মেকার</h3><p class="muted" style="font-size:.88rem">ডিজাইনার ছাড়াই শেয়ার ছবি, ফেসবুক পোস্ট আর স্টোরির ছবি বানান। লিখলেই ছবি বদলায়।</p></div></div>
+      <div class="cm">
+        <div class="cm-stage"><canvas id="cmCanvas" width="1200" height="630" aria-label="সোশ্যাল কার্ডের প্রিভিউ"></canvas></div>
+        <div class="cm-ctl" id="cmCtl">
+          <div class="f"><label>মাপ</label><div class="cm-chips" data-k="fmt">${Object.entries(CARD_FMT).map(([k, [, , l, d]]) => `<button type="button" data-v="${k}" aria-pressed="${scard.fmt === k}"><span>${l}<br><small class="muted" style="font-size:.74rem">${d}</small></span></button>`).join("")}</div></div>
+          <div class="f"><label>ডিজাইন</label><div class="cm-chips" data-k="tpl">${CARD_TPL.map(([k, l, bg]) => `<button type="button" data-v="${k}" aria-pressed="${scard.tpl === k}"><span class="sw" style="background:${bg}"></span>${l}</button>`).join("")}</div></div>
+          <div class="f"><label>রং</label><div class="cm-col">${ACCENTS.map(c => `<button type="button" data-accent="${c}" style="background:${c}" aria-label="${c}" aria-pressed="${scard.accent === c}"></button>`).join("")}<input type="color" id="cmColor" value="${esc(scard.accent)}" aria-label="নিজের রং"></div></div>
+          <div class="f"><label for="cm-title">শিরোনাম</label><input class="inp" id="cm-title" data-f="title" maxlength="80" value="${esc(scard.title)}"></div>
+          <div class="f"><label for="cm-hi">শিরোনামের রঙিন অংশ</label><input class="inp" id="cm-hi" data-f="hi" maxlength="60" value="${esc(scard.hi)}"></div>
+          <div class="f"><label for="cm-sub">ছোট লেখা</label><input class="inp" id="cm-sub" data-f="sub" maxlength="120" value="${esc(scard.sub)}"></div>
+          <div class="seo-grid" style="grid-template-columns:1fr 1fr;gap:10px"><div class="f"><label for="cm-badge">ব্যাজ</label><input class="inp" id="cm-badge" data-f="badge" maxlength="40" value="${esc(scard.badge)}"></div>
+            <div class="f"><label for="cm-foot">নিচের লেখা</label><input class="inp" id="cm-foot" data-f="foot" maxlength="60" value="${esc(scard.foot)}"></div></div>
+          <div class="cm-tg"><label><input type="checkbox" data-t="logo" ${scard.logo ? "checked" : ""}> লোগো</label><label><input type="checkbox" data-t="shot" ${scard.shot ? "checked" : ""}> ওয়েবসাইটের স্ক্রিনশট</label></div>
+          <div class="row2"><button class="btn btn-primary" type="button" id="cmSave">শেয়ার ছবি হিসেবে বসান</button><button class="btn btn-ghost" type="button" id="cmDl">PNG ডাউনলোড</button><button class="btn btn-ghost btn-sm" type="button" id="cmReset">শুরুর লেখায় ফেরান</button></div>
+          <small class="seo-hint" id="cmHint"></small>
+        </div>
+      </div>
+    </div>`;
+  seoLiveUpdate(); drawCardNow();
+  $("seoForm").addEventListener("input", seoLiveUpdate);
+  $("seoForm").addEventListener("change", seoLiveUpdate);
+  $("seoTabs").addEventListener("click", e => { const b = e.target.closest("[data-tab]"); if (!b) return; seoTab = b.dataset.tab; $("seoTabs").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); $("seoPrev").innerHTML = seoPreview(); });
+  $("seoForm").addEventListener("submit", async ev => {
+    ev.preventDefault(); $("soErr").textContent = "";
+    const b = ev.target.querySelector("button[type=submit]"); b.disabled = true;
+    const f = new FormData(ev.target), d = Object.fromEntries(f); d.index = f.get("index") ? 1 : "";
+    try { seoSet = (await api.saveSeo(d)).settings; if (SITE){ SITE.seo_title = seoSet.title; SITE.seo_desc = seoSet.description; } renderSeo(); toast("সেভ হয়েছে। হোমপেজে নতুন SEO ট্যাগ বসে গেছে।"); }
+    catch(err){ $("soErr").textContent = err.message; b.disabled = false; }
+  });
+  $("main").querySelectorAll("[data-copy]").forEach(b => b.addEventListener("click", async () => { try { await navigator.clipboard.writeText(b.dataset.copy); toast("কপি হয়েছে।"); } catch(e){ toast(b.dataset.copy); } }));
+  $("toMaker").addEventListener("click", e => { e.preventDefault(); $("cardMaker").scrollIntoView({behavior: "smooth"}); });
+  $("ogFile").addEventListener("change", async ev => {
+    const f = ev.target.files[0]; if (!f) return;
+    try { seoSet = (await api.ogUpload(f)).settings; renderSeo(); toast("নতুন শেয়ার ছবি বসানো হয়েছে।"); } catch(err){ toast(err.message); }
+  });
+  $("ogReset")?.addEventListener("click", async () => { try { seoSet = (await api.ogReset()).settings; renderSeo(); toast("ডিফল্ট কার্ড ফিরে এসেছে।"); } catch(err){ toast(err.message); } });
+  $("seoPing").addEventListener("click", async ev => {
+    ev.target.disabled = true;
+    try { seoSet = (await api.seoPing()).settings; renderSeo(); toast(seoSet.last_ping?.msg || "পাঠানো হয়েছে।"); } catch(err){ toast(err.message); ev.target.disabled = false; }
+  });
+  $("seoLiveBtn").addEventListener("click", seoLiveCheck);
+  // card maker
+  const ctl = $("cmCtl");
+  ctl.addEventListener("input", e => { const k = e.target.dataset.f; if (k){ scard[k] = e.target.value; drawCardSoon(); } if (e.target.id === "cmColor"){ scard.accent = e.target.value; ctl.querySelectorAll("[data-accent]").forEach(x => x.setAttribute("aria-pressed", false)); drawCardSoon(); } });
+  ctl.addEventListener("change", e => { const t = e.target.dataset.t; if (t){ scard[t] = e.target.checked; drawCardNow(); } });
+  ctl.addEventListener("click", e => {
+    const ch = e.target.closest(".cm-chips button"), ac = e.target.closest("[data-accent]");
+    if (ch){ const k = ch.parentElement.dataset.k; scard[k] = ch.dataset.v; ch.parentElement.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === ch)); drawCardNow(); }
+    if (ac){ scard.accent = ac.dataset.accent; $("cmColor").value = scard.accent; ctl.querySelectorAll("[data-accent]").forEach(x => x.setAttribute("aria-pressed", x === ac)); drawCardNow(); }
+  });
+  $("cmReset").addEventListener("click", () => { scard = {...cardDefault(), fmt: scard.fmt, tpl: scard.tpl, accent: scard.accent}; ["title", "hi", "sub", "badge", "foot"].forEach(k => $("cm-" + k).value = scard[k]); drawCardNow(); });
+  $("cmDl").addEventListener("click", () => $("cmCanvas").toBlob(b => { const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = `${(seoSet.name || "techill").toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${scard.fmt}.png`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }, "image/png"));
+  $("cmSave").addEventListener("click", async ev => {
+    const b = ev.target; b.disabled = true; b.textContent = "বসানো হচ্ছে...";
+    try {
+      const blob = await new Promise(r => $("cmCanvas").toBlob(r, "image/jpeg", .9));   // JPG keeps it small enough for WhatsApp previews
+      seoSet = (await api.ogUpload(blob, JSON.stringify(scard))).settings; renderSeo(); toast("কার্ডটা এখন শেয়ার ছবি। লিংক শেয়ার করলে এটাই দেখাবে।");
+    } catch(err){ toast(err.message); b.disabled = false; b.textContent = "শেয়ার ছবি হিসেবে বসান"; }
+  });
+}
+
+// Fetches the public pages from this browser to confirm the server really sends the tags (index.php and .htaccess at work).
+async function seoLiveCheck(){
+  if (api.demo){ toast("ডেমো মোডে লাইভ চেক চলে না। আসল সার্ভারে চালান।"); return; }
+  const b = $("seoLiveBtn"); b.disabled = true; b.textContent = "চেক হচ্ছে...";
+  const get = async u => { try { const r = await fetch(u + (u.includes("?") ? "&" : "?") + "t=" + Date.now(), {cache: "no-store", credentials: "omit"}); return r.ok ? await r.text() : ""; } catch(e){ return ""; } };
+  const [home, robots, map] = await Promise.all([get("./"), get("robots.txt"), get("sitemap.xml")]);
+  seoLive = [
+    [/property="og:image"/.test(home) && /application\/ld\+json/.test(home), "লাইভ: হোমপেজে SEO ট্যাগ সার্ভার থেকেই আসছে", "index.php আপলোড হয়েছে কিনা আর .htaccess ফাইলটা আছে কিনা দেখুন (cPanel File Manager → Settings → Show Hidden Files)।"],
+    [/Sitemap:/i.test(robots), "লাইভ: robots.txt কাজ করছে", "seo.php আর .htaccess আপলোড করুন। হোস্টে mod_rewrite চালু থাকতে হবে।"],
+    [/<urlset/.test(map), "লাইভ: sitemap.xml কাজ করছে", "seo.php আর .htaccess আপলোড করুন।"]
+  ];
+  seoLiveUpdate(); b.disabled = false; b.textContent = "আবার চেক করুন";
+  toast(seoLive.every(x => x[0]) ? "লাইভ সাইট ঠিক আছে।" : "কিছু জিনিস কাজ করছে না, তালিকা দেখুন।");
+}
+
+/* card drawing (canvas, so the same picture is previewed, saved and downloaded) */
+let cardImgs = null, cardTimer = 0;
+function cardAssets(){
+  if (cardImgs) return cardImgs;
+  const load = src => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.onerror = () => r(null); i.src = src; });
+  const font = document.fonts ? Promise.all(['64px "Tiro Bangla"', 'italic 64px "Tiro Bangla"'].map(f => document.fonts.load(f, "অনলাইন দোকান Techill ৳০১২").catch(() => {}))) : Promise.resolve();
+  return cardImgs = Promise.all([load("assets/logo-dark.png"), load("assets/logo-light.png"), load("assets/hero-shop.webp"), font]).then(([ld, ll, shot]) => ({ld, ll, shot}));
+}
+function drawCardSoon(){ clearTimeout(cardTimer); cardTimer = setTimeout(drawCardNow, 60); }
+async function drawCardNow(){
+  const cv = $("cmCanvas"); if (!cv) return;
+  const imgs = await cardAssets(); if (!$("cmCanvas")) return;
+  const [W, H] = CARD_FMT[scard.fmt]; cv.width = W; cv.height = H; cv.classList.toggle("tall", H > W);
+  drawCard(cv.getContext("2d"), W, H, scard, imgs);
+  $("cmSave").disabled = scard.fmt !== "og";
+  $("cmHint").textContent = scard.fmt === "og" ? "শেয়ার কার্ড বসালে Facebook, WhatsApp, Messenger আর X-এ লিংকের সাথে এই ছবি যাবে।" : "এই মাপটা পোস্ট বা স্টোরিতে দেওয়ার জন্য: ডাউনলোড করে ফেসবুকে আপলোড করুন। শেয়ার ছবি হিসেবে শুধু ১২০০×৬৩০ মাপ বসানো যায়।";
+}
+const hex2 = h => { h = h.replace("#", ""); if (h.length === 3) h = [...h].map(c => c + c).join(""); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); };
+const mix = (a, b, t) => { const x = hex2(a), y = hex2(b); return "rgb(" + x.map((v, i) => Math.round(v + (y[i] - v) * t)).join(",") + ")"; };
+const rgba = (h, a) => `rgba(${hex2(h).join(",")},${a})`;
+function rrect(g, x, y, w, h, r){ g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+function glow(g, x, y, r, col){ const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, col); gr.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); }
+// Word-wraps coloured runs of text; returns lines of [{w, col}].
+function wrapRuns(g, runs, maxW){
+  const words = runs.flatMap(r => String(r.t || "").split(/\s+/).filter(Boolean).map(w => ({w, col: r.col}))), sp = g.measureText(" ").width, lines = [];
+  let line = [], lw = 0;
+  for (const t of words){ const tw = g.measureText(t.w).width; if (line.length && lw + sp + tw > maxW){ lines.push(line); line = []; lw = 0; } lw += (line.length ? sp : 0) + tw; line.push(t); }
+  if (line.length) lines.push(line);
+  return lines;
+}
+function drawCard(g, W, H, c, im){
+  const A = c.accent || "#0a84f0", FF = '"Tiro Bangla","Noto Serif Bengali",Georgia,serif', story = H > W * 1.3;
+  const T = {
+    aurora: {bg(){ const l = g.createLinearGradient(0, 0, W, H); l.addColorStop(0, "#06142f"); l.addColorStop(1, mix(A, "#06142f", .55)); g.fillStyle = l; g.fillRect(0, 0, W, H);
+      glow(g, W * .92, H * .05, W * .55, rgba(A, .55)); glow(g, W * .05, H * 1.02, W * .45, "rgba(165,75,184,.38)"); }, ink: "#fff", sub: "rgba(255,255,255,.8)", hi: mix(A, "#ffffff", .5), logo: im.ld, bb: A, bi: "#fff"},
+    clean: {bg(){ g.fillStyle = "#f7f9fc"; g.fillRect(0, 0, W, H); glow(g, W * .95, H * .1, W * .5, rgba(A, .22)); glow(g, W * .02, H * .98, W * .4, rgba(A, .12));
+      g.strokeStyle = rgba(A, .08); g.lineWidth = 2; for (let x = -H; x < W; x += 46){ g.beginPath(); g.moveTo(x, H); g.lineTo(x + H, 0); g.stroke(); } g.fillStyle = "rgba(247,249,252,.82)"; g.fillRect(0, 0, W, H); },
+      ink: "#121822", sub: "#4a5568", hi: A, logo: im.ll, bb: A, bi: "#fff"},
+    bold: {bg(){ g.fillStyle = A; g.fillRect(0, 0, W, H); g.fillStyle = "rgba(255,255,255,.07)"; for (let i = 0; i < 6; i++){ g.beginPath(); g.arc(W * .88, H * .12, W * (.12 + i * .12), 0, 7); g.lineWidth = 26; g.strokeStyle = "rgba(255,255,255," + (.06 - i * .008) + ")"; g.stroke(); } },
+      ink: "#fff", sub: "rgba(255,255,255,.88)", hi: "#ffe066", logo: im.ld, bb: "#fff", bi: A},
+    night: {bg(){ g.fillStyle = "#0b1220"; g.fillRect(0, 0, W, H); g.fillStyle = "rgba(255,255,255,.06)"; for (let x = 20; x < W; x += 34) for (let y = 20; y < H; y += 34) g.fillRect(x, y, 2, 2);
+      glow(g, W * .8, H * .9, W * .5, rgba(A, .35)); }, ink: "#e9eef5", sub: "#98a4b7", hi: mix(A, "#ffffff", .25), logo: im.ld, bb: "rgba(255,255,255,.1)", bi: "#fff", bs: A}
+  }[c.tpl] || {};
+  T.bg();
+  const P = story ? 90 : Math.round(W * .06), shot = c.shot && im.shot;
+  const textW = story || !shot ? W - P * 2 : W * (H >= W ? .5 : .54) - P;
+  let y = P + (story ? 60 : 0);
+  if (c.logo && T.logo){ const lh = story ? 74 : W === H ? 60 : 52, lw = T.logo.width * lh / T.logo.height; g.drawImage(T.logo, P, y, lw, lh); y += lh + (story ? 90 : H * .085); }
+  else y += story ? 40 : H * .03;
+  // headline: shrink until it fits in 3 lines (4 on a story)
+  let fs = story ? 104 : W === H ? 76 : 68, lines;
+  const ss = story ? 44 : W === H ? 34 : 30, bs = story ? 40 : W === H ? 32 : 28;
+  g.font = `${ss}px ${FF}`; const subN = c.sub ? Math.min(3, wrapRuns(g, [{t: c.sub}], textW).length) : 0;
+  const rest = (subN ? ss * .5 + subN * ss * 1.45 : 0) + (c.badge || c.foot ? (story ? 60 : H * .06) + bs * 1.9 : 0);
+  for (;;){ g.font = `${fs}px ${FF}`; lines = wrapRuns(g, [{t: c.title, col: T.ink}, {t: c.hi, col: T.hi}], textW);
+    if ((lines.length <= (story ? 4 : 3) && (story || y + lines.length * fs * 1.34 + rest <= H - P * .8)) || fs < 36) break; fs -= 4; }
+  g.textBaseline = "alphabetic"; const lh = fs * 1.34, sp = g.measureText(" ").width;
+  for (const ln of lines){ y += lh; let x = P; for (const t of ln){ g.fillStyle = t.col; g.fillText(t.w, x, y - fs * .28); x += g.measureText(t.w).width + sp; } }
+  if (c.sub){ g.font = `${ss}px ${FF}`; y += ss * .5;
+    for (const ln of wrapRuns(g, [{t: c.sub, col: T.sub}], textW).slice(0, 3)){ y += ss * 1.45; g.fillStyle = T.sub; g.fillText(ln.map(t => t.w).join(" "), P, y); } }
+  let fx0 = P, fy0 = 0; const bh = bs * 1.9;
+  if (c.badge || c.foot) y += story ? 60 : H * .06;
+  if (c.badge){ g.font = `${bs}px ${FF}`; const bw = g.measureText(c.badge).width + bs * 1.3;
+    g.save(); g.shadowColor = "rgba(0,0,0,.18)"; g.shadowBlur = 18; g.shadowOffsetY = 6; rrect(g, P, y, bw, bh, bh / 2); g.fillStyle = T.bb; g.fill(); g.restore();
+    if (T.bs){ rrect(g, P, y, bw, bh, bh / 2); g.lineWidth = 2.5; g.strokeStyle = T.bs; g.stroke(); }
+    g.fillStyle = T.bi; g.fillText(c.badge, P + bs * .65, y + bh * .66); fx0 = P + bw + bs * .9; }
+  fy0 = y + bh * .64;
+  if (c.badge || c.foot) y += bh;
+  // the web address sits beside the badge
+  if (c.foot){ const fz = story ? 34 : W === H ? 26 : 24; g.font = `${fz}px ${FF}`;
+    g.fillStyle = c.tpl === "bold" ? "#fff" : A; g.beginPath(); g.arc(fx0 + fz * .35, fy0 - fz * .32, fz * .3, 0, 7); g.fill();
+    g.fillStyle = T.sub; g.fillText(c.foot, fx0 + fz * 1.05, fy0); }
+  if (shot){
+    let fx, fy, fw, fh;
+    if (story){ fx = W * .1; fy = Math.max(y + 90, H * .5); fw = W * .8; fh = H - fy + 60; }
+    else { fx = W * (H >= W ? .56 : .6); fy = H * .13; fw = W * (H >= W ? .5 : .46); fh = H * .97; }
+    const bar = Math.round(fw * .07), r = Math.round(fw * .045);
+    g.save(); g.shadowColor = "rgba(8,20,48,.45)"; g.shadowBlur = 50; g.shadowOffsetY = 24; rrect(g, fx, fy, fw, fh, r); g.fillStyle = "#fff"; g.fill(); g.restore();
+    g.save(); rrect(g, fx, fy, fw, fh, r); g.clip();
+    g.fillStyle = "#eef2f7"; g.fillRect(fx, fy, fw, bar);
+    ["#ff5f57", "#febc2e", "#28c840"].forEach((col, i) => { g.fillStyle = col; g.beginPath(); g.arc(fx + bar * .55 + i * bar * .45, fy + bar / 2, bar * .14, 0, 7); g.fill(); });
+    g.fillStyle = "#fff"; rrect(g, fx + bar * 1.9, fy + bar * .22, fw - bar * 2.4, bar * .56, bar * .28); g.fill();
+    const s = im.shot, k = fw / s.width; g.drawImage(s, 0, 0, s.width, Math.min(s.height, (fh - bar) / k), fx, fy + bar, fw, Math.min(s.height * k, fh - bar));
+    g.restore();
+  }
 }
 
 /* ---------- invoice ---------- */

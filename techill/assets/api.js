@@ -234,6 +234,17 @@ window.TechillAPI = (() => {
   const SITE_DEF = {"name": "Techill", "favicon": null, "favicon_sm": null, "seo_title": "Techill — ২৪ ঘণ্টায় আপনার অনলাইন দোকান", "seo_desc": "২৪ ঘণ্টায় আপনার নিজের অনলাইন দোকান। WooCommerce ও Laravel ই-কমার্স ওয়েবসাইট, COD, বিকাশ, কুরিয়ার আর Pixel সেটআপ সহ।", "hero_eyebrow": "বাংলাদেশের অনলাইন ব্যবসার জন্য", "hero_title": "মাত্র ২৪ ঘণ্টায় আপনার নিজের", "hero_highlight": "অনলাইন দোকান", "hero_sub": "ফেসবুক ইনবক্সে অর্ডার নেওয়ার ঝামেলা শেষ। টেমপ্লেট বাছুন, তথ্য দিন, বাকিটা আমাদের। COD, বিকাশ আর কুরিয়ার সেটআপ করা অবস্থায় ওয়েবসাইট হাতে পাবেন।", "trust1": "৳৬,৯৯৯ থেকে শুরু", "trust2": "কোনো মাসিক চার্জ নেই", "trust3": "হোয়াটসঅ্যাপে সাপোর্ট", "cta_title": "আজ অর্ডার করুন, কাল থেকে বিক্রি শুরু", "cta_text": "প্রশ্ন থাকলে হোয়াটসঅ্যাপে সরাসরি কথা বলুন।", "footer_text": "বাংলাদেশের ছোট ও মাঝারি অনলাইন ব্যবসার জন্য দ্রুত, সাশ্রয়ী ই-কমার্স ওয়েবসাইট।", "whatsapp": "", "phone": "", "email": "hello@techill.top", "hours": "সকাল ১০টা থেকে রাত ১০টা", "address": "", "facebook": "", "instagram": "", "youtube": "", "company": "Techill · by RedBolt IT", "invoice_note": "Techill-এর সাথে কাজ করার জন্য ধন্যবাদ। কোনো প্রশ্ন থাকলে আমাদের সাথে যোগাযোগ করুন।"};
   const SITEKEY = "techill_demo_site";
   const demoSite = () => ({...SITE_DEF, ...(ls.get(SITEKEY) || {})});
+  // Same defaults as SEO_DEFAULTS in lib.php.
+  const SEO_DEF = {site_url: "", keywords: "", index: true, og_title: "", og_desc: "", og_image: null, og_alt: "", card: null, twitter_site: "", fb_app_id: "",
+    google_verify: "", bing_verify: "", fb_verify: "", ga4_id: "", gtm_id: "", schema_type: "ProfessionalService", head_code: "", indexnow_key: "", last_ping: null, updated_at: 0};
+  const SEOKEY = "techill_demo_seo";
+  const demoSeo = () => ({...SEO_DEF, ...(ls.get(SEOKEY) || {})});
+  const seoOut = () => { const seo = demoSeo(), site = demoSite(), det = new URL("./", location.href).href, base = seo.site_url || det;
+    return {...seo, title: site.seo_title, description: site.seo_desc, name: site.name, base, detected: det,
+      og_url: seo.og_image && seo.og_image.startsWith("data:") ? seo.og_image : new URL(seo.og_image || "assets/og-card.jpg", base).href,
+      sitemap: base + "sitemap.xml", robots: base + "robots.txt", gd: true, site}; };
+  const verifyCode = v => { v = String(v || "").trim(); const m = v.match(/content\s*=\s*["']([^"']+)["']/i); if (m) v = m[1].trim();
+    if (v && !/^[A-Za-z0-9_\-=.:+\/]{6,120}$/.test(v)) bad("ভেরিফিকেশন কোড সঠিক নয়। পুরো <meta> ট্যাগ বা শুধু content-এর মান দিন।"); return v; };
   const REF_DEF = {enabled: true, reward: 1000, discount: 1000, min_order: 5000, trigger: "delivered", payout_min: 1000, first_order_only: true};
   const demoRef = () => ({...REF_DEF, ...(ls.get(RKEY) || {})});
   const demoMarketing = () => ls.get(MKEY) || {pixel_enabled: false, pixel_id: "", capi_token: "", test_code: "", capi_last: null};
@@ -680,7 +691,7 @@ window.TechillAPI = (() => {
       support: await publicSupport(), referral: publicReferral(), site: demoSite(), auth: {email: emailReady(), otp: otpRequired()}}; },
     async site_save(f) {
       const d = load(); needAdmin(d); const s = demoSite();
-      for (const k of ["name","seo_title","seo_desc","hero_eyebrow","hero_title","hero_highlight","hero_sub","trust1","trust2","trust3","cta_title","cta_text","footer_text","hours","address","company","invoice_note","phone"]) s[k] = String(f[k] ?? "").trim();
+      for (const k of ["name","hero_eyebrow","hero_title","hero_highlight","hero_sub","trust1","trust2","trust3","cta_title","cta_text","footer_text","hours","address","company","invoice_note","phone"]) s[k] = String(f[k] ?? "").trim();
       if (!s.name || !s.hero_title || !s.hero_highlight) bad("সাইটের নাম আর হিরো শিরোনাম ফাঁকা রাখা যাবে না।");
       const em = String(f.email || "").trim().toLowerCase(); if (em && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) bad("যোগাযোগের ইমেইল সঠিক নয়।"); s.email = em;
       let wa = digits(f.whatsapp); if (wa) { if (/^01[3-9]\d{8}$/.test(wa)) wa = "88" + wa; if (!/^\d{8,15}$/.test(wa)) bad("হোয়াটসঅ্যাপ নম্বর সঠিক নয় (যেমন 01712345678)।"); } s.whatsapp = wa;
@@ -688,6 +699,37 @@ window.TechillAPI = (() => {
       ls.set(SITEKEY, s); return {site: demoSite()};
     },
     async favicon_upload({big, small}) { const d = load(); needAdmin(d); const s = demoSite(); s.favicon = big; s.favicon_sm = small; ls.set(SITEKEY, s); return {site: demoSite()}; },
+    async seo_settings() { needAdmin(load()); return {settings: seoOut()}; },
+    async seo_save(f) {
+      needAdmin(load()); const seo = demoSeo(), site = demoSite(), str = k => String(f[k] ?? "").trim();
+      const title = str("title"), desc = str("description"); if (!title || !desc) bad("টাইটেল আর বিবরণ ফাঁকা রাখা যাবে না।");
+      let url = str("site_url");
+      if (url) { if (!/^https?:\/\//i.test(url)) url = "https://" + url; let u; try { u = new URL(url); } catch (e) { bad("সাইটের ঠিকানা সঠিক নয় (যেমন https://techill.top)।"); }
+        if (u.search || u.hash) bad("সাইটের ঠিকানা সঠিক নয় (যেমন https://techill.top)।"); url = u.origin + u.pathname.replace(/\/+$/, "") + "/"; }
+      seo.site_url = url;
+      seo.keywords = str("keywords").split(/[,،\n]+/).map(x => x.trim()).filter(Boolean).slice(0, 20).join(", ");
+      seo.index = !!f.index;
+      for (const k of ["og_title", "og_desc", "og_alt", "head_code"]) seo[k] = str(k);
+      let tw = str("twitter_site").replace(/^@/, ""); const tm = tw.match(/(?:twitter|x)\.com\/([A-Za-z0-9_]+)/i); if (tm) tw = tm[1];
+      if (tw && !/^[A-Za-z0-9_]{1,15}$/.test(tw)) bad("X (Twitter) username সঠিক নয়।"); seo.twitter_site = tw;
+      const app = str("fb_app_id").replace(/\D/g, ""); if (app && app.length < 8) bad("Facebook App ID সঠিক নয় (শুধু সংখ্যা)।"); seo.fb_app_id = app;
+      for (const k of ["google_verify", "bing_verify", "fb_verify"]) seo[k] = verifyCode(f[k]);
+      const ga = str("ga4_id").toUpperCase(), gtm = str("gtm_id").toUpperCase();
+      if (ga && !/^G-[A-Z0-9]{4,15}$/.test(ga)) bad("GA4 Measurement ID সঠিক নয় (যেমন G-AB12CD34EF)।");
+      if (gtm && !/^GTM-[A-Z0-9]{4,10}$/.test(gtm)) bad("Tag Manager ID সঠিক নয় (যেমন GTM-AB12CD3)।");
+      seo.ga4_id = ga; seo.gtm_id = gtm;
+      seo.schema_type = ["Organization", "LocalBusiness", "ProfessionalService", "OnlineStore"].includes(f.schema_type) ? f.schema_type : "ProfessionalService";
+      if (f.card) try { seo.card = JSON.parse(f.card); } catch (e) {}
+      if (!seo.indexnow_key) seo.indexnow_key = [...crypto.getRandomValues(new Uint8Array(16))].map(x => x.toString(16).padStart(2, "0")).join("");
+      seo.updated_at = Math.floor(Date.now() / 1000);
+      ls.set(SEOKEY, seo); ls.set(SITEKEY, {...(ls.get(SITEKEY) || {}), seo_title: title, seo_desc: desc});
+      return {settings: seoOut()};
+    },
+    async og_upload({data, card}) { needAdmin(load()); const seo = demoSeo(); seo.og_image = data; if (card) try { seo.card = JSON.parse(card); } catch (e) {} seo.updated_at = Math.floor(Date.now() / 1000); ls.set(SEOKEY, seo); return {settings: seoOut()}; },
+    async og_reset() { needAdmin(load()); const seo = demoSeo(); seo.og_image = null; ls.set(SEOKEY, seo); return {settings: seoOut()}; },
+    async seo_ping() { needAdmin(load()); const seo = demoSeo();
+      if (!seo.index) bad("ইনডেক্সিং বন্ধ আছে, আগে চালু করে সেভ করুন।"); if (!seo.site_url) bad("আগে \"সাইটের ঠিকানা\" দিয়ে সেভ করুন (যেমন https://techill.top)।");
+      seo.last_ping = {at: Math.floor(Date.now() / 1000), ok: true, msg: "ডেমো মোড: আসল সার্ভারে Bing আর Yandex-কে জানানো হবে।"}; ls.set(SEOKEY, seo); return {settings: seoOut()}; },
     async favicon_reset() { const d = load(); needAdmin(d); const s = demoSite(); s.favicon = s.favicon_sm = null; ls.set(SITEKEY, s); return {site: demoSite()}; },
     async avatar_upload({file, user_id}) {
       const d = load(), u = needUser(d), id = +user_id || u.id;
@@ -1255,6 +1297,20 @@ window.TechillAPI = (() => {
       return post("favicon_upload", {favicon: file});
     },
     faviconReset: () => run("favicon_reset", {}, () => post("favicon_reset", {})),
+    seoSettings: () => run("seo_settings", {}, () => http("seo_settings")),
+    saveSeo: data => run("seo_save", data, () => post("seo_save", data)),
+    // The image is a File (a photo) or a Blob (the card made in the editor). The demo keeps it as a JPEG data URL.
+    async ogUpload(blob, card) {
+      if (demo) { const data = await new Promise((res, rej) => { const img = new Image(), u = URL.createObjectURL(blob);
+          img.onload = () => { const c = document.createElement("canvas"); c.width = 1200; c.height = 630; const k = Math.max(1200 / img.width, 630 / img.height), w = img.width * k, h = img.height * k;
+            const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, 1200, 630); g.drawImage(img, (1200 - w) / 2, (630 - h) / 2, w, h); URL.revokeObjectURL(u); res(c.toDataURL("image/jpeg", .85)); };
+          img.onerror = () => rej(Object.assign(new Error("ছবিটা পড়া যায়নি, অন্য একটা ছবি দিন।"), {status: 400})); img.src = u; });
+        return run("og_upload", {data, card}, null); }
+      const f = new FormData(); f.append("image", blob, blob.name || "card.png"); if (card) f.append("card", card);
+      return post("og_upload", f);
+    },
+    ogReset: () => run("og_reset", {}, () => post("og_reset", {})),
+    seoPing: () => run("seo_ping", {}, () => post("seo_ping", {})),
     // Puts the admin's favicon on the current page (the static assets/favicon.png stays as the fallback).
     applyFavicon(site) {
       if (!site) return;
@@ -1323,7 +1379,7 @@ window.TechillAPI = (() => {
       this.track("view", {r: document.referrer, u, tz});
       setInterval(() => { if (!document.hidden) this.track("ping"); }, 30000);
     },
-    resetDemo() { [KEY, SKEY, CKEY, PKEY, MKEY, EKEY, SUPKEY, RKEY, SITEKEY].forEach(k => ls.del(k)); },
+    resetDemo() { [KEY, SKEY, CKEY, PKEY, MKEY, EKEY, SUPKEY, RKEY, SITEKEY, SEOKEY].forEach(k => ls.del(k)); },
     supportWidget
   };
 })();
