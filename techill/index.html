@@ -1223,7 +1223,7 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
         </div>
         <form id="infoForm" novalidate>
           <div class="fgrid">
-            <div class="f" data-req><label for="i-name">অ্যাডমিনের নাম <span class="req">*</span></label><input type="text" id="i-name" name="admin_name" autocomplete="name"><span class="msg"></span></div>
+            <div class="f" data-req><label for="i-name">আপনার নাম <span class="req">*</span></label><input type="text" id="i-name" name="admin_name" autocomplete="name"><span class="msg"></span></div>
             <div class="f" data-req data-type="email"><label for="i-email">ইমেইল <span class="req">*</span> <small>(অ্যাডমিন লগইন যাবে)</small></label><input type="email" id="i-email" name="email" autocomplete="email"><span class="msg"></span></div>
             <div class="f" id="f-pass" data-type="pass"><label for="i-pass">পাসওয়ার্ড <span class="req">*</span> <small>(ড্যাশবোর্ডে লগইনের জন্য, ৮+ অক্ষর)</small></label><input type="password" id="i-pass" name="password" autocomplete="new-password" minlength="8"><span class="hint">আগে অ্যাকাউন্ট থাকলে সেই পাসওয়ার্ডটাই দিন।</span><span class="msg"></span></div>
             <div class="f" id="f-otp" data-type="otp" hidden><label for="i-otp">ইমেইল যাচাই কোড <span class="req">*</span></label><div class="otp-row"><input type="text" id="i-otp" name="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="৬ ডিজিট"><button type="button" class="btn btn-ghost btn-sm" id="otpSend">কোড পাঠান</button></div><span class="hint" id="otpHint">নতুন অ্যাকাউন্টের জন্য ইমেইলে একটা কোড যাবে। আগে অ্যাকাউন্ট থাকলে কোড লাগবে না, শুধু সেই পাসওয়ার্ড দিন।</span><span class="msg"></span></div>

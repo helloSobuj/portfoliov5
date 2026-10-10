@@ -72,9 +72,6 @@ button,input,textarea,select{font:inherit;color:inherit}
 .live-pill b{font-variant-numeric:tabular-nums}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--ok);flex:none}
 @media (prefers-reduced-motion:no-preference){.dot{animation:pulse 1.8s ease-out infinite}@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 60%,transparent)}100%{box-shadow:0 0 0 9px transparent}}}
-.demo-bar{background:var(--warn-soft);color:var(--warn);font-size:.88rem;text-align:center;padding:7px 16px}
-.demo-bar b{color:var(--ink)}
-.demo-bar button{all:unset;cursor:pointer;text-decoration:underline;margin-left:6px}
 
 /* shell */
 .shell{display:grid;grid-template-columns:220px minmax(0,1fr);gap:28px;max-width:1440px;margin:0 auto;padding:24px 24px 72px}
@@ -330,7 +327,6 @@ textarea.inp{resize:vertical;min-height:84px}
     </div>
   </div>
 </header>
-<div class="demo-bar" id="demoBar" hidden>ডেমো মোড: নমুনা ডেটা, শুধু এই ব্রাউজারে। অ্যাডমিন <b>admin@techill.top / admin1234</b> · ডেভেলপার <b>dev@techill.top / dev12345</b><button type="button" id="resetDemo">রিসেট</button></div>
 
 <section class="auth" id="auth" hidden>
   <form class="auth-card" id="loginForm" novalidate>
@@ -453,7 +449,6 @@ $("loginForm").addEventListener("submit", async e => {
   finally { btn.disabled = false; }
 });
 $("logoutBtn").addEventListener("click", async () => { await api.logout().catch(() => {}); me = null; showAuth("ব্যবসার পুরো হিসাব এক জায়গায়।"); });
-$("resetDemo").addEventListener("click", () => { api.resetDemo(); location.reload(); });
 
 /* ---------- data ---------- */
 async function loadAll(){
@@ -1525,7 +1520,6 @@ async function boot(){
 }
 (async () => {
   me = await api.init();
-  $("demoBar").hidden = !api.demo;
   boot();
 })();
 </script>

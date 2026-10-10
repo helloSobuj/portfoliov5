@@ -69,9 +69,6 @@ button,input,textarea,select{font:inherit;color:inherit}
 .theme-btn .moon{display:none}
 :root[data-theme="dark"] .theme-btn .sun{display:none}
 :root[data-theme="dark"] .theme-btn .moon{display:block}
-.demo-bar{background:var(--warn-soft);color:var(--warn);font-size:.9rem;text-align:center;padding:8px 16px}
-.demo-bar b{color:var(--ink)}
-.demo-bar button{all:unset;cursor:pointer;text-decoration:underline;margin-left:6px}
 
 /* auth */
 .auth{display:grid;place-items:center;padding:64px 16px}
@@ -388,7 +385,6 @@ table.tbl{width:100%;border-collapse:collapse;font-size:.92rem;min-width:720px}
   </div>
 </header>
 <div class="verify-bar" id="verifyBar" hidden><div class="container"><span>আপনার ইমেইল এখনো যাচাই করা হয়নি। প্রোজেক্টের আপডেট ঠিকমতো পেতে আর রেফারেলের টাকা তুলতে যাচাই করুন।</span><button type="button" id="verifyBtn">এখনই যাচাই করুন</button></div></div>
-<div class="demo-bar" id="demoBar" hidden>ডেমো মোড: ডেটা শুধু এই ব্রাউজারে থাকে। কাস্টমার <b>demo@techill.top / demo1234</b> · ডেভেলপার <b>dev@techill.top / dev12345</b> · অ্যাডমিন <b>admin@techill.top / admin1234</b><button type="button" id="resetDemo">রিসেট</button></div>
 
 <!-- logged out -->
 <main class="auth" id="auth" hidden>
@@ -613,7 +609,6 @@ $("resetForm").addEventListener("submit", async e => {
   catch(err){ $("rsErr").textContent = err.message; }
 });
 $("logoutBtn").addEventListener("click", async () => { await api.logout().catch(() => {}); me = null; cur = null; refData = null; stopPoll(); showAuth(); });
-$("resetDemo").addEventListener("click", () => { api.resetDemo(); location.reload(); });
 
 function showAuth(){
   $("auth").hidden = false; $("app").hidden = true; $("viewbar").hidden = true; $("ordersView").hidden = true; $("refView").hidden = true; $("who").hidden = true; $("logoutBtn").hidden = true; $("verifyBar").hidden = true;
@@ -1192,7 +1187,6 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) poll
 /* ---------- boot ---------- */
 (async () => {
   me = await api.init();
-  $("demoBar").hidden = !api.demo;
   const payFlag = (location.hash.match(/pay=(\w+)/) || [])[1];
   api.catalog().then(r => {
     if (r.pixel) api.initPixel(r.pixel.id);
