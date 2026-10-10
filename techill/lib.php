@@ -925,8 +925,8 @@ function seo_head(): string {
               'google-site-verification' => $seo['google_verify'], 'msvalidate.01' => $seo['bing_verify'], 'facebook-domain-verification' => $seo['fb_verify'],
               'theme-color' => '#0a84f0'] as $k => $v) $tags[] = $meta('name', $k, $v);
     if ($site['favicon_sm']) $tags[] = '<link rel="icon" href="' . h($site['favicon_sm']) . '" sizes="32x32" type="image/png">';
-    else $tags[] = '<link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">';
-    $tags[] = '<link rel="apple-touch-icon" href="' . h($site['favicon'] ?: 'assets/favicon.png') . '">';
+    else $tags[] = '<link rel="icon" href="assets/favicon-32.png?v=2" sizes="32x32" type="image/png">';
+    $tags[] = '<link rel="apple-touch-icon" href="' . h($site['favicon'] ?: 'assets/favicon.png?v=2') . '">';
     $tags[] = '<script type="application/ld+json">' . json_encode(seo_schema($seo, $site, $base, $img, $desc), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) . '</script>';
     if ($seo['gtm_id']) $tags[] = "<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','" . $seo['gtm_id'] . "');</script>";
     if ($seo['ga4_id']) $tags[] = '<script async src="https://www.googletagmanager.com/gtag/js?id=' . $seo['ga4_id'] . '"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","' . $seo['ga4_id'] . '");</script>';
@@ -937,7 +937,7 @@ function seo_head(): string {
 // schema.org data: the business, the website, and the packages with their prices (Google can show them in results).
 function seo_schema(array $seo, array $site, string $base, string $img, string $desc): array {
     $org = ['@type' => $seo['schema_type'], '@id' => $base . '#org', 'name' => $site['name'], 'url' => $base,
-        'logo' => seo_abs($site['favicon'] ?: 'assets/favicon.png'), 'image' => $img, 'description' => $desc];
+        'logo' => seo_abs($site['favicon'] ?: 'assets/favicon.png?v=2'), 'image' => $img, 'description' => $desc];
     if ($site['phone'] !== '' || $site['whatsapp'] !== '') $org['telephone'] = $site['phone'] ?: '+' . $site['whatsapp'];
     if ($site['email'] !== '') $org['email'] = $site['email'];
     if ($site['address'] !== '') $org['address'] = ['@type' => 'PostalAddress', 'streetAddress' => $site['address'], 'addressCountry' => 'BD'];

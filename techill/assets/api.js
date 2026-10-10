@@ -112,7 +112,7 @@ window.TechillAPI = (() => {
 .tinv *{box-sizing:border-box}
 .tinv::before{content:"";position:absolute;left:0;right:0;top:0;height:6px;background:linear-gradient(90deg,#0a84f0,#12a150,#a54bb8)}
 .tinv .ih{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding-bottom:22px;border-bottom:1px solid #e1e7ef}
-.tinv .ih img{height:44px;width:auto;display:block}
+.tinv .ih img{height:36px;width:auto;display:block}
 .tinv .co{margin-top:10px;font-size:12.5px;color:#5a6578;line-height:1.6}
 .tinv .it{text-align:right}
 .tinv .it h2{margin:0;font-size:30px;color:#0759b8;font-weight:700}
@@ -151,7 +151,7 @@ window.TechillAPI = (() => {
     const lines = o.lines || [], sub = lines.filter(l => l.amt > 0).reduce((a, l) => a + l.amt, 0), disc = lines.filter(l => l.amt < 0).reduce((a, l) => a + l.amt, 0);
     const contact = [site.address, [site.phone, site.whatsapp && "WhatsApp +" + bnN(site.whatsapp)].filter(Boolean).join(" · "), site.email].filter(Boolean).map(escH).join("<br>");
     return `<article class="tinv">
-      <div class="ih"><div><img src="assets/logo-light.png" alt="${escH(site.name)}" crossorigin="anonymous"><div class="co"><b>${escH(site.company || site.name)}</b>${contact ? "<br>" + contact : ""}</div></div>
+      <div class="ih"><div><img src="assets/logo-light.png?v=2" alt="${escH(site.name)}" crossorigin="anonymous"><div class="co"><b>${escH(site.company || site.name)}</b>${contact ? "<br>" + contact : ""}</div></div>
         <div class="it"><h2>ইনভয়েস</h2><div class="no">#${escH(o.code)}</div><div class="dt">${d}</div><span class="st ${o.cancelled ? "void" : paid ? "paid" : "due"}">${o.cancelled ? "বাতিল" : paid ? "পরিশোধিত" : "যাচাই বাকি"}</span></div></div>
       <div class="im">
         <div><h4>বিল প্রাপক</h4><b>${escH(i.admin_name || cust.name || "")}</b><br>${escH(i.phone || cust.phone || "")}${cust.email ? "<br>" + escH(cust.email) : ""}${i.address ? "<br>" + escH(i.address) : ""}</div>
@@ -1311,7 +1311,7 @@ window.TechillAPI = (() => {
     },
     ogReset: () => run("og_reset", {}, () => post("og_reset", {})),
     seoPing: () => run("seo_ping", {}, () => post("seo_ping", {})),
-    // Puts the admin's favicon on the current page (the static assets/favicon.png stays as the fallback).
+    // Puts the admin's favicon on the current page (the static assets/favicon.png?v=2 stays as the fallback).
     applyFavicon(site) {
       if (!site) return;
       const set = (rel, href, sizes) => { let l = document.querySelector(`link[rel="${rel}"]${sizes ? `[sizes="${sizes}"]` : ""}`);

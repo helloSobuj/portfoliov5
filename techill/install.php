@@ -199,13 +199,13 @@ $OK = $I('<path d="M5 12.5l4.5 4.5L19 7"/>'); $NO = $I('<path d="M6 6l12 12M18 6
 ?><!doctype html>
 <html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
 <title>Techill ইনস্টলার</title>
-<link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="assets/favicon-32.png?v=2" sizes="32x32" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tiro+Bangla&display=swap">
 <style>
 :root{--bg:#f4f7fc;--surface:#fff;--ink:#121822;--muted:#5a6578;--line:#e1e7ef;--blue:#0a84f0;--blue-ink:#0759b8;--blue-soft:#e8f3ff;--ok:#12a150;--ok-soft:#e4f6eb;--warn:#b26a00;--warn-soft:#fff3e0;--bad:#d93025;--bad-soft:#fde8e7;font-family:"Tiro Bangla","Noto Serif Bengali",system-ui,sans-serif}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(60% 50% at 10% 0,#dcecff,transparent 70%),radial-gradient(50% 40% at 100% 10%,#ddf5e7,transparent 70%),var(--bg);color:var(--ink);min-height:100vh;padding:32px 16px 64px;line-height:1.6}
-.wrap{max-width:760px;margin:auto}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}.top img{height:38px}.top span{font-size:.85rem;color:var(--muted)}
+.wrap{max-width:760px;margin:auto}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}.top img{height:30px}.top span{font-size:.85rem;color:var(--muted)}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:0 1px 2px rgb(16 24 40/.04),0 24px 48px -28px rgb(16 24 40/.3);overflow:hidden}
 .steps{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--line);background:#fafcff}
 .steps div{display:flex;align-items:center;gap:8px;justify-content:center;padding:14px 6px;font-size:.88rem;color:var(--muted);position:relative}
@@ -238,7 +238,7 @@ pre{background:#0f172a;color:#e2e8f0;padding:14px;border-radius:12px;overflow:au
 .next li::before{content:counter(n, bengali);width:28px;height:28px;border-radius:50%;background:var(--blue-soft);color:var(--blue-ink);display:grid;place-items:center;font-weight:700}
 @media (max-width:600px){.grid{grid-template-columns:1fr}.steps span{display:none}.body{padding:20px}.req li{grid-template-columns:30px 1fr}.req .tag{grid-column:2;justify-self:start}}
 </style></head><body><div class="wrap">
-<div class="top"><img src="assets/logo-light.png" alt="Techill"><span>ইনস্টলার · PHP <?= $h(PHP_VERSION) ?></span></div>
+<div class="top"><img src="assets/logo-light.png?v=2" alt="Techill"><span>ইনস্টলার · PHP <?= $h(PHP_VERSION) ?></span></div>
 <div class="card">
 <?php if ($step !== 'update' && $step !== 'updated'): ?>
   <div class="steps"><?php $n = 0; foreach ($steps as $k => $l): $n++; $cls = $n - 1 < $idx ? 'done' : ($n - 1 === $idx ? 'on' : ''); ?><div class="<?= $cls ?>"><i><?= $cls === 'done' ? '✓' : ['১','২','৩','৪'][$n - 1] ?></i><span><?= $h($l) ?></span></div><?php endforeach; ?></div>
