@@ -1,0 +1,6 @@
+# Public images only (template photos, profile photos). Nothing else here may be served or run.
+Options -Indexes
+Require all denied
+<FilesMatch "^[a-f0-9]{32}\.(jpg|png|webp)$">
+  Require all granted
+</FilesMatch>

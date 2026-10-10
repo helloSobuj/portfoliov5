@@ -1,0 +1,21 @@
+# Block direct access to config, helpers and the schema.
+<FilesMatch "^(config\.php|lib\.php|schema\.sql|README\.md)$">
+  Require all denied
+</FilesMatch>
+Options -Indexes
+
+# The landing page goes through index.php, which writes the SEO tags from the admin panel into it.
+DirectoryIndex index.php index.html
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^index\.html$ index.php [L]
+  RewriteRule ^robots\.txt$ seo.php?f=robots [L]
+  RewriteRule ^sitemap\.xml$ seo.php?f=sitemap [L]
+</IfModule>
+
+# Pages, scripts and the catalog change with each update: make browsers check for a new copy.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|js|json)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>

@@ -1,0 +1,2025 @@
+<!doctype html>
+<html lang="bn" data-mode="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Techill অ্যাডমিন</title>
+<link rel="icon" href="assets/favicon-32.png?v=2" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="assets/favicon.png?v=2">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tiro+Bangla:ital@0;1&display=swap">
+<style>
+/* Layout: sticky header with live pill; left section nav (horizontal on mobile); one section visible at a time:
+   overview (alerts, KPI tiles, charts, funnel, pipeline, team, activity), orders table + side drawer, project board,
+   visitors, package & price editor, team, customers */
+:root{
+  --bg:#f7f9fc;--surface:#ffffff;--sunk:#eef3f9;--ink:#121822;--muted:#5a6578;--line:#e1e7ef;--grid:#edf1f6;
+  --blue:#0a84f0;--blue-ink:#0067c7;--blue-soft:#e8f3ff;--on-blue:#ffffff;
+  --ok:#12a150;--ok-soft:#e4f6eb;--warn:#a85800;--warn-soft:#fff3e0;--danger:#d93025;--danger-soft:#fdecea;
+  --shadow:0 1px 2px rgb(16 24 40 / .04),0 18px 40px -18px rgb(16 24 40 / .16);
+  --font:"Tiro Bangla","Noto Serif Bengali",Georgia,serif;
+  --r:18px;
+}
+:root[data-mode="dark"]{
+  --bg:#0b1018;--surface:#111925;--sunk:#0e1520;--ink:#e9eef5;--muted:#98a4b7;--line:#1f2b3b;--grid:#18222f;
+  --blue:#3aa0ff;--blue-ink:#7cc0ff;--blue-soft:#10223a;--on-blue:#04121f;
+  --ok:#3ccf7f;--ok-soft:#0f2a1c;--warn:#ffb454;--warn-soft:#2c1f0c;--danger:#ff6b60;--danger-soft:#2d1311;
+  --shadow:0 1px 2px rgb(0 0 0 / .3),0 18px 40px -18px rgb(0 0 0 / .6);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.6}
+h1,h2,h3,h4{margin:0;line-height:1.25;font-weight:700}
+p{margin:0}
+a{color:inherit}
+button,input,textarea,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:8px}
+.num{font-variant-numeric:tabular-nums}
+
+.logo{display:block;height:28px;width:auto}
+.logo-d{display:none}
+:root[data-mode="dark"] .logo-l{display:none}
+:root[data-mode="dark"] .logo-d{display:block}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:10px 18px;font-weight:600;text-decoration:none;cursor:pointer;border:1.5px solid transparent;transition:transform .15s,border-color .15s;white-space:nowrap;background:transparent}
+.btn:hover{transform:translateY(-1px)}
+.btn-primary{background:var(--blue);color:var(--on-blue)}
+.btn-ghost{border-color:var(--line)}
+.btn-ghost:hover{border-color:var(--blue)}
+.btn-danger{border-color:var(--danger);color:var(--danger)}
+.btn-ok{background:var(--ok);color:#fff}
+.btn-sm{padding:6px 12px;font-size:.9rem;border-radius:10px}
+.btn[disabled]{opacity:.5;cursor:not-allowed;transform:none}
+.icon-btn{width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer;flex:none}
+.icon-btn svg{width:19px;height:19px}
+.theme-btn .moon{display:none}
+:root[data-mode="dark"] .theme-btn .sun{display:none}
+:root[data-mode="dark"] .theme-btn .moon{display:block}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:.78rem;font-weight:600;border-radius:999px;padding:2px 10px;white-space:nowrap}
+.b-unread{background:var(--danger);color:#fff;min-width:22px;justify-content:center;padding:1px 7px}
+.b-pending{background:var(--warn-soft);color:var(--warn)}
+.b-verified,.b-done{background:var(--ok-soft);color:var(--ok)}
+.b-rejected,.b-late{background:var(--danger-soft);color:var(--danger)}
+.b-run,.b-admin{background:var(--blue-soft);color:var(--blue-ink)}
+.b-cancel,.b-off{background:var(--sunk);color:var(--muted)}
+
+/* header */
+.hdr{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.hdr-in{display:flex;align-items:center;justify-content:space-between;gap:12px;height:64px;padding-inline:24px;max-width:1440px;margin:0 auto}
+.hdr-l,.hdr-r{display:flex;align-items:center;gap:12px;min-width:0}
+@media (max-width:480px){.hdr-l,.hdr-r{gap:6px}.hdr-l{flex:none}.hdr .hdr-in{padding-inline:12px}.hdr .logo{height:24px}.hdr .live-pill{display:none}.hdr .tag{display:none}.hdr-r .btn-sm{padding:6px 9px}}
+.tag{font-size:.8rem;font-weight:600;color:var(--blue-ink);background:var(--blue-soft);border-radius:8px;padding:2px 10px}
+.live-pill{display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 14px;font-size:.9rem;cursor:pointer}
+.live-pill b{font-variant-numeric:tabular-nums}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--ok);flex:none}
+@media (prefers-reduced-motion:no-preference){.dot{animation:pulse 1.8s ease-out infinite}@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 60%,transparent)}100%{box-shadow:0 0 0 9px transparent}}}
+
+/* shell */
+.shell{display:grid;grid-template-columns:220px minmax(0,1fr);gap:28px;max-width:1440px;margin:0 auto;padding:24px 24px 72px}
+.nav{position:sticky;top:88px;align-self:start;display:grid;gap:2px}
+.nav button{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;cursor:pointer;color:var(--muted);font-weight:600}
+.nav button:hover{background:var(--sunk);color:var(--ink)}
+.nav button[aria-current="true"]{background:var(--blue-soft);color:var(--blue-ink)}
+.nav button svg{width:18px;height:18px;flex:none}
+.nav .cnt{margin-left:auto}
+.nav hr{border:0;border-top:1px solid var(--line);margin:10px 4px}
+.nav a{display:flex;gap:10px;padding:9px 12px;border-radius:10px;color:var(--muted);text-decoration:none;font-weight:600;font-size:.94rem}
+.nav a:hover{background:var(--sunk);color:var(--ink)}
+.nav a svg{width:18px;height:18px;flex:none}
+main{min-width:0}
+.sec-h{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.sec-h h1{font-size:1.6rem}
+.sec-h p{color:var(--muted);margin-top:2px}
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}
+.seg button{border:0;background:transparent;border-radius:9px;padding:5px 14px;font-weight:600;cursor:pointer;color:var(--muted);font-size:.9rem}
+.seg button[aria-pressed="true"]{background:var(--blue);color:var(--on-blue)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:22px;min-width:0}
+.card h3{font-size:1.05rem}
+.card .ch{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.card .ch small{color:var(--muted);font-size:.85rem}
+.grid{display:grid;gap:18px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g-main{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+.muted{color:var(--muted)}
+.empty{color:var(--muted);text-align:center;padding:24px 8px}
+
+/* alerts */
+.alerts{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.alert{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:10px 14px;cursor:pointer;text-align:left;font-size:.93rem}
+.alert b{font-size:1.25rem;font-variant-numeric:tabular-nums;line-height:1}
+.alert.warn{border-color:color-mix(in srgb,var(--warn) 45%,var(--line));background:var(--warn-soft)}
+.alert.bad{border-color:color-mix(in srgb,var(--danger) 45%,var(--line));background:var(--danger-soft)}
+.alert.good{background:var(--ok-soft);border-color:transparent;cursor:default}
+.alert svg{width:18px;height:18px;flex:none}
+
+/* stat tiles */
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 18px;display:grid;gap:4px;min-width:0}
+.tile .l{color:var(--muted);font-size:.86rem;display:flex;align-items:center;gap:8px}
+.tile .v{font-size:1.85rem;font-weight:700;line-height:1.15;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile .s{color:var(--muted);font-size:.82rem}
+
+/* charts */
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:220px;overflow:visible}
+.chart .gl{stroke:var(--grid);stroke-width:1}
+.chart .ax{fill:var(--muted);font-size:11px;font-family:var(--font)}
+.chart .bar{fill:var(--blue)}
+.chart .bar.dim{fill:color-mix(in srgb,var(--blue) 35%,var(--surface))}
+.chart .hit{fill:transparent;cursor:crosshair}
+.chart .hl{fill:var(--blue-ink)}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);border-radius:10px;padding:7px 11px;font-size:.84rem;line-height:1.35;white-space:nowrap;transform:translate(-50%,calc(-100% - 10px));box-shadow:var(--shadow);z-index:5}
+.tip b{font-variant-numeric:tabular-nums}
+details.tv{margin-top:10px;font-size:.88rem}
+details.tv summary{cursor:pointer;color:var(--muted)}
+details.tv table{margin-top:8px}
+.hb{display:grid;gap:10px}
+.hb-row{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.6fr) auto;gap:12px;align-items:center;font-size:.92rem}
+.hb-row .k{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb-track{height:10px;background:var(--sunk);border-radius:999px;overflow:hidden}
+.hb-track i{display:block;height:100%;background:var(--blue);border-radius:0 4px 4px 0;min-width:3px}
+.hb-row .n{font-variant-numeric:tabular-nums;font-weight:600;min-width:48px;text-align:right}
+.hb-row .n small{color:var(--muted);font-weight:400}
+
+/* lists */
+.feed{list-style:none;margin:0;padding:0;display:grid;gap:2px;max-height:480px;overflow-y:auto}
+.feed li{display:grid;grid-template-columns:28px 1fr;gap:10px;padding:9px 6px;border-radius:10px;cursor:pointer}
+.feed li:hover{background:var(--sunk)}
+.feed .fi{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:var(--blue-soft);color:var(--blue)}
+.feed .fi.m{background:var(--ok-soft);color:var(--ok)}
+.feed .fi svg{width:15px;height:15px}
+.feed p{font-size:.9rem;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.feed small{color:var(--muted);font-size:.78rem}
+.people{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.people li{display:grid;grid-template-columns:36px 1fr auto;gap:12px;align-items:center}
+.av{width:36px;height:36px;border-radius:50%;background:var(--blue-soft);color:var(--blue-ink);display:grid;place-items:center;font-weight:700;font-size:.95rem;overflow:hidden;flex:none}
+.av img{width:100%;height:100%;object-fit:cover;display:block}
+.av.sm{width:30px;height:30px;font-size:.8rem}
+.av.lg{width:84px;height:84px;font-size:1.8rem}
+.who-cell{display:flex;align-items:center;gap:10px;min-width:0}
+.who-cell > div{min-width:0}
+.me-btn{border:0;background:transparent;padding:2px;border-radius:50%;cursor:pointer}
+.tpl-img{width:64px;height:80px;border-radius:8px;object-fit:cover;object-position:top;border:1px solid var(--line);display:block;background:var(--sunk)}
+.tpl-ph{width:64px;height:80px;border-radius:8px;border:1.5px dashed var(--line);display:grid;place-items:center;color:var(--muted);font-size:.72rem;text-align:center;line-height:1.2}
+.photo-row{display:flex;gap:14px;align-items:center}
+.people small{color:var(--muted);display:block;font-size:.8rem}
+
+/* tables */
+.tbl-wrap{overflow-x:auto;margin-inline:-4px}
+table.tbl{width:100%;border-collapse:collapse;font-size:.9rem}
+.tbl th{text-align:left;font-weight:600;color:var(--muted);font-size:.8rem;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl tbody tr.click{cursor:pointer}
+.tbl tbody tr.click:hover{background:var(--sunk)}
+.tbl .r{text-align:right}
+.tbl .sub{display:block;color:var(--muted);font-size:.78rem}
+.tbl select{border:1.5px solid var(--line);background:var(--surface);border-radius:9px;padding:4px 8px;max-width:170px}
+.late{color:var(--danger);font-weight:600}
+.mini{height:5px;width:70px;background:var(--line);border-radius:999px;overflow:hidden;margin-top:4px}
+.mini i{display:block;height:100%;background:var(--blue)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips button{border:1.5px solid var(--line);background:transparent;border-radius:999px;padding:3px 13px;font-size:.86rem;cursor:pointer;color:var(--muted)}
+.chips button[aria-pressed="true"]{border-color:var(--blue);color:var(--blue-ink);background:var(--blue-soft);font-weight:600}
+.search{border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 12px;outline:none;min-width:220px}
+.search:focus{border-color:var(--blue)}
+
+/* board */
+.board{display:grid;grid-template-columns:repeat(5,minmax(190px,1fr));gap:14px;overflow-x:auto;padding-bottom:8px}
+.col{background:var(--sunk);border-radius:16px;padding:12px;display:grid;gap:10px;align-content:start;min-height:200px}
+.col h3{font-size:.95rem;display:flex;justify-content:space-between;padding:2px 4px}
+.kc{all:unset;box-sizing:border-box;display:grid;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;font-size:.88rem}
+.kc:hover{border-color:var(--blue)}
+.kc.late{border-color:color-mix(in srgb,var(--danger) 55%,var(--line))}
+.kc .t{display:flex;justify-content:space-between;gap:6px}
+.kc small{color:var(--muted)}
+.kc .mini{width:100%}
+
+/* drawer */
+.drawer-bg{position:fixed;inset:0;background:rgb(8 12 20 / .45);z-index:40}
+/* invoice modal */
+.modal{position:fixed;inset:0;z-index:60;background:rgb(10 14 22 / .55);display:grid;place-items:start center;overflow-y:auto;padding:32px 16px}
+.modal[hidden]{display:none}
+.inv-wrap{width:100%;max-width:820px}
+.inv-acts{display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+@media print{body > *:not(#invModal){display:none!important}#invModal{position:static;background:none;padding:0;display:block}.inv-acts{display:none}.tinv{border-radius:0}}
+/* site settings */
+.ss-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+.ss-grid .card{display:grid;gap:12px;align-content:start}
+.ss-grid .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fav{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.fav-prev{display:flex;align-items:center;gap:10px}
+.fav-prev img{width:64px;height:64px;border-radius:14px;border:1px solid var(--line);background:repeating-conic-gradient(var(--sunk) 0 25%,var(--surface) 0 50%) 0 0/12px 12px;object-fit:contain}
+.fav-tab{display:flex;align-items:center;gap:8px;background:var(--sunk);border:1px solid var(--line);border-radius:10px 10px 0 0;padding:6px 12px;font-size:.82rem;max-width:220px}
+.fav-tab img{width:16px;height:16px}
+.ss-save{position:sticky;bottom:12px;z-index:5;display:flex;gap:10px;align-items:center;justify-content:flex-end;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 14px;box-shadow:var(--shadow);margin-top:18px}
+@media (max-width:900px){.ss-grid{grid-template-columns:1fr}.ss-grid .two{grid-template-columns:1fr}}
+/* SEO */
+.seo-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:18px;align-items:start}
+.seo-grid form{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}
+.seo-grid .card{display:grid;gap:12px;align-content:start}
+.seo-grid .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seo-side{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}
+.seo-cnt{font-size:.78rem;color:var(--muted);justify-self:end;margin-top:-2px}
+.seo-cnt.ok{color:var(--ok)}.seo-cnt.warn{color:var(--warn)}
+.seo-hint{font-size:.82rem;color:var(--muted)}
+.seo-hero{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.seo-ring{--p:0;width:92px;height:92px;border-radius:50%;flex:none;display:grid;place-items:center;background:conic-gradient(var(--c,var(--ok)) calc(var(--p)*1%),var(--sunk) 0);transition:--p .6s}
+.seo-ring b{width:72px;height:72px;border-radius:50%;background:var(--surface);display:grid;place-items:center;font-size:1.45rem;line-height:1}
+.seo-ring b small{display:block;font-size:.66rem;color:var(--muted);font-weight:400;margin-top:-10px}
+.seo-list{list-style:none;margin:0;padding:0;display:grid;gap:7px;font-size:.88rem}
+.seo-list li{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:start}
+.seo-list i{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:.72rem;font-weight:700;color:#fff;background:var(--ok);margin-top:1px}
+.seo-list li.no i{background:var(--warn)}
+.seo-list li.off i{background:var(--line);color:var(--muted)}
+.seo-list small{display:block;color:var(--muted);font-size:.8rem}
+.seo-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.seo-tabs button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 13px;font-size:.86rem;cursor:pointer;color:var(--muted)}
+.seo-tabs button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.sp{border-radius:14px;background:var(--sunk);padding:16px;min-height:150px}
+.sp-g{background:#fff;color:#202124;border-radius:12px;padding:16px 18px;font-family:Arial,"Noto Sans Bengali",sans-serif;box-shadow:0 1px 3px rgb(0 0 0 / .08)}
+.sp-g-site{display:flex;gap:10px;align-items:center;margin-bottom:6px}
+.sp-g-site img{width:28px;height:28px;border-radius:50%;background:#f1f3f4;padding:5px;object-fit:contain}
+.sp-g-site b{display:block;font-size:14px;font-weight:400;color:#202124}
+.sp-g-site small{display:block;font-size:12px;color:#4d5156}
+.sp-g-t{display:block;color:#1a0dab;font-size:20px;line-height:1.3;margin-bottom:4px;text-decoration:none}
+.sp-g p{margin:0;font-size:14px;line-height:1.58;color:#4d5156}
+.sp-fb{background:#fff;color:#050505;border-radius:10px;overflow:hidden;border:1px solid #dadde1;font-family:Helvetica,Arial,"Noto Sans Bengali",sans-serif}
+.sp-img{width:100%;aspect-ratio:1.91/1;object-fit:cover;display:block;background:#e4e6eb}
+.sp-fb div{background:#f0f2f5;padding:10px 12px;border-top:1px solid #dadde1}
+.sp-fb small{display:block;color:#65676b;font-size:12px;text-transform:uppercase}
+.sp-fb b{display:block;font-size:16px;line-height:1.3;margin:2px 0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.sp-fb p{margin:0;color:#65676b;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-wa{background:#efeae2 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Ccircle cx='4' cy='4' r='1.4' fill='%23d9d2c5'/%3E%3C/svg%3E");border-radius:12px;padding:14px;display:grid;justify-items:end}
+.sp-wa-b{background:#d9fdd3;border-radius:10px 2px 10px 10px;padding:4px;max-width:330px;width:100%;color:#111b21;font-family:Helvetica,Arial,"Noto Sans Bengali",sans-serif;box-shadow:0 1px .5px rgb(11 20 26 / .13)}
+.sp-wa-c{background:#c8f0c0;border-radius:7px;overflow:hidden}
+.sp-wa-c div{padding:7px 10px}
+.sp-wa-c b{display:block;font-size:14px;line-height:1.3}
+.sp-wa-c p{margin:2px 0 0;font-size:12.5px;color:#54656f;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.sp-wa-c small{display:block;font-size:12px;color:#667781;margin-top:3px}
+.sp-wa-b > span{display:block;padding:6px 6px 2px;font-size:14px;color:#027eb5;word-break:break-all}
+.sp-wa-b > em{display:block;text-align:right;font-style:normal;font-size:11px;color:#667781;padding:0 6px 2px}
+.sp-x{background:#fff;color:#0f1419;border-radius:14px;padding:12px;font-family:-apple-system,Arial,"Noto Sans Bengali",sans-serif}
+.sp-x-i{position:relative;border-radius:16px;overflow:hidden;border:1px solid #cfd9de}
+.sp-x-i span{position:absolute;left:12px;bottom:12px;background:rgb(0 0 0 / .77);color:#fff;font-size:13px;border-radius:4px;padding:1px 6px;max-width:80%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-x small{display:block;color:#536471;font-size:13px;margin-top:4px}
+.seo-img{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.seo-img img{width:220px;aspect-ratio:1.91/1;object-fit:cover;border-radius:10px;border:1px solid var(--line);background:var(--sunk)}
+.seo-steps{counter-reset:s;list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.seo-steps li{counter-increment:s;display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;font-size:.9rem}
+.seo-steps li::before{content:counter(s);width:28px;height:28px;border-radius:50%;background:var(--blue-soft,#e8f3ff);color:var(--blue,#0a84f0);display:grid;place-items:center;font-weight:700}
+.seo-steps p{margin:2px 0 6px;color:var(--muted);font-size:.84rem}
+.seo-copy{display:flex;gap:6px;align-items:center;background:var(--sunk);border:1px solid var(--line);border-radius:10px;padding:4px 4px 4px 10px;font-size:.84rem}
+.seo-copy code{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seo-tools{display:flex;gap:6px;flex-wrap:wrap}
+.seo-adv summary{cursor:pointer;font-weight:600;font-size:.9rem}
+.seo-adv[open] summary{margin-bottom:10px}
+/* social card maker */
+.cm{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:20px;align-items:start;margin-top:18px}
+.cm-stage{background:repeating-conic-gradient(var(--sunk) 0 25%,var(--surface) 0 50%) 0 0/18px 18px;border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;place-items:center}
+.cm-stage canvas{width:100%;height:auto;border-radius:10px;box-shadow:0 18px 40px -18px rgb(16 24 40 / .45);display:block}
+.cm-stage canvas.tall{width:auto;max-height:560px;max-width:100%}
+.cm-ctl{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+.cm-chips{display:flex;gap:6px;flex-wrap:wrap}
+.cm-chips button{border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:6px 12px;font-size:.86rem;cursor:pointer;display:flex;gap:7px;align-items:center}
+.cm-chips button[aria-pressed="true"]{border-color:var(--blue,#0a84f0);box-shadow:0 0 0 3px rgb(10 132 240 / .15)}
+.cm-chips .sw{width:16px;height:16px;border-radius:5px;display:inline-block}
+.cm-col{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.cm-col button{width:30px;height:30px;border-radius:50%;border:3px solid var(--surface);box-shadow:0 0 0 1.5px var(--line);cursor:pointer}
+.cm-col button[aria-pressed="true"]{box-shadow:0 0 0 2.5px var(--ink)}
+.cm-col input[type=color]{width:34px;height:34px;border:0;background:none;padding:0;cursor:pointer}
+.cm-tg{display:flex;gap:16px;flex-wrap:wrap;font-size:.9rem}
+.cm-tg label{display:flex;gap:7px;align-items:center;cursor:pointer}
+@media (max-width:1100px){.seo-grid,.cm{grid-template-columns:1fr}}
+@media (max-width:600px){.seo-grid .two{grid-template-columns:1fr}}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100%);background:var(--bg);z-index:41;overflow-y:auto;box-shadow:var(--shadow);border-left:1px solid var(--line)}
+.dr-h{position:sticky;top:0;background:var(--surface);border-bottom:1px solid var(--line);padding:16px 20px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;z-index:2}
+.dr-h h2{font-size:1.3rem;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dr-h p{color:var(--muted);font-size:.9rem}
+.dr-b{padding:18px 20px 40px;display:grid;gap:14px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+.box h4{font-size:.95rem;margin-bottom:10px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:.9rem}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;text-align:right;word-break:break-word}
+.lines{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:.9rem}
+.lines li{display:flex;justify-content:space-between;gap:12px}
+.lines li.t{border-top:1.5px dashed var(--line);padding-top:8px;font-weight:700}
+.row2{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.f{display:grid;gap:5px;min-width:0}
+.f label{font-weight:600;font-size:.86rem}
+.f label small{font-weight:400;color:var(--muted)}
+.inp{width:100%;border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 11px;outline:none;min-width:0}
+.inp:focus{border-color:var(--blue)}
+textarea.inp{resize:vertical;min-height:84px}
+.err{color:var(--danger);font-size:.86rem;min-height:1.2em}
+.tl{list-style:none;margin:0;padding:0;display:grid;gap:10px;font-size:.88rem}
+.tl li{border-left:2px solid var(--line);padding-left:12px}
+.tl small{color:var(--muted);display:block}
+.tl p{white-space:pre-wrap}
+
+/* catalog editor */
+.ed-sec{display:grid;gap:14px;margin-bottom:22px}
+.ed-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.ed-grid .w2{grid-column:span 2}
+.ed-grid .w4{grid-column:1/-1}
+.packs-ed{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.pk{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:10px;align-content:start}
+.pk .h{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.pk .g2i{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pk .g3i{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.checks{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.86rem}
+.checks label{display:flex;gap:6px;align-items:center;font-weight:400}
+.sw{display:flex;gap:6px;align-items:center;font-size:.88rem;font-weight:600}
+.tbl input.inp,.tbl select.inp{padding:6px 8px;font-size:.88rem}
+.savebar{position:sticky;bottom:16px;z-index:5;display:flex;justify-content:space-between;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:14px;padding:12px 16px;margin-top:10px;flex-wrap:wrap}
+
+/* counts strip, analytics */
+.counts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}
+.cnt-card{all:unset;box-sizing:border-box;display:flex;gap:12px;align-items:center;background:var(--blue-soft);border-radius:14px;padding:12px 16px;cursor:pointer;color:var(--blue-ink);min-width:0}
+.cnt-card:hover{outline:1.5px solid var(--blue)}
+.cnt-card svg{width:26px;height:26px;flex:none}
+.cnt-card span{display:grid;line-height:1.3;color:var(--ink);min-width:0}
+.cnt-card b{font-size:1.4rem;font-variant-numeric:tabular-nums}
+.cnt-card small{color:var(--muted);font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.atabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:18px;overflow-x:auto}
+.atabs button{display:flex;gap:8px;align-items:center;border:0;background:transparent;padding:10px 18px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.atabs button svg{width:17px;height:17px}
+.atabs button[aria-selected="true"]{color:var(--blue-ink);border-bottom-color:var(--blue)}
+.sub-h{font-size:1.1rem;margin:6px 0 12px;display:flex;gap:8px;align-items:center}
+.sub-h svg{width:19px;height:19px;color:var(--blue)}
+.dl{font-weight:700}
+.dl.up{color:var(--ok)}
+.dl.dn{color:var(--danger)}
+.tile .s .muted{font-size:.8rem}
+
+/* switch, radio segments, steps */
+.switch{display:inline-flex;align-items:center;gap:10px;font-weight:600;font-size:.92rem;cursor:pointer}
+.switch input{position:absolute;opacity:0;width:1px;height:1px}
+.switch span{width:44px;height:26px;border-radius:999px;background:var(--line);position:relative;flex:none;transition:background .15s}
+.switch span::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px rgb(0 0 0 / .25);transition:transform .15s}
+.switch input:checked + span{background:var(--ok)}
+.switch input:checked + span::after{transform:translateX(18px)}
+.switch input:focus-visible + span{outline:2px solid var(--blue);outline-offset:2px}
+.seg-r{position:relative;cursor:pointer}
+.seg-r input{position:absolute;opacity:0}
+.seg-r span{display:block;border-radius:9px;padding:6px 14px;font-weight:600;color:var(--muted);font-size:.9rem}
+.seg-r input:checked + span{background:var(--blue);color:var(--on-blue)}
+.seg-r input:focus-visible + span{outline:2px solid var(--blue)}
+.steps-ol{margin:0;padding-left:20px;display:grid;gap:8px;font-size:.92rem}
+
+/* auth */
+.auth{display:grid;place-items:center;padding:72px 16px}
+.auth-card{width:100%;max-width:420px;background:var(--surface);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:30px;display:grid;gap:14px}
+.auth-card h1{font-size:1.5rem}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:12px;font-size:.92rem;z-index:60;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
+
+@media (max-width:1180px){
+  .tiles,.counts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g-main,.g3{grid-template-columns:1fr 1fr}
+  .packs-ed{grid-template-columns:1fr 1fr}
+}
+@media (max-width:900px){
+  .shell{grid-template-columns:1fr;gap:16px;padding-top:12px}
+  .nav{position:sticky;top:64px;z-index:20;display:flex;overflow-x:auto;background:var(--bg);padding:6px 0;margin-inline:-24px;padding-inline:24px;border-bottom:1px solid var(--line)}
+  .nav button{white-space:nowrap;flex:none}
+  .nav hr,.nav a{display:none}
+  .g2,.g-main,.g3{grid-template-columns:1fr}
+  .ed-grid{grid-template-columns:1fr 1fr}
+  .packs-ed{grid-template-columns:1fr}
+  .who{display:none}
+}
+@media (max-width:640px){
+  .hdr-in{padding-inline:16px}
+  .shell{padding-inline:16px}
+  .nav{margin-inline:-16px;padding-inline:16px}
+  .tile .v{font-size:1.5rem}
+  .tag,.dash-link{display:none}
+  .search{min-width:0;width:100%}
+  .hb-row{grid-template-columns:minmax(0,1fr) auto}
+  .hb-row .hb-track{grid-column:1/-1;grid-row:2}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div class="hdr-in">
+    <div class="hdr-l">
+      <a href="index.html" aria-label="Techill হোম"><img class="logo logo-l" src="assets/logo-light.png?v=2" alt="Techill"><img class="logo logo-d" src="assets/logo-dark.png?v=2" alt="Techill"></a>
+      <span class="tag">অ্যাডমিন</span>
+    </div>
+    <div class="hdr-r">
+      <button class="live-pill" type="button" id="livePill" hidden title="এখন সাইটে আছেন"><span class="dot"></span><span>লাইভ <b id="liveN">০</b></span></button>
+      <a class="btn btn-ghost btn-sm dash-link" href="dashboard.html" id="dashLink" hidden>প্রোজেক্ট চ্যাট</a>
+      <button class="me-btn" type="button" id="meBtn" hidden title="আমার প্রোফাইল ও ছবি"></button>
+      <button class="icon-btn theme-btn" id="themeBtn" type="button" aria-label="দিন/রাত থিম বদলান">
+        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></svg>
+        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+      </button>
+      <button class="btn btn-ghost btn-sm" id="logoutBtn" type="button" hidden>লগআউট</button>
+    </div>
+  </div>
+</header>
+
+<section class="auth" id="auth" hidden>
+  <form class="auth-card" id="loginForm" novalidate>
+    <h1>অ্যাডমিন লগইন</h1>
+    <p class="muted" id="authMsg">ব্যবসার পুরো হিসাব এক জায়গায়।</p>
+    <div class="f"><label for="l-email">ইমেইল</label><input class="inp" type="email" id="l-email" name="email" autocomplete="email" required></div>
+    <div class="f"><label for="l-pass">পাসওয়ার্ড</label><input class="inp" type="password" id="l-pass" name="password" autocomplete="current-password" required></div>
+    <button class="btn btn-primary" type="submit">লগইন</button>
+    <p class="err" id="loginErr" role="alert"></p>
+  </form>
+</section>
+
+<div class="shell" id="shell" hidden>
+  <nav class="nav" id="nav" aria-label="অ্যাডমিন মেনু"></nav>
+  <main id="main"></main>
+</div>
+
+<div class="drawer-bg" id="drawerBg" hidden></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drTitle" hidden></aside>
+<div class="modal" id="invModal" role="dialog" aria-modal="true" aria-label="ইনভয়েস" hidden>
+  <div class="inv-wrap">
+    <div class="inv-acts"><button class="btn btn-primary btn-sm" type="button" id="invPdf">PDF ডাউনলোড</button><button class="btn btn-ghost btn-sm" type="button" id="invPrint">প্রিন্ট</button><button class="btn btn-ghost btn-sm" type="button" id="invClose">বন্ধ করুন</button></div>
+    <div id="inv"></div>
+  </div>
+</div>
+<div class="tip" id="tip" hidden></div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="assets/api.js?v=14"></script>
+<script>
+const api = window.TechillAPI;
+const $ = id => document.getElementById(id);
+const BN = s => String(s).replace(/\d/g, d => "০১২৩৪৫৬৭৮৯"[d]);
+const nf = n => BN(Math.round(n).toLocaleString("en-IN"));
+const tk = n => "৳" + nf(n);
+const tkShort = n => n >= 1e5 ? "৳" + BN((n / 1e5).toFixed(n >= 1e6 ? 0 : 1)) + " লাখ" : tk(n);
+const pct = (a, b) => b ? BN((a / b * 100).toFixed(a / b < .1 ? 1 : 0)) + "%" : "—";
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const nowS = () => Math.floor(Date.now() / 1000);
+const when = t => new Date(t * 1000).toLocaleString("bn-BD", {day: "numeric", month: "short", hour: "numeric", minute: "2-digit"});
+const dateOnly = t => new Date(t * 1000).toLocaleDateString("bn-BD", {day: "numeric", month: "short", year: "numeric"});
+const dayLabel = d => new Date(d + "T00:00:00").toLocaleDateString("bn-BD", {day: "numeric", month: "short"});
+function ago(t){
+  const s = Math.max(0, nowS() - t);
+  if (s < 60) return "এইমাত্র";
+  if (s < 3600) return BN(Math.floor(s / 60)) + " মিনিট আগে";
+  if (s < 86400) return BN(Math.floor(s / 3600)) + " ঘণ্টা আগে";
+  return BN(Math.floor(s / 86400)) + " দিন আগে";
+}
+function left(t){
+  const s = t - nowS(), a = Math.abs(s), h = Math.floor(a / 3600), txt = h >= 48 ? BN(Math.floor(h / 24)) + " দিন" : h ? BN(h) + " ঘণ্টা" : BN(Math.floor(a / 60)) + " মিনিট";
+  return s < 0 ? txt + " দেরি" : txt + " বাকি";
+}
+const STAGES = api.STAGES;
+const safeImg = u => /^media\/[a-f0-9]{32}\.(jpg|png|webp)$/.test(u || "") || /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(u || "") ? u : null;
+const avatarHTML = (name, url, cls = "") => `<span class="av ${cls}">${safeImg(url) ? `<img src="${safeImg(url)}" alt="">` : esc(String(name || "?").trim().slice(0, 1) || "?")}</span>`;
+const pname = o => o.domain || o.code;   // a project is known by its domain once there is one
+const PAY = {pending: "যাচাই বাকি", verified: "যাচাই হয়েছে", rejected: "পাওয়া যায়নি"};
+const MNAME = {bKash: "বিকাশ", Nagad: "নগদ", Rocket: "রকেট", PayStation: "অনলাইন (PayStation)"};
+const PSTAT = {initiated: ["শুরু হয়েছে", "b-off"], processing: ["প্রক্রিয়াধীন", "b-pending"], success: ["সফল", "b-done"], failed: ["ব্যর্থ", "b-late"], canceled: ["বাতিল", "b-cancel"], mismatch: ["মেলেনি", "b-late"], error: ["শুরু হয়নি", "b-late"]};
+const pstat = st => `<span class="badge ${(PSTAT[st] || ["", "b-off"])[1]}">${(PSTAT[st] || [st])[0]}</span>`;
+const DEV = {mobile: "মোবাইল", desktop: "ডেস্কটপ", tablet: "ট্যাবলেট"};
+const ic = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const I = {
+  seo: ic('<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/><path d="M7.5 11.5l2 2 3.5-4"/>'),
+  site: ic('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/>'),
+  home: ic('<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/>'),
+  orders: ic('<path d="M6 3h12l2 4v13H4V7z"/><path d="M4 7h16M9 11h6"/>'),
+  board: ic('<rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="10" rx="1.5"/><rect x="17" y="4" width="4" height="13" rx="1.5"/>'),
+  visitors: ic('<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
+  chart: ic('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'),
+  fb: ic('<path d="M15 3h-2.5A4.5 4.5 0 0 0 8 7.5V10H5.5v3.5H8V21h3.5v-7.5H14l.5-3.5h-3V7.8c0-.7.4-1.3 1.3-1.3H15z"/>'),
+  pin: ic('<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>'),
+  plus: ic('<path d="M12 5v14M5 12h14"/>'),
+  catalog: ic('<path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>'),
+  team: ic('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6 6 0 0 1 3.5 5.5"/>'),
+  customers: ic('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'),
+  alert: ic('<path d="M12 3l9.5 17h-19z"/><path d="M12 10v4M12 17.5v.01"/>'),
+  clock: ic('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+  money: ic('<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/>'),
+  user: ic('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'),
+  chat: ic('<path d="M4 5h16v11H8l-4 4z"/>'),
+  step: ic('<path d="M5 12.5l4.5 4.5L19 7"/>'),
+  ok: ic('<path d="M5 12.5l4.5 4.5L19 7"/>'),
+  mail: ic('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/>'),
+  support: ic('<path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="2.5" y="12.5" width="4" height="6" rx="1.6"/><rect x="17.5" y="12.5" width="4" height="6" rx="1.6"/><path d="M19.5 18.5c0 1.6-2.2 2.5-5.5 2.5h-1.5"/>'),
+  gift: ic('<rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M12 8c-1.5-3-5-3.5-5-1.2C7 8 12 8 12 8zm0 0c1.5-3 5-3.5 5-1.2C17 8 12 8 12 8z"/>')
+};
+const SECTIONS = [["overview", "ওভারভিউ", I.home], ["orders", "অর্ডার", I.orders], ["board", "প্রোজেক্ট বোর্ড", I.board], ["analytics", "অ্যানালিটিক্স", I.chart], ["catalog", "প্যাকেজ ও দাম", I.catalog], ["site", "সাইট সেটিং", I.site], ["seo", "SEO ও সোশ্যাল কার্ড", I.seo], ["payments", "পেমেন্ট গেটওয়ে", I.money], ["email", "ইমেইল", I.mail], ["marketing", "Facebook Pixel", I.fb], ["support", "সাপোর্ট বাটন", I.support], ["referral", "রেফারেল", I.gift], ["customers", "কাস্টমার", I.customers], ["team", "টিম ও ডেভেলপার", I.team]];
+
+let me = null, sec = "overview", days = 30, stats = null, orders = [], team = [], customers = [], cat = null, draft = null, dirty = false;
+let oFilter = "all", oQuery = "", oStack = "", boardDev = "", custQ = "", custF = "all", edStack = "woo", drawerId = null;
+let an = null, aDays = 30, aTab = "visitors";
+let siteSet = null, SITE = null;
+let pset = null, plist = null, ptest = null, mset = null, mtest = null, eset = null, etest = null, sset = null, rdata = null, rFilter = "all";
+let regionName = c => c;
+try { const dn = new Intl.DisplayNames(["bn"], {type: "region"}); regionName = c => { try { return dn.of(c) || c; } catch(e){ return c; } }; } catch(e){}
+const country = c => c ? regionName(c) : "অজানা";
+const BROWSER = {Facebook: "Facebook অ্যাপ", Instagram: "Instagram অ্যাপ", Samsung: "Samsung Internet", Chrome: "Chrome", Safari: "Safari", Edge: "Edge", Firefox: "Firefox", Opera: "Opera", UC: "UC Browser", Other: "অন্যান্য"};
+const WEEK = ["রবিবার", "সোমবার", "মঙ্গলবার", "বুধবার", "বৃহস্পতিবার", "শুক্রবার", "শনিবার"];
+function delta(cur, prev){
+  if (!prev) return '<span class="muted">আগের তুলনা নেই</span>';
+  const p = (cur - prev) / prev * 100;
+  return `<span class="dl ${p >= 0 ? "up" : "dn"}">${p >= 0 ? "▲" : "▼"} ${BN(Math.abs(p).toFixed(0))}%</span> <span class="muted">আগের ${BN(aDays)} দিনের তুলনায়</span>`;
+}
+
+function toast(m){ const t = $("toast"); t.textContent = m; t.hidden = false; clearTimeout(t._t); t._t = setTimeout(() => t.hidden = true, 3200); }
+
+/* ---------- theme ----------
+   Light unless the visitor picks dark with the button. Uses its own data-mode attribute (not
+   data-theme, which some hosting previews set from their own theme) and ignores the OS setting. */
+(function(){
+  try { const s = JSON.parse(localStorage.getItem("techill_mode")); if (s === "light" || s === "dark") document.documentElement.dataset.mode = s; } catch(e){}
+  $("themeBtn").addEventListener("click", () => {
+    const c = document.documentElement.dataset.mode || "light";
+    const n = c === "dark" ? "light" : "dark"; document.documentElement.dataset.mode = n;
+    try { localStorage.setItem("techill_mode", JSON.stringify(n)); } catch(e){}
+  });
+})();
+
+/* ---------- auth ---------- */
+function showAuth(msg){
+  $("auth").hidden = false; $("shell").hidden = true; $("logoutBtn").hidden = !me; $("livePill").hidden = true; $("dashLink").hidden = true;
+  if (msg) $("authMsg").innerHTML = msg;
+}
+$("loginForm").addEventListener("submit", async e => {
+  e.preventDefault(); $("loginErr").textContent = "";
+  const btn = e.target.querySelector("button"); btn.disabled = true;
+  try { me = (await api.login(Object.fromEntries(new FormData(e.target)))).user; e.target.reset(); boot(); }
+  catch(err){ $("loginErr").textContent = err.message; }
+  finally { btn.disabled = false; }
+});
+$("logoutBtn").addEventListener("click", async () => { await api.logout().catch(() => {}); me = null; showAuth("ব্যবসার পুরো হিসাব এক জায়গায়।"); });
+
+/* ---------- data ---------- */
+async function loadAll(){
+  const [s, o, t] = await Promise.all([api.stats(days), api.orders(), api.team()]);
+  stats = s; orders = o.orders; team = t.team;
+}
+async function refreshStats(){
+  try {
+    stats = await api.stats(days); renderLive(); renderNav();
+    if (sec === "overview") render();
+    if (sec === "analytics" && aTab === "visitors" && !document.activeElement?.closest("main select")) loadAnalytics(true);
+  } catch(e){ if (e.status === 401) showAuth(); }
+}
+async function refreshOrders(){ orders = (await api.orders()).orders; renderNav(); }
+
+/* ---------- shell ---------- */
+function renderNav(){
+  const s = stats?.orders || {};
+  const counts = {orders: (s.pending_pay || 0) + (s.unassigned || 0), board: s.overdue || 0, referral: stats?.referral?.requests || 0, email: stats?.email?.failed || 0};
+  $("nav").innerHTML = SECTIONS.map(([k, l, icon]) => `<button type="button" data-sec="${k}" aria-current="${sec === k}">${icon}<span>${l}</span>${counts[k] ? `<span class="badge b-unread cnt">${BN(counts[k])}</span>` : ""}</button>`).join("")
+    + `<hr><a href="dashboard.html">${I.chat}<span>প্রোজেক্ট চ্যাট</span></a><a href="index.html" target="_blank" rel="noopener">${I.home}<span>সাইট দেখুন ↗</span></a>`;
+  const urgent = (s.unread || 0) + (s.pending_pay || 0) + (s.overdue || 0);
+  document.title = (urgent ? `(${BN(urgent)}) ` : "") + "Techill অ্যাডমিন";
+}
+$("nav").addEventListener("click", e => { const b = e.target.closest("[data-sec]"); if (b) go(b.dataset.sec); });
+function go(s){
+  if (sec === "catalog" && dirty && s !== "catalog" && !confirm("প্যাকেজের পরিবর্তন সেভ হয়নি। তবু চলে যাবেন?")) return;
+  sec = s; history.replaceState(null, "", "#" + s); renderNav(); render(); scrollTo({top: 0});
+  if (s === "customers") api.customers().then(r => { customers = r.customers; if (sec === "customers") render(); });
+  if (s === "analytics") loadAnalytics();
+  if (s === "payments") loadPayments();
+  if (s === "email") api.emailSettings().then(r => { eset = r.settings; if (sec === "email") render(); }).catch(e => toast(e.message));
+  if (s === "seo") api.seoSettings().then(r => { seoSet = r.settings; seoLive = null; if (sec === "seo") render(); }).catch(e => toast(e.message));
+  if (s === "site") api.catalog().then(r => { siteSet = r.site; if (sec === "site") render(); }).catch(e => toast(e.message));
+  if (s === "support") api.supportSettings().then(r => { sset = r.settings; if (sec === "support") render(); }).catch(e => toast(e.message));
+  if (s === "referral") api.referralAdmin().then(r => { rdata = r; if (sec === "referral") render(); }).catch(e => toast(e.message));
+  if (s === "marketing") api.marketingSettings().then(r => { mset = r.settings; if (sec === "marketing") render(); }).catch(e => toast(e.message));
+  if (s === "catalog" && !cat) api.catalog().then(r => { cat = r.catalog; draft = structuredClone(cat); if (sec === "catalog") render(); });
+}
+function renderLive(){
+  if (!stats) return;
+  $("livePill").hidden = false; $("liveN").textContent = BN(stats.live.count);
+}
+$("livePill").addEventListener("click", () => { aTab = "visitors"; go("analytics"); });
+function render(){
+  const m = $("main");
+  if (!stats){ m.innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; return; }
+  ({overview: renderOverview, orders: renderOrders, board: renderBoard, analytics: renderAnalytics, catalog: renderCatalog, payments: renderPayments, marketing: renderMarketing, email: renderEmail, support: renderSupport, site: renderSite, seo: renderSeo, referral: renderReferral, team: renderTeam, customers: renderCustomers})[sec]();
+}
+const rangeSeg = () => `<div class="seg" role="group" aria-label="সময়সীমা">${[7, 30, 90].map(d => `<button type="button" data-days="${d}" aria-pressed="${days === d}">${BN(d)} দিন</button>`).join("")}</div>`;
+$("main").addEventListener("click", async e => {
+  const d = e.target.closest("[data-days]"); if (d){ days = +d.dataset.days; stats = await api.stats(days); render(); }
+});
+
+/* ---------- charts ---------- */
+// Single-series column chart with hover tooltip; values in ink, bars in the brand blue.
+function columns(rows, val, fmt, label, xlab = r => dayLabel(r.d), every0){
+  const W = 640, H = 220, P = {l: 44, r: 8, t: 10, b: 26};
+  const max = Math.max(1, ...rows.map(val)), nice = niceMax(max), n = rows.length;
+  const cw = (W - P.l - P.r) / n, bw = Math.max(2, Math.min(28, cw - 2));
+  const y = v => H - P.b - (v / nice) * (H - P.t - P.b);
+  const ticks = [0, .5, 1].map(f => f * nice);
+  const every = every0 || Math.ceil(n / 7);
+  const id = "c" + Math.random().toString(36).slice(2, 8);
+  const bars = rows.map((r, i) => {
+    const v = val(r), x = P.l + i * cw + (cw - bw) / 2, yt = y(v), h = H - P.b - yt, rad = Math.min(4, bw / 2, h);
+    const path = h > 0 ? `M${x},${H - P.b}V${yt + rad}Q${x},${yt} ${x + rad},${yt}H${x + bw - rad}Q${x + bw},${yt} ${x + bw},${yt + rad}V${H - P.b}Z` : "";
+    return `<g>${path ? `<path class="bar" d="${path}"/>` : ""}<rect class="hit" x="${P.l + i * cw}" y="${P.t}" width="${cw}" height="${H - P.t - P.b}" data-i="${i}"/></g>`;
+  }).join("");
+  const xl = rows.map((r, i) => i % every === 0 || (!every0 && i === n - 1) ? `<text class="ax" x="${P.l + i * cw + cw / 2}" y="${H - 8}" text-anchor="middle">${xlab(r)}</text>` : "").join("");
+  const yl = ticks.map(t => `<line class="gl" x1="${P.l}" x2="${W - P.r}" y1="${y(t)}" y2="${y(t)}"/><text class="ax" x="${P.l - 8}" y="${y(t) + 4}" text-anchor="end">${fmt(t, true)}</text>`).join("");
+  setTimeout(() => {
+    const el = document.getElementById(id); if (!el) return;
+    el.addEventListener("mousemove", e => {
+      const h = e.target.closest(".hit"); const tip = $("tip");
+      el.querySelectorAll(".hl").forEach(b => b.classList.remove("hl"));
+      if (!h){ tip.hidden = true; return; }
+      const r = rows[+h.dataset.i]; h.previousElementSibling?.classList.add("hl");
+      tip.innerHTML = `${xlab(r)}<br><b>${fmt(val(r))}</b> ${label}`; tip.hidden = false;
+      const bb = h.getBoundingClientRect(); tip.style.left = (bb.left + bb.width / 2 + scrollX) + "px"; tip.style.top = (e.clientY + scrollY - 6) + "px";
+      tip.style.position = "absolute";
+    });
+    el.addEventListener("mouseleave", () => { $("tip").hidden = true; el.querySelectorAll(".hl").forEach(b => b.classList.remove("hl")); });
+  });
+  return `<div class="chart" id="${id}"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${label}, দিনভিত্তিক">${yl}${bars}${xl}</svg></div>
+    <details class="tv"><summary>টেবিল দেখুন</summary><div class="tbl-wrap"><table class="tbl"><tbody>${(xlab.length && rows[0]?.d ? rows.slice().reverse() : rows).map(r => `<tr><td>${xlab(r)}</td><td class="r">${fmt(val(r))}</td></tr>`).join("")}</tbody></table></div></details>`;
+}
+function niceMax(v){ const p = Math.pow(10, Math.floor(Math.log10(v))), m = v / p; return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * p; }
+const fmtN = (v, axis) => axis && v >= 1000 ? BN((v / 1000).toFixed(v % 1000 ? 1 : 0)) + "k" : nf(v);
+const fmtTk = (v, axis) => axis ? (v >= 1e5 ? BN((v / 1e5).toFixed(1)) + "লা" : v >= 1000 ? BN(Math.round(v / 1000)) + "k" : BN(v)) : tk(v);
+function hbars(items, total, fmt = nf){
+  if (!items.length) return '<p class="empty">এখনো কোনো ডেটা নেই।</p>';
+  const max = Math.max(1, ...items.map(i => i.n));
+  return `<div class="hb">${items.map(i => `<div class="hb-row"><span class="k" title="${esc(i.k)}">${esc(i.label ?? i.k)}</span><span class="hb-track"><i style="width:${i.n / max * 100}%"></i></span><span class="n">${fmt(i.n)}${total ? ` <small>${pct(i.n, total)}</small>` : ""}</span></div>`).join("")}</div>`;
+}
+
+/* ---------- overview ---------- */
+function renderOverview(){
+  const s = stats, o = s.orders, v = s.visits, f = s.funnel;
+  const alerts = [
+    o.pending_pay && ["warn", I.money, o.pending_pay, "পেমেন্ট যাচাই বাকি", "pending"],
+    o.unassigned && ["warn", I.user, o.unassigned, "ডেভেলপার দেওয়া হয়নি", "unassigned"],
+    o.overdue && ["bad", I.alert, o.overdue, "ডেডলাইন পেরিয়েছে", "late"],
+    o.due_soon && ["warn", I.clock, o.due_soon, "২৪ ঘণ্টার মধ্যে ডেলিভারি", "soon"],
+    o.unread && ["bad", I.chat, o.unread, "কাস্টমারের না-পড়া মেসেজ", "unread"],
+    s.referral?.requests && ["warn", I.gift, s.referral.requests, "রেফারেলের টাকা তোলার অনুরোধ", "payouts"],
+    s.email?.failed && ["bad", I.mail, s.email.failed, "ইমেইল যায়নি (২৪ ঘণ্টায়)", "mailfail"]
+  ].filter(Boolean);
+  const revSeries = s.series.reduce((a, r) => a + r.revenue, 0), ordSeries = s.series.reduce((a, r) => a + r.orders, 0);
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>আসসালামু আলাইকুম, ${esc(me.name.split(" ")[0])}</h1><p>${new Date().toLocaleDateString("bn-BD", {weekday: "long", day: "numeric", month: "long"})} · ব্যবসার এক নজরে হিসাব</p></div><div class="tools">${rangeSeg()}</div></div>
+    <div class="alerts">${alerts.length ? alerts.map(([c, icon, n, l, k]) => `<button type="button" class="alert ${c}" data-alert="${k}">${icon}<b>${BN(n)}</b><span>${l}</span></button>`).join("") : `<div class="alert good">${I.ok}<span>সব ঠিক আছে, এখন জরুরি কিছু নেই।</span></div>`}</div>
+    ${s.counts ? `<div class="counts">
+      <button type="button" class="cnt-card" data-go="customers">${I.customers}<span><b>${nf(s.counts.customers)}</b> কাস্টমার<small>${nf(s.counts.customers_active)} জন সক্রিয়</small></span></button>
+      <button type="button" class="cnt-card" data-go="team">${I.team}<span><b>${nf(s.counts.developers)}</b> ডেভেলপার<small>${nf(s.counts.admins)} জন অ্যাডমিন</small></span></button>
+      <button type="button" class="cnt-card" data-go="catalog">${I.catalog}<span><b>${nf(s.counts.packages)}</b> প্যাকেজ<small>${BN(s.counts.platforms)} প্ল্যাটফর্ম · ${nf(s.counts.templates)} টেমপ্লেট · ${nf(s.counts.addons)} অ্যাড-অন</small></span></button>
+      <button type="button" class="cnt-card" data-go="analytics">${I.chart}<span><b>${nf(v.total_uniques)}</b> মোট ভিজিটর<small>অ্যানালিটিক্সে বিস্তারিত</small></span></button>
+    </div>` : ""}
+    <div class="tiles">
+      <div class="tile"><span class="l"><span class="dot"></span>এখন সাইটে</span><span class="v">${BN(s.live.count)}</span><span class="s">গত ২ মিনিটে সক্রিয়</span></div>
+      <div class="tile"><span class="l">আজকের ভিজিটর</span><span class="v">${nf(v.today_uniques)}</span><span class="s">${nf(v.today)} বার পেজ দেখা</span></div>
+      <div class="tile"><span class="l">মোট ভিজিট</span><span class="v">${nf(v.total)}</span><span class="s">${nf(v.total_uniques)} জন আলাদা ভিজিটর</span></div>
+      <div class="tile"><span class="l">কনভার্শন (${BN(days)} দিন)</span><span class="v">${pct(f.orders, f.visitors)}</span><span class="s">${nf(f.visitors)} ভিজিটর থেকে ${nf(f.orders)} অর্ডার</span></div>
+      <div class="tile"><span class="l">মোট আয় (যাচাই হওয়া)</span><span class="v">${tkShort(o.revenue)}</span><span class="s">এই মাসে ${tk(o.revenue_month)}</span></div>
+      <div class="tile"><span class="l">পেমেন্ট যাচাই বাকি</span><span class="v">${tkShort(o.pending_amount)}</span><span class="s">${nf(o.pending_pay)}টা অর্ডার</span></div>
+      <div class="tile"><span class="l">চলমান প্রোজেক্ট</span><span class="v">${nf(o.running)}</span><span class="s">${nf(o.done)}টা সম্পন্ন · ${nf(o.cancelled)}টা বাতিল</span></div>
+      <div class="tile"><span class="l">গড় অর্ডার</span><span class="v">${tkShort(o.avg_order)}</span><span class="s">মোট ${nf(o.total)}টা অর্ডার</span></div>
+    </div>
+    <div class="grid g-main" style="margin-bottom:18px">
+      <div class="card"><div class="ch"><h3>দৈনিক ভিজিটর</h3><small>${nf(v.range_uniques)} জন · ${BN(days)} দিনে</small></div>${columns(s.series, r => r.uniques, fmtN, "জন ভিজিটর")}</div>
+      <div class="card"><div class="ch"><h3>ভিজিটর থেকে অর্ডার</h3><small>${BN(days)} দিন</small></div>
+        ${hbars([{k: "ভিজিটর", n: f.visitors}, {k: "চেকআউট খুলেছেন", n: f.checkout}, {k: "হোয়াটসঅ্যাপে ক্লিক", n: f.whatsapp}, {k: "অর্ডার করেছেন", n: f.orders}], f.visitors)}
+        <p class="muted" style="font-size:.86rem;margin-top:14px">চেকআউট খুলে অর্ডার না করা ${nf(Math.max(0, f.checkout - f.orders))} জন, এদের জন্য রিটার্গেটিং Ad চালানো যায়।</p>
+      </div>
+    </div>
+    <div class="grid g2" style="margin-bottom:18px">
+      <div class="card"><div class="ch"><h3>দৈনিক অর্ডার</h3><small>${nf(ordSeries)}টা · ${tk(revSeries)}</small></div>${columns(s.series, r => r.orders, fmtN, "টা অর্ডার")}</div>
+      <div class="card"><div class="ch"><h3>দৈনিক অর্ডারের মূল্য</h3><small>বাতিল বাদে</small></div>${columns(s.series, r => r.revenue, fmtTk, "")}</div>
+    </div>
+    <div class="grid g3">
+      <div class="card"><div class="ch"><h3>প্রোজেক্ট পাইপলাইন</h3><small>বাতিল বাদে</small></div>${hbars(STAGES.map((st, i) => ({k: st, n: o.stages[i]})), 0)}
+        <div class="ch" style="margin:22px 0 12px"><h3>জনপ্রিয় প্যাকেজ</h3><small>${BN(days)} দিন</small></div>${hbars(s.packs.map(p => ({k: p.pack + " · " + p.stack, n: p.n})), 0)}</div>
+      <div class="card"><div class="ch"><h3>টিমের কাজের চাপ</h3><button class="btn btn-ghost btn-sm" type="button" data-go="team">টিম</button></div>
+        <ul class="people">${s.team.filter(t => t.active).map(t => `<li>${avatarHTML(t.name, t.avatar)}<div><b>${esc(t.name)}</b><small>${t.role === "admin" ? "অ্যাডমিন" : "ডেভেলপার"} · ${BN(t.done)}টা সম্পন্ন</small></div><div style="text-align:right"><b>${BN(t.running)}</b><small class="${t.overdue ? "late" : ""}">${t.overdue ? BN(t.overdue) + "টা দেরি" : "চলমান"}</small></div></li>`).join("") || '<li class="empty">কোনো ডেভেলপার নেই</li>'}</ul>
+        <div class="ch" style="margin:22px 0 12px"><h3>জনপ্রিয় অ্যাড-অন</h3></div>${hbars(s.addons.slice(0, 6), 0)}</div>
+      <div class="card"><div class="ch"><h3>সাম্প্রতিক কার্যকলাপ</h3></div>
+        <ul class="feed">${s.activity.map(a => `<li data-order="${a.order_id}"><span class="fi ${a.type === "message" ? "m" : ""}">${a.type === "message" ? I.chat : I.step}</span><div><p>${a.type === "message" ? `<b>${esc(a.who || "কাস্টমার")}:</b> ` : ""}${esc(a.text)}</p><small>${esc(a.code)} · ${ago(a.created)}${a.unread ? ' · <span class="late">না-পড়া</span>' : ""}</small></div></li>`).join("") || '<li class="empty">এখনো কিছু নেই</li>'}</ul></div>
+    </div>`;
+}
+$("main").addEventListener("click", e => {
+  const a = e.target.closest("[data-alert]");
+  if (a){
+    const k = a.dataset.alert;
+    if (k === "unread") location.href = "dashboard.html";
+    else if (k === "payouts") go("referral");
+    else if (k === "mailfail") go("email");
+    else { oFilter = k === "soon" ? "running" : k; go("orders"); }
+    return;
+  }
+  const g = e.target.closest("[data-go]"); if (g) return go(g.dataset.go);
+  const fo = e.target.closest("[data-order]"); if (fo) openDrawer(+fo.dataset.order);
+});
+
+/* ---------- orders ---------- */
+const isLate = o => !o.cancelled && o.stage < 4 && o.deadline < nowS();
+const OF = {
+  all: ["সব", () => true], running: ["চলমান", o => !o.cancelled && o.stage < 4], late: ["দেরি", isLate],
+  unassigned: ["অ্যাসাইন হয়নি", o => !o.cancelled && o.stage < 4 && !o.developer], pending: ["পেমেন্ট বাকি", o => !o.cancelled && o.pay_status === "pending"],
+  done: ["সম্পন্ন", o => !o.cancelled && o.stage === 4], cancelled: ["বাতিল", o => o.cancelled]
+};
+function statusBadge(o){
+  if (o.cancelled) return '<span class="badge b-cancel">বাতিল</span>';
+  if (o.stage === 4) return '<span class="badge b-done">সম্পন্ন</span>';
+  if (isLate(o)) return '<span class="badge b-late">দেরি হচ্ছে</span>';
+  return `<span class="badge b-run">${STAGES[o.stage]}</span>`;
+}
+const devOptions = sel => `<option value="">— অ্যাসাইন করুন —</option>` + team.filter(t => t.active).map(t => `<option value="${t.id}" ${sel === t.id ? "selected" : ""}>${esc(t.name)} (${BN(t.running)})</option>`).join("");
+function renderOrders(){
+  const q = oQuery.toLowerCase();
+  const list = orders.filter(OF[oFilter][1]).filter(o => !oStack || o.stack === oStack)
+    .filter(o => !q || [o.code, o.domain, o.pack, o.template, o.customer?.name, o.customer?.email, o.customer?.phone, o.pay_trx].some(v => String(v || "").toLowerCase().includes(q)));
+  const sum = list.filter(o => !o.cancelled).reduce((s, o) => s + o.total, 0);
+  const focus = document.activeElement?.id === "oq";
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>অর্ডার</h1><p>${nf(list.length)}টা অর্ডার · ${tk(sum)}</p></div>
+      <div class="tools"><input class="search" type="search" id="oq" placeholder="কোড, নাম, ফোন, TrxID" value="${esc(oQuery)}" aria-label="অর্ডার খুঁজুন">
+        <select class="search" id="ostack" style="min-width:0" aria-label="প্ল্যাটফর্ম"><option value="">সব প্ল্যাটফর্ম</option>${["WooCommerce", "Laravel"].map(s => `<option ${oStack === s ? "selected" : ""}>${s}</option>`).join("")}</select>
+        <button class="btn btn-ghost btn-sm" type="button" id="exportBtn">CSV এক্সপোর্ট</button></div></div>
+    <div class="chips" style="margin-bottom:14px">${Object.entries(OF).map(([k, [l, f]]) => `<button type="button" data-of="${k}" aria-pressed="${oFilter === k}">${l} (${BN(orders.filter(f).length)})</button>`).join("")}</div>
+    <div class="card" style="padding:10px 14px">${list.length ? `<div class="tbl-wrap"><table class="tbl" style="min-width:980px"><thead><tr>
+      <th>অর্ডার</th><th>কাস্টমার</th><th>প্যাকেজ</th><th class="r">মোট</th><th>পেমেন্ট</th><th>অবস্থা</th><th>ডেলিভারি</th><th>ডেভেলপার</th></tr></thead><tbody>
+      ${list.map(o => `<tr class="click" data-open="${o.id}">
+        <td style="white-space:nowrap"><b>${esc(pname(o))}</b>${o.unread ? ` <span class="badge b-unread">${BN(o.unread)}</span>` : ""}<span class="sub">${o.domain ? esc(o.code) + " · " : ""}${when(o.created)}</span></td>
+        <td>${esc(o.customer?.name)}<span class="sub">${esc(o.customer?.phone || o.customer?.email)}</span></td>
+        <td>${esc(o.pack)}<span class="sub">${esc(o.stack)} · ${esc(o.template)}</span></td>
+        <td class="r num">${tk(o.total)}</td>
+        <td><span class="badge b-${o.pay_status}">${PAY[o.pay_status]}</span><span class="sub">${MNAME[o.pay_method] || ""} · ${esc(o.pay_trx)}</span></td>
+        <td>${statusBadge(o)}<span class="mini"><i style="width:${o.progress}%"></i></span></td>
+        <td class="${isLate(o) ? "late" : ""}">${o.cancelled || o.stage === 4 ? "—" : left(o.deadline)}<span class="sub">${o.cancelled || o.stage === 4 ? "" : when(o.deadline)}</span></td>
+        <td><select data-assign="${o.id}" aria-label="ডেভেলপার" ${o.cancelled ? "disabled" : ""}>${devOptions(o.developer?.id)}</select></td>
+      </tr>`).join("")}</tbody></table></div>` : '<p class="empty">এই ফিল্টারে কোনো অর্ডার নেই।</p>'}</div>`;
+  if (focus){ const i = $("oq"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
+}
+$("main").addEventListener("input", e => {
+  if (e.target.id === "oq"){ oQuery = e.target.value; renderOrders(); }
+  if (e.target.id === "cq"){ custQ = e.target.value; renderCustomers(); }
+});
+$("main").addEventListener("change", async e => {
+  if (e.target.id === "ostack"){ oStack = e.target.value; renderOrders(); }
+  if (e.target.id === "boardDev"){ boardDev = e.target.value; renderBoard(); }
+  const as = e.target.closest("[data-assign]");
+  if (as){
+    try { await api.assign(+as.dataset.assign, as.value); toast("ডেভেলপার আপডেট হয়েছে।"); [orders, team] = [(await api.orders()).orders, (await api.team()).team]; render(); }
+    catch(err){ toast(err.message); }
+  }
+});
+$("main").addEventListener("click", async e => {
+  if (e.target.closest("select")) return;
+  const of = e.target.closest("[data-of]"); if (of){ oFilter = of.dataset.of; return renderOrders(); }
+  const op = e.target.closest("[data-open]"); if (op) return openDrawer(+op.dataset.open);
+  if (e.target.closest("#exportBtn")){ const a = document.createElement("a"); a.href = await api.exportUrl(); a.download = "techill-orders.csv"; document.body.appendChild(a); a.click(); a.remove(); }
+});
+
+/* ---------- order drawer ---------- */
+async function openDrawer(id){
+  drawerId = id;
+  $("drawer").innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; $("drawer").hidden = false; $("drawerBg").hidden = false;
+  try { renderDrawer(await api.order(id)); } catch(e){ toast(e.message); closeDrawer(); }
+}
+function closeDrawer(){ $("drawer").hidden = true; $("drawerBg").hidden = true; drawerId = null; }
+$("drawerBg").addEventListener("click", closeDrawer);
+addEventListener("keydown", e => { if (e.key === "Escape" && drawerId) closeDrawer(); });
+function renderDrawer(d){
+  const o = d.order, c = o.customer || {}, i = o.info || {};
+  const wa = (c.phone || i.whatsapp || "").replace(/\D/g, "").replace(/^0/, "880");
+  $("drawer").innerHTML = `
+    <div class="dr-h"><div><h2 id="drTitle" style="word-break:break-all">${esc(pname(o))} ${statusBadge(o)}</h2><p>${o.domain ? esc(o.code) + " · " : ""}${esc(o.pack)} · ${esc(o.stack)} · ${esc(o.template)}</p></div><button class="icon-btn" type="button" id="drClose" aria-label="বন্ধ করুন">${ic('<path d="M6 6l12 12M18 6L6 18"/>')}</button></div>
+    <div class="dr-b">
+      <div class="row2"><a class="btn btn-primary btn-sm" href="dashboard.html#o=${o.id}">চ্যাট ও অগ্রগতি আপডেট</a><button class="btn btn-ghost btn-sm" type="button" id="drInv">ইনভয়েস</button>${wa ? `<a class="btn btn-ghost btn-sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">হোয়াটসঅ্যাপ</a>` : ""}${o.site_url ? `<a class="btn btn-ghost btn-sm" href="${esc(o.site_url)}" target="_blank" rel="noopener noreferrer">সাইট ↗</a>` : ""}</div>
+      <div class="box"><h4>অগ্রগতি · ${BN(o.progress)}%</h4><div class="mini" style="width:100%;height:8px"><i style="width:${o.progress}%"></i></div>
+        <dl class="kv" style="margin-top:12px"><dt>ধাপ</dt><dd>${STAGES[o.stage]}</dd><dt>ডেলিভারি</dt><dd class="${isLate(o) ? "late" : ""}">${when(o.deadline)}${o.stage < 4 && !o.cancelled ? " · " + left(o.deadline) : ""}</dd><dt>অর্ডারের সময়</dt><dd>${when(o.created)}</dd></dl></div>
+      <div class="box"><h4>ডেভেলপার</h4><select class="inp" data-assign="${o.id}" ${o.cancelled ? "disabled" : ""}>${devOptions(o.developer?.id)}</select></div>
+      <div class="box"><h4>ডোমেইন</h4>${o.domain ? `<p><b style="font-size:1.1rem;word-break:break-all">${esc(o.domain)}</b></p><p class="muted" style="font-size:.86rem">${i.domain_mode === "new" ? "কাস্টমার চেকআউটে বেছেছেন, তার নামে রেজিস্টার করুন।" : "কাস্টমারের নিজের ডোমেইন, DNS আমাদের সার্ভারে আনতে হবে।"}</p>` : '<p class="muted" style="font-size:.88rem">কাস্টমার পরে জানাবেন। ঠিক হলে প্রোজেক্ট চ্যাট থেকে ডোমেইন বসিয়ে দিন।</p>'}</div>
+      ${i.trade_license || i.nid_number || d.files.some(f => f.kind === "license" || f.kind === "nid") ? `<div class="box"><h4>পেমেন্ট গেটওয়ের কাগজপত্র</h4><dl class="kv"><dt>ট্রেড লাইসেন্স</dt><dd>${esc(i.trade_license || "—")}</dd><dt>NID নম্বর</dt><dd>${esc(i.nid_number || "—")}</dd></dl>
+        <div class="row2" style="margin-top:10px">${d.files.filter(f => f.kind === "license" || f.kind === "nid").map(f => `<button class="btn btn-ghost btn-sm" type="button" data-doc="${f.id}" data-name="${esc(f.name)}">${f.kind === "nid" ? "NID কার্ড" : "ট্রেড লাইসেন্স"} খুলুন</button>`).join("") || '<span class="muted" style="font-size:.86rem">ফাইল নেই</span>'}</div></div>` : ""}
+      <div class="box"><h4>কাস্টমার</h4><dl class="kv"><dt>নাম</dt><dd>${esc(c.name)}</dd><dt>ইমেইল</dt><dd>${esc(c.email)}</dd><dt>ফোন</dt><dd>${esc(i.phone || c.phone)}</dd><dt>হোয়াটসঅ্যাপ</dt><dd>${esc(i.whatsapp)}</dd>${i.fb_page ? `<dt>ফেসবুক</dt><dd><a href="${esc(i.fb_page)}" target="_blank" rel="noopener noreferrer">${esc(i.fb_page)}</a></dd>` : ""}${i.address ? `<dt>ঠিকানা</dt><dd>${esc(i.address)}</dd>` : ""}</dl>
+        ${i.business_intro ? `<p class="muted" style="font-size:.88rem;margin-top:10px;white-space:pre-wrap">${esc(i.business_intro)}</p>` : ""}</div>
+      <div class="box"><h4>পেমেন্ট <span class="badge b-${o.pay_status}">${PAY[o.pay_status]}</span></h4>
+        <dl class="kv"><dt>মাধ্যম</dt><dd>${MNAME[o.pay_method] || esc(o.pay_method)}</dd><dt>যে নম্বর থেকে</dt><dd>${esc(o.pay_sender)}</dd><dt>TrxID</dt><dd><b>${esc(o.pay_trx)}</b></dd></dl>
+        <ul class="lines" style="margin-top:12px">${o.lines.map(l => `<li><span>${esc(l.label)}</span><span>${l.amt < 0 ? "−" : ""}${tk(Math.abs(l.amt))}</span></li>`).join("")}<li class="t"><span>মোট</span><span>${tk(o.total)}</span></li></ul>
+        ${o.cancelled ? "" : `<div class="row2" style="margin-top:12px">${o.pay_status !== "verified" ? `<button class="btn btn-ok btn-sm" type="button" data-pay="verified">${tk(o.total)} পেয়েছি, যাচাই করুন</button>` : ""}${o.pay_status !== "rejected" ? '<button class="btn btn-ghost btn-sm" type="button" data-pay="rejected">পেমেন্ট পাওয়া যায়নি</button>' : ""}${o.pay_status !== "pending" ? '<button class="btn btn-ghost btn-sm" type="button" data-pay="pending">যাচাই বাকি করুন</button>' : ""}</div>`}</div>
+      ${o.pay_method === "PayStation" || (d.payments || []).length ? `<div class="box"><h4>অনলাইন পেমেন্ট (PayStation)</h4>
+        ${(d.payments || []).length ? `<ul class="tl">${d.payments.map(p => `<li><b>${pstat(p.status)} ${tk(p.amount)}</b>${p.sandbox ? ' <span class="badge b-pending">Sandbox</span>' : ""}<p>${esc(p.invoice)}${p.trx_id ? " · TrxID " + esc(p.trx_id) : ""}${p.method ? " · " + esc(p.method) : ""}${p.payer ? " · " + esc(p.payer) : ""}</p>${p.note ? `<p class="muted">${esc(p.note)}</p>` : ""}<small>${when(p.created)}</small></li>`).join("")}</ul>` : '<p class="muted" style="font-size:.88rem">এখনো কোনো চেষ্টা হয়নি।</p>'}
+        ${o.pay_status !== "verified" && (d.payments || []).length ? '<div class="row2" style="margin-top:10px"><button class="btn btn-ghost btn-sm" type="button" id="psVerify">PayStation থেকে আবার যাচাই করুন</button></div>' : ""}</div>` : ""}
+      ${d.referral ? `<div class="box"><h4>রেফারেল ${rstat(d.referral.status)}</h4><dl class="kv"><dt>কোড</dt><dd><b>${esc(d.referral.code)}</b></dd><dt>রেফার করেছেন</dt><dd>${esc(d.referral.referrer.name)}<br><small class="muted">${esc(d.referral.referrer.email)}</small></dd><dt>কাস্টমারের ছাড়</dt><dd>${tk(d.referral.discount)}</dd><dt>রেফারারের আয়</dt><dd>${tk(d.referral.reward)}</dd></dl></div>` : ""}
+      <form class="box" id="adjForm"><h4>দাম ও সময় সমন্বয়</h4>
+        <div class="grid" style="grid-template-columns:1fr 120px;gap:10px">
+          <div class="f"><label for="adj-l">চার্জ / ছাড়ের বিবরণ</label><input class="inp" id="adj-l" name="line_label" placeholder="যেমন: ঈদ ছাড় / অতিরিক্ত পেজ"></div>
+          <div class="f"><label for="adj-a">টাকা <small>(ছাড়: −)</small></label><input class="inp" id="adj-a" name="line_amt" type="number" step="1" placeholder="-500"></div>
+          <div class="f"><label for="adj-h">ডেডলাইন বাড়ান <small>(ঘণ্টা)</small></label><input class="inp" id="adj-h" name="extend_hours" type="number" min="1" max="720" placeholder="24"></div>
+        </div>
+        <div class="row2" style="margin-top:10px"><button class="btn btn-primary btn-sm" type="submit">সেভ করুন</button><button class="btn ${o.cancelled ? "btn-ghost" : "btn-danger"} btn-sm" type="button" id="cancelBtn">${o.cancelled ? "অর্ডার আবার চালু করুন" : "অর্ডার বাতিল করুন"}</button></div>
+        <p class="err" id="adjErr" role="alert"></p></form>
+      <div class="box"><h4>ইতিহাস</h4><ul class="tl">${d.events.slice(0, 8).map(e => `<li><b>${STAGES[e.stage]} · ${BN(e.progress)}%</b>${e.note ? `<p>${esc(e.note)}</p>` : ""}<small>${when(e.created)}</small></li>`).join("")}</ul></div>
+      <div class="box"><h4>ফাইল (${BN(d.files.length)}) · মেসেজ (${BN(d.messages.length)})</h4><p class="muted" style="font-size:.88rem">${d.files.map(f => esc(f.name)).join(", ") || "কোনো ফাইল নেই"}</p>
+        ${d.messages.length ? `<p style="font-size:.88rem;margin-top:8px"><b>সর্বশেষ:</b> ${esc(d.messages[d.messages.length - 1].body).slice(0, 160)}</p>` : ""}</div>
+    </div>`;
+  $("drClose").addEventListener("click", closeDrawer); $("drClose").focus();
+  $("drInv").addEventListener("click", () => showInvoice(o, o.customer));
+  $("drawer").querySelectorAll("[data-doc]").forEach(b => b.addEventListener("click", () => {
+    const url = api.fileUrl(b.dataset.doc);
+    if (!url) return toast("ডেমো মোডে বড় ফাইল সেভ হয় না। আসল সার্ভারে খুলবে।");
+    if (url.startsWith("data:")){ const a = document.createElement("a"); a.href = url; a.download = b.dataset.name || "file"; a.click(); return; }
+    window.open(url, "_blank", "noopener");
+  }));
+  const after = async () => { orders = (await api.orders()).orders; team = (await api.team()).team; stats = await api.stats(days); renderNav(); renderLive(); render(); renderDrawer(await api.order(o.id)); };
+  $("drawer").querySelectorAll("[data-pay]").forEach(b => b.addEventListener("click", async () => {
+    try { await api.adminUpdate({order_id: o.id, stage: b.dataset.pay === "verified" ? Math.max(1, o.stage) : o.stage, progress: b.dataset.pay === "verified" ? Math.max(15, o.progress) : o.progress, pay_status: b.dataset.pay, site_url: o.site_url || ""}); toast("পেমেন্ট স্ট্যাটাস আপডেট হয়েছে।"); after(); }
+    catch(err){ toast(err.message); }
+  }));
+  $("drawer").querySelector("[data-assign]").addEventListener("change", async e => { try { await api.assign(o.id, e.target.value); toast("ডেভেলপার আপডেট হয়েছে।"); after(); } catch(err){ toast(err.message); } });
+  $("psVerify")?.addEventListener("click", async () => {
+    try { const r = await api.payVerify(o.id); toast(r.order.pay_status === "verified" ? "পেমেন্ট পাওয়া গেছে, অর্ডার নিশ্চিত হয়েছে।" : "PayStation-এ এখনো সফল পেমেন্ট নেই।"); after(); } catch(err){ toast(err.message); }
+  });
+  $("adjForm").addEventListener("submit", async e => {
+    e.preventDefault(); $("adjErr").textContent = "";
+    const data = Object.fromEntries(new FormData(e.target));
+    if (!data.line_label && !data.extend_hours){ $("adjErr").textContent = "কিছু লিখুন।"; return; }
+    if (data.line_label && !data.line_amt){ $("adjErr").textContent = "টাকার পরিমাণ দিন।"; return; }
+    try { await api.adjust({order_id: o.id, ...data}); toast("সেভ হয়েছে।"); after(); } catch(err){ $("adjErr").textContent = err.message; }
+  });
+  $("cancelBtn").addEventListener("click", async () => {
+    if (!o.cancelled && !confirm(`${o.code} বাতিল করবেন?`)) return;
+    try { await api.adjust({order_id: o.id, cancelled: o.cancelled ? 0 : 1}); toast(o.cancelled ? "অর্ডার চালু হয়েছে।" : "অর্ডার বাতিল হয়েছে।"); after(); } catch(err){ toast(err.message); }
+  });
+}
+
+/* ---------- board ---------- */
+function renderBoard(){
+  const list = orders.filter(o => !o.cancelled).filter(o => !boardDev || String(o.developer?.id || "none") === boardDev);
+  const run = list.filter(o => o.stage < 4);
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>প্রোজেক্ট বোর্ড</h1><p>${nf(run.length)}টা চলমান · ${nf(run.filter(isLate).length)}টা দেরি হচ্ছে</p></div>
+      <div class="tools"><select class="search" id="boardDev" style="min-width:0" aria-label="ডেভেলপার"><option value="">সব ডেভেলপার</option><option value="none" ${boardDev === "none" ? "selected" : ""}>অ্যাসাইন হয়নি</option>${team.map(t => `<option value="${t.id}" ${boardDev === String(t.id) ? "selected" : ""}>${esc(t.name)}</option>`).join("")}</select></div></div>
+    <div class="board">${STAGES.map((st, i) => {
+      let col = list.filter(o => o.stage === i).sort((a, b) => a.deadline - b.deadline);
+      const more = i === 4 && col.length > 8 ? col.length - 8 : 0; if (i === 4) col = col.sort((a, b) => b.created - a.created).slice(0, 8);
+      return `<div class="col"><h3><span>${st}</span><span class="muted">${BN(list.filter(o => o.stage === i).length)}</span></h3>
+        ${col.map(o => `<button type="button" class="kc ${isLate(o) ? "late" : ""}" data-open="${o.id}">
+          <span class="t"><b style="word-break:break-all">${esc(pname(o))}</b>${o.unread ? `<span class="badge b-unread">${BN(o.unread)}</span>` : o.pay_status !== "verified" ? `<span class="badge b-${o.pay_status}">${PAY[o.pay_status]}</span>` : ""}</span>
+          <span>${esc(o.customer?.name)} · ${esc(o.pack)}</span>
+          <small>${o.developer ? esc(o.developer.name) : '<span class="late">ডেভেলপার নেই</span>'}</small>
+          <span class="mini"><i style="width:${o.progress}%"></i></span>
+          <small class="${isLate(o) ? "late" : ""}">${i === 4 ? "ডেলিভারি সম্পন্ন" : left(o.deadline)}</small>
+        </button>`).join("") || '<p class="muted" style="font-size:.86rem;padding:4px">খালি</p>'}${more ? `<small class="muted">আরও ${BN(more)}টা</small>` : ""}</div>`;
+    }).join("")}</div>`;
+}
+
+/* ---------- analytics ---------- */
+async function loadAnalytics(quiet){
+  if (!quiet && !an) render();
+  try { an = await api.analytics(aDays); if (sec === "analytics") render(); } catch(e){ toast(e.message); }
+}
+const tile = (l, v, sub) => `<div class="tile"><span class="l">${l}</span><span class="v">${v}</span><span class="s">${sub}</span></div>`;
+const card = (title, small, body, cls = "") => `<div class="card ${cls}"><div class="ch"><h3>${title}</h3>${small ? `<small>${small}</small>` : ""}</div>${body}</div>`;
+function renderAnalytics(){
+  const head = `<div class="sec-h"><div><h1>অ্যানালিটিক্স</h1><p>ভিজিটর, অর্ডার আর আয়ের পুরো হিসাব</p></div>
+    <div class="tools"><div class="seg" role="group" aria-label="সময়সীমা">${[7, 30, 90, 365].map(d => `<button type="button" data-adays="${d}" aria-pressed="${aDays === d}">${d === 365 ? "১ বছর" : BN(d) + " দিন"}</button>`).join("")}</div></div></div>
+    <div class="atabs" role="tablist">${[["visitors", "ভিজিটর", I.visitors], ["orders", "অর্ডার", I.orders], ["earnings", "আয়", I.money]].map(([k, l, icon]) => `<button type="button" role="tab" data-atab="${k}" aria-selected="${aTab === k}">${icon}${l}</button>`).join("")}</div>`;
+  if (!an){ $("main").innerHTML = head + '<p class="empty">লোড হচ্ছে...</p>'; return; }
+  $("main").innerHTML = head + ({visitors: anVisitors, orders: anOrders, earnings: anEarnings})[aTab]();
+}
+function anVisitors(){
+  const v = an.visitors, u = v.uniques;
+  const live = an.live;
+  return `
+    <div class="tiles">
+      ${tile('<span class="dot"></span>এখন সাইটে', BN(live.length), "গত ২ মিনিটে সক্রিয়")}
+      ${tile("ভিজিটর (" + BN(aDays) + " দিন)", nf(u), delta(u, v.prev_uniques))}
+      ${tile("পেজ ভিউ", nf(v.views), u ? BN((v.views / u).toFixed(1)) + "টা পেজ প্রতি ভিজিটর" : "—")}
+      ${tile("নতুন / ফিরে আসা", `${nf(v.new)} <small class="muted" style="font-size:1rem">/ ${nf(v.returning)}</small>`, pct(v.returning, u) + " আগেও এসেছিলেন")}
+      ${tile("এক পেজ দেখেই চলে গেছেন", pct(v.single_page, u), nf(v.single_page) + " জন (bounce)")}
+      ${tile("আজ", nf(v.today), "জন আলাদা ভিজিটর")}
+      ${tile("শুরু থেকে মোট", nf(v.total_uniques), nf(v.total_views) + " পেজ ভিউ")}
+      ${tile("চেকআউট পর্যন্ত গেছেন", pct(an.funnel.checkout, u), nf(an.funnel.checkout) + " জন")}
+    </div>
+    <div class="grid g-main" style="margin-bottom:18px">
+      ${card("দৈনিক ভিজিটর", nf(u) + " জন", columns(an.series, r => r.uniques, fmtN, "জন ভিজিটর"))}
+      ${card("এখন যারা সাইটে", BN(live.length) + " জন", live.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>কোথা থেকে</th><th>পেজ</th><th>ডিভাইস</th><th class="r">কতক্ষণ</th></tr></thead><tbody>${live.map(l => `<tr><td>${esc(l.city || "")}${l.city ? ", " : ""}${esc(country(l.country))}</td><td>${esc(l.path)}</td><td>${DEV[l.device] || esc(l.device)}<span class="sub">${esc(BROWSER[l.browser] || l.browser || "")}</span></td><td class="r">${BN(Math.max(1, Math.round((l.seen - l.since) / 60)))} মি.</td></tr>`).join("")}</tbody></table></div>` : '<p class="empty">এই মুহূর্তে কেউ নেই</p>')}
+    </div>
+    <h2 class="sub-h">${I.pin} ভিজিটর কোথা থেকে আসছেন</h2>
+    <div class="grid g3" style="margin-bottom:18px">
+      ${card("দেশ", "", hbars(an.countries.map(c => ({k: c.k, label: country(c.k), n: c.n})), u))}
+      ${card("শহর", "", hbars(an.cities, u) + '<p class="muted" style="font-size:.82rem;margin-top:10px">শহর বের হয় IP থেকে, তাই মোবাইল ডেটায় অনেক সময় কাছের বড় শহর দেখায়।</p>')}
+      ${card("বিভাগ / অঞ্চল", "", hbars(an.regions, u))}
+    </div>
+    <h2 class="sub-h">${I.clock} কখন আসেন</h2>
+    <div class="grid g-main" style="margin-bottom:18px">
+      ${card("দিনের কোন সময়ে", "বাংলাদেশ সময়", columns(an.hours.map((n, h) => ({h, n})), r => r.n, fmtN, "জন ভিজিটর", r => BN(r.h) + "টা", 3) + `<p class="muted" style="font-size:.85rem;margin-top:10px">সবচেয়ে বেশি ভিজিটর আসেন ${BN(an.hours.indexOf(Math.max(...an.hours)))}টার দিকে। Ad বা পোস্ট এর একটু আগে দিন।</p>`)}
+      ${card("সপ্তাহের কোন দিনে", "", hbars(an.weekdays.map((n, i) => ({k: WEEK[i], n})), u))}
+    </div>
+    <h2 class="sub-h">${I.visitors} কী দিয়ে দেখছেন</h2>
+    <div class="grid g3" style="margin-bottom:18px">
+      ${card("ডিভাইস", "", hbars(an.devices.map(d => ({k: d.k, label: DEV[d.k] || d.k, n: d.n})), u))}
+      ${card("ব্রাউজার", "", hbars(an.browsers.map(b => ({k: b.k, label: BROWSER[b.k] || b.k, n: b.n})), u) + (an.browsers[0]?.k === "Facebook" ? '<p class="muted" style="font-size:.82rem;margin-top:10px">বেশিরভাগ ভিজিটর Facebook অ্যাপের ভেতর থেকে আসছেন। চেকআউট যেন অ্যাপের ব্রাউজারেও ঠিকমতো চলে, সেটা নিয়মিত দেখে নিন।</p>' : ""))}
+      ${card("অপারেটিং সিস্টেম", "", hbars(an.os, u))}
+    </div>
+    <h2 class="sub-h">${I.home} কোন পথে আসছেন</h2>
+    <div class="grid g3">
+      ${card("রেফারার", "", hbars(an.referrers.map(r => ({k: r.k || "সরাসরি / বুকমার্ক", n: r.n})), u))}
+      ${card("ক্যাম্পেইন (utm_source)", "", hbars(an.utm, u))}
+      ${card("সবচেয়ে বেশি দেখা পেজ", "", hbars(an.pages, v.views))}
+    </div>`;
+}
+function anOrders(){
+  const o = an.orders, f = an.funnel, act = o.count - o.cancelled;
+  return `
+    <div class="tiles">
+      ${tile("অর্ডার (" + BN(aDays) + " দিন)", nf(o.count), delta(o.count, o.prev_count))}
+      ${tile("অর্ডারের মোট মূল্য", tkShort(o.value), "বাতিল বাদে · গড় " + (act ? tk(o.value / act) : "—"))}
+      ${tile("কনভার্শন", pct(f.orders, f.visitors), nf(f.visitors) + " ভিজিটর থেকে " + nf(f.orders) + " অর্ডার")}
+      ${tile("চলমান / সম্পন্ন", `${nf(o.running)} <small class="muted" style="font-size:1rem">/ ${nf(o.done)}</small>`, nf(o.cancelled) + "টা বাতিল (" + pct(o.cancelled, o.count) + ")")}
+      ${tile("সময়মতো ডেলিভারি", o.delivered ? pct(o.on_time, o.delivered) : "—", nf(o.on_time) + " / " + nf(o.delivered) + "টা ডেডলাইনের মধ্যে")}
+      ${tile("গড় ডেলিভারি সময়", o.delivered ? BN(o.avg_hours) + " ঘণ্টা" : "—", "অর্ডার থেকে ডেলিভারি পর্যন্ত")}
+      ${tile("চেকআউট খুলে ছেড়ে গেছেন", nf(Math.max(0, f.checkout - f.orders)), "রিটার্গেটিং Ad-এর জন্য উপযুক্ত")}
+      ${tile("হোয়াটসঅ্যাপে ক্লিক", nf(f.whatsapp), pct(f.whatsapp, f.visitors) + " ভিজিটর")}
+    </div>
+    <div class="grid g-main" style="margin-bottom:18px">
+      ${card("দৈনিক অর্ডার", nf(o.count) + "টা", columns(an.series, r => r.orders, fmtN, "টা অর্ডার"))}
+      ${card("ভিজিটর থেকে অর্ডার", "", hbars([{k: "ভিজিটর", n: f.visitors}, {k: "চেকআউট খুলেছেন", n: f.checkout}, {k: "হোয়াটসঅ্যাপে ক্লিক", n: f.whatsapp}, {k: "অর্ডার করেছেন", n: f.orders}], f.visitors))}
+    </div>
+    <div class="grid g3" style="margin-bottom:18px">
+      ${card("প্যাকেজ অনুযায়ী", "", hbars(o.by_pack.map(p => ({k: p.k, n: p.n})), act))}
+      ${card("প্ল্যাটফর্ম", "", hbars(o.by_stack, act))}
+      ${card("অর্ডার কোথা থেকে এসেছে", "প্রথম ভিজিট অনুযায়ী", hbars(o.sources.map(x => ({k: x.k || "সরাসরি / বুকমার্ক", n: x.n})), 0))}
+    </div>
+    <div class="grid g3">
+      ${card("প্রোজেক্টের ধাপ", "", hbars(STAGES.map((st, i) => ({k: st, n: o.stages[i]})), 0))}
+      ${card("পেমেন্ট মাধ্যম", "", hbars(o.by_method.map(m => ({k: m.k, label: MNAME[m.k] || m.k, n: m.n})), act))}
+      ${card("পেমেন্ট স্ট্যাটাস", "", hbars(o.by_pay.map(m => ({k: m.k, label: PAY[m.k] || m.k, n: m.n})), act))}
+    </div>`;
+}
+function anEarnings(){
+  const e = an.earnings, o = an.orders;
+  const mLabel = m => new Date(m + "-15T00:00:00").toLocaleDateString("bn-BD", {month: "short", year: "2-digit"});
+  return `
+    <div class="tiles">
+      ${tile("আয় (" + BN(aDays) + " দিন)", tkShort(e.range), delta(e.range, e.prev))}
+      ${tile("এই মাসে", tkShort(e.this_month), e.last_month ? (e.this_month >= e.last_month ? '<span class="dl up">▲</span> ' : '<span class="dl dn">▼</span> ') + "গত মাসে " + tk(e.last_month) : "গত মাসে কিছু নেই")}
+      ${tile("শুরু থেকে মোট আয়", tkShort(e.all_time), "শুধু যাচাই হওয়া পেমেন্ট")}
+      ${tile("যাচাই বাকি", tkShort(e.pending), "এখনো হাতে আসেনি")}
+    </div>
+    <div class="grid g2" style="margin-bottom:18px">
+      ${card("মাসিক আয়", "গত ১২ মাস", columns(e.months, r => r.earned, fmtTk, "", r => mLabel(r.m), 2))}
+      ${card("দৈনিক আয়", BN(aDays) + " দিন", columns(an.series, r => r.earned, fmtTk, ""))}
+    </div>
+    <div class="grid g3">
+      ${card("প্যাকেজ অনুযায়ী আয়", "বাতিল বাদে", hbars(o.by_pack.map(p => ({k: p.k, n: p.t})), 0, tk))}
+      ${card("পেমেন্ট মাধ্যম অনুযায়ী", "", hbars(o.by_method.map(m => ({k: m.k, label: MNAME[m.k] || m.k, n: m.t})), 0, tk))}
+      ${card("সবচেয়ে বেশি দিয়েছেন", "শুরু থেকে", e.top_customers.length ? `<ul class="people">${e.top_customers.map(c => `<li>${avatarHTML(c.name, (customers.find(x => x.email === c.email) || {}).avatar)}<div><b>${esc(c.name)}</b><small>${esc(c.email)} · ${BN(c.orders)}টা অর্ডার</small></div><b class="num">${tk(c.total)}</b></li>`).join("")}</ul>` : '<p class="empty">এখনো কিছু নেই</p>')}
+    </div>`;
+}
+$("main").addEventListener("click", e => {
+  if (sec !== "analytics") return;
+  const d = e.target.closest("[data-adays]"); if (d){ aDays = +d.dataset.adays; an = null; loadAnalytics(); return; }
+  const t = e.target.closest("[data-atab]"); if (t){ aTab = t.dataset.atab; render(); }
+});
+
+/* ---------- catalog editor ---------- */
+const getP = (o, p) => p.split(".").reduce((a, k) => a?.[k], o);
+const setP = (o, p, v) => { const ks = p.split("."), last = ks.pop(); ks.reduce((a, k) => a[k], o)[last] = v; };
+function renderCatalog(){
+  if (!draft){ $("main").innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; return; }
+  const S = draft.stacks[edStack], base = `stacks.${edStack}`;
+  draft.tlds_basic ??= ["shop", "top", "store", "online", "site", "website"]; draft.tlds_premium ??= ["com"];
+  Object.values(draft.stacks).forEach(x => x.packs.forEach(p => { p.premium_tlds ??= (p.incl || []).includes("domain"); }));
+  const words = (p, ph) => `<input class="inp" data-p="${p}" data-t="words" value="${esc((getP(draft, p) || []).map(t => "." + t).join(" "))}" placeholder="${ph}">`;
+  const inp = (p, type = "text", extra = "") => `<input class="inp" data-p="${p}" data-t="${type === "number" ? "int" : "str"}" type="${type}" value="${esc(getP(draft, p) ?? "")}" ${extra}>`;
+  const simple = draft.addons.filter(a => !a.qty), qtyAdd = draft.addons.filter(a => a.qty);
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>প্যাকেজ ও দাম</h1><p>এখানে বদলালে ল্যান্ডিং পেজ আর চেকআউটে সাথে সাথে নতুন দাম দেখাবে। নতুন অর্ডারের দাম সার্ভারও এখান থেকেই হিসাব করে।</p></div>
+      <div class="tools"><a class="btn btn-ghost btn-sm" href="index.html#packages" target="_blank" rel="noopener">সাইটে দেখুন ↗</a></div></div>
+    <div class="tiles">
+      ${Object.entries(draft.stacks).map(([k, S]) => tile(esc(S.name) + " প্যাকেজ", BN(S.packs.length), BN(S.templates.length) + "টা টেমপ্লেট · " + S.packs.map(p => tk(p.price)).join(" / "))).join("")}
+      ${tile("মোট প্যাকেজ", BN(Object.values(draft.stacks).reduce((n, S) => n + S.packs.length, 0)), "নিচে যোগ, এডিট বা মুছতে পারবেন")}
+      ${tile("অ্যাড-অন", BN(draft.addons.length), BN(draft.groups.length) + "টা গ্রুপে")}
+    </div>
+
+    <div class="card ed-sec"><h3>পেমেন্ট ও যোগাযোগ</h3>
+      <div class="ed-grid">
+        <div class="f"><label>হোয়াটসঅ্যাপ নম্বর <small>(8801...)</small></label>${inp("whatsapp", "tel")}</div>
+        <div class="f"><label>বিকাশ নম্বর</label>${inp("pay_numbers.bKash", "tel")}</div>
+        <div class="f"><label>নগদ নম্বর</label>${inp("pay_numbers.Nagad", "tel")}</div>
+        <div class="f"><label>রকেট নম্বর</label>${inp("pay_numbers.Rocket", "tel")}</div>
+        <div class="f"><label>গেটওয়ে নিলে বাড়তি সময় <small>(ঘণ্টা)</small></label>${inp("gateway_extra_hours", "number", 'min="0" max="720"')}</div>
+      </div></div>
+
+    <div class="card ed-sec"><h3>ডোমেইন এক্সটেনশন</h3>
+      <p class="muted" style="font-size:.88rem;margin-top:-6px">চেকআউটের ডোমেইন ধাপে কাস্টমার এগুলো থেকে বাছতে পারবেন। প্রতিটা প্যাকেজে ".com সহ" টিক দিলে দ্বিতীয় তালিকাও পাবে।</p>
+      <div class="ed-grid"><div class="f w2"><label>সব প্যাকেজে <small>(স্পেস দিয়ে আলাদা)</small></label>${words("tlds_basic", ".shop .top .store")}</div>
+        <div class="f w2"><label>শুধু ".com সহ" প্যাকেজে</label>${words("tlds_premium", ".com")}</div></div>
+      <div class="row2" style="margin-top:12px;flex-wrap:wrap;gap:10px"><button class="btn btn-ghost btn-sm" type="button" id="domDiag">লাইভ ডোমেইন চেক টেস্ট করুন</button><span class="muted" style="font-size:.85rem">সার্ভার আর ব্রাউজার রেজিস্ট্রি/DNS-এ পৌঁছাতে পারছে কিনা দেখায়</span></div>
+      <div id="domDiagOut"></div></div>
+
+    <div class="sec-h" style="margin-bottom:12px"><div class="seg" role="group" aria-label="প্ল্যাটফর্ম">${Object.entries(draft.stacks).map(([k, s]) => `<button type="button" data-ed-stack="${k}" aria-pressed="${edStack === k}">${esc(s.name)}</button>`).join("")}</div>
+      <div class="tools"><label class="sw">ডোমেইন ও হোস্টিং (১ বছর) দাম ${inp(base + ".domainPrice", "number", 'min="0" style="width:120px"')}</label></div></div>
+
+    <div class="ed-sec"><div class="packs-ed">${S.packs.map((p, i) => { const pb = `${base}.packs.${i}`; return `<div class="pk">
+      <div class="h"><b>প্যাকেজ ${BN(i + 1)}</b><span class="row2"><label class="sw"><input type="checkbox" data-p="${pb}.popular" data-t="bool" ${p.popular ? "checked" : ""}> জনপ্রিয়</label><label class="sw" title="ডোমেইন ধাপে .com-এর মতো দামি এক্সটেনশনও দেখাবে"><input type="checkbox" data-p="${pb}.premium_tlds" data-t="bool" ${p.premium_tlds ? "checked" : ""}> .com সহ</label><button class="btn btn-ghost btn-sm" type="button" data-del="${base}.packs" data-i="${i}" aria-label="প্যাকেজ মুছুন">মুছুন</button></span></div>
+      <div class="g2i"><div class="f"><label>নাম</label>${inp(pb + ".name")}</div><div class="f"><label>ইংরেজি নাম</label>${inp(pb + ".en")}</div></div>
+      <div class="f"><label>ট্যাগলাইন</label>${inp(pb + ".tag")}</div>
+      <div class="g3i"><div class="f"><label>দাম ৳</label>${inp(pb + ".price", "number", 'min="0"')}</div><div class="f"><label>ঘণ্টা</label>${inp(pb + ".hours", "number", 'min="1"')}</div><div class="f"><label>প্রোডাক্ট</label>${inp(pb + ".products", "number", 'min="0"')}</div></div>
+      <div class="f"><label>ফিচার <small>(প্রতি লাইনে একটা; "+" দিয়ে শুরু = আগের প্যাকেজের সব)</small></label><textarea class="inp" data-p="${pb}.feat" data-t="lines" rows="6">${esc((p.feat || []).join("\n"))}</textarea></div>
+      <div class="f"><label>প্যাকেজে যা ফ্রি</label><div class="checks">${simple.filter(a => !a.only || a.only === edStack).map(a => `<label><input type="checkbox" data-incl="${pb}" value="${esc(a.key)}" ${(p.incl || []).includes(a.key) ? "checked" : ""}> ${esc(a.name)}</label>`).join("")}</div></div>
+      ${qtyAdd.length ? `<div class="g2i">${qtyAdd.map(a => `<div class="f"><label>${esc(a.name)} ফ্রি <small>(টা)</small></label><input class="inp" type="number" min="0" max="20" data-inclqty="${pb}" data-k="${esc(a.key)}" value="${(p.inclQty || {})[a.key] || 0}"></div>`).join("")}</div>` : ""}
+    </div>`; }).join("")}</div>
+    <div><button class="btn btn-ghost btn-sm" type="button" data-add="pack">+ নতুন প্যাকেজ</button></div></div>
+
+    <div class="card ed-sec"><div class="ch" style="margin:0"><h3>টেমপ্লেট (${esc(S.name)})</h3><button class="btn btn-ghost btn-sm" type="button" data-add="tpl">+ টেমপ্লেট</button></div>
+      <div class="tbl-wrap"><table class="tbl" style="min-width:920px"><thead><tr><th>ছবি</th><th>কোড</th><th>নাম</th><th>কাদের জন্য</th><th>ডেমো লিংক</th><th>রং <small class="muted">(ছবি না থাকলে)</small></th><th></th></tr></thead><tbody>
+      ${S.templates.map((t, i) => { const tb = `${base}.templates.${i}`; return `<tr>
+        <td style="width:150px"><div class="photo-row" style="gap:8px">${safeImg(t.image) ? `<img class="tpl-img" src="${safeImg(t.image)}" alt="${esc(t.name)}">` : '<span class="tpl-ph">ছবি নেই</span>'}
+          <div style="display:grid;gap:4px"><button class="btn btn-ghost btn-sm" type="button" data-tplimg="${tb}">${t.image ? "বদলান" : "আপলোড"}</button>${t.image ? `<button class="btn btn-ghost btn-sm" type="button" data-tplimg-del="${tb}">সরান</button>` : ""}</div></div></td>
+        <td style="width:80px">${inp(tb + ".code")}</td><td>${inp(tb + ".name")}</td><td>${inp(tb + ".niche")}</td><td>${inp(tb + ".demo", "url")}</td>
+        <td style="white-space:nowrap"><input type="color" data-p="${tb}.t" data-t="str" value="${esc(t.t)}" aria-label="মূল রং"> <input type="color" data-p="${tb}.t2" data-t="str" value="${esc(t.t2)}" aria-label="হালকা রং"></td>
+        <td><button class="btn btn-ghost btn-sm" type="button" data-del="${base}.templates" data-i="${i}">মুছুন</button></td></tr>`; }).join("")}
+      </tbody></table></div></div>
+
+    <div class="card ed-sec"><div class="ch" style="margin:0"><h3>অ্যাড-অন (দুই প্ল্যাটফর্মেই)</h3><button class="btn btn-ghost btn-sm" type="button" data-add="addon">+ অ্যাড-অন</button></div>
+      <div class="tbl-wrap"><table class="tbl" style="min-width:980px"><thead><tr><th>key</th><th>নাম</th><th>নোট</th><th>দাম ৳</th><th>গ্রুপ</th><th>কোথায়</th><th>সংখ্যা</th><th>গেটওয়ে</th><th></th></tr></thead><tbody>
+      ${draft.addons.map((a, i) => { const ab = `addons.${i}`; return `<tr>
+        <td style="width:120px">${a._new ? inp(ab + ".key") : `<code>${esc(a.key)}</code>`}</td><td>${inp(ab + ".name")}</td><td>${inp(ab + ".note")}</td>
+        <td style="width:110px">${a.key === "domain" ? '<span class="sub">প্ল্যাটফর্ম অনুযায়ী</span>' : inp(ab + ".price", "number", 'min="0"')}</td>
+        <td><select class="inp" data-p="${ab}.g" data-t="int">${draft.groups.map((g, gi) => `<option value="${gi}" ${a.g === gi ? "selected" : ""}>${esc(g)}</option>`).join("")}</select></td>
+        <td><select class="inp" data-p="${ab}.only" data-t="str"><option value="">দুটোতেই</option><option value="woo" ${a.only === "woo" ? "selected" : ""}>WooCommerce</option><option value="laravel" ${a.only === "laravel" ? "selected" : ""}>Laravel</option></select></td>
+        <td><input type="checkbox" data-p="${ab}.qty" data-t="bool" ${a.qty ? "checked" : ""} aria-label="সংখ্যা দিয়ে নেওয়া যায়"></td>
+        <td><input type="checkbox" data-p="${ab}.gw" data-t="bool" ${a.gw ? "checked" : ""} aria-label="পেমেন্ট গেটওয়ে, বাড়তি সময় লাগে"></td>
+        <td>${["domain", "products25", "pixel", "capi"].includes(a.key) ? "" : `<button class="btn btn-ghost btn-sm" type="button" data-del="addons" data-i="${i}">মুছুন</button>`}</td></tr>`; }).join("")}
+      </tbody></table></div></div>
+
+    <div class="savebar"><span class="muted" id="saveState">${dirty ? "সেভ না করা পরিবর্তন আছে" : "সব সেভ করা আছে"}</span>
+      <span class="row2"><button class="btn btn-ghost btn-sm" type="button" id="catReset">ডিফল্টে ফেরান</button><button class="btn btn-ghost btn-sm" type="button" id="catUndo" ${dirty ? "" : "disabled"}>বাতিল</button><button class="btn btn-primary" type="button" id="catSave" ${dirty ? "" : "disabled"}>সেভ করুন</button></span></div>`;
+}
+function markDirty(){ dirty = true; const s = $("saveState"); if (s){ s.textContent = "সেভ না করা পরিবর্তন আছে"; $("catSave").disabled = false; $("catUndo").disabled = false; } }
+$("main").addEventListener("input", e => {
+  if (sec !== "catalog") return;
+  const t = e.target;
+  if (t.dataset.p){
+    const v = t.dataset.t === "int" ? (t.value === "" ? "" : +t.value) : t.dataset.t === "bool" ? t.checked : t.dataset.t === "lines" ? t.value.split("\n").map(x => x.trim()).filter(Boolean) : t.dataset.t === "words" ? t.value.split(/[\s,]+/).map(x => x.replace(/^\.+/, "").toLowerCase()).filter(x => /^[a-z]{2,24}$/.test(x)) : t.value;
+    if (t.dataset.p.endsWith(".only") && !v) delete getP(draft, t.dataset.p.replace(/\.only$/, "")).only; else setP(draft, t.dataset.p, v);
+    markDirty();
+  }
+  if (t.dataset.incl){ const p = getP(draft, t.dataset.incl); p.incl = [...t.closest(".checks").querySelectorAll("input:checked")].map(x => x.value); markDirty(); }
+  if (t.dataset.inclqty){ const p = getP(draft, t.dataset.inclqty); p.inclQty = {...(p.inclQty || {}), [t.dataset.k]: +t.value || 0}; if (!+t.value) delete p.inclQty[t.dataset.k]; markDirty(); }
+});
+$("main").addEventListener("change", e => { if (sec === "catalog" && (e.target.type === "checkbox" || e.target.tagName === "SELECT")) e.target.dispatchEvent(new Event("input", {bubbles: true})); });
+$("main").addEventListener("click", async e => {
+  if (sec !== "catalog") return;
+  const st = e.target.closest("[data-ed-stack]"); if (st){ edStack = st.dataset.edStack; return renderCatalog(); }
+  const del = e.target.closest("[data-del]");
+  if (del){ const arr = getP(draft, del.dataset.del); if (arr.length <= 1 && !del.dataset.del.startsWith("addons")) return toast("অন্তত একটা রাখতে হবে।"); arr.splice(+del.dataset.i, 1); markDirty(); return renderCatalog(); }
+  const add = e.target.closest("[data-add]");
+  if (add){
+    const S = draft.stacks[edStack];
+    if (add.dataset.add === "pack") S.packs.push({name: "নতুন প্যাকেজ", en: "New", tag: "", price: 9999, products: 20, hours: 48, feat: ["ফিচার লিখুন"], incl: [], inclQty: {}});
+    if (add.dataset.add === "tpl") S.templates.push({code: (edStack === "woo" ? "W" : "L") + (S.templates.length + 1), name: "নতুন টেমপ্লেট", niche: "", demo: "https://", t: "#0a84f0", t2: "#e8f3ff"});
+    if (add.dataset.add === "addon") draft.addons.push({key: "new_addon_" + (draft.addons.length + 1), g: 0, name: "নতুন অ্যাড-অন", price: 1000, _new: true});
+    markDirty(); return renderCatalog();
+  }
+  const ti = e.target.closest("[data-tplimg]");
+  if (ti){
+    const pick = document.createElement("input"); pick.type = "file"; pick.accept = "image/jpeg,image/png,image/webp";
+    pick.onchange = async () => {
+      const f = pick.files[0]; if (!f) return;
+      ti.disabled = true; ti.textContent = "আপলোড হচ্ছে...";
+      try { const r = await api.mediaUpload(f); getP(draft, ti.dataset.tplimg).image = r.url; markDirty(); renderCatalog(); toast("ছবি যোগ হয়েছে। সাইটে দেখাতে নিচে সেভ করুন।"); }
+      catch(err){ toast(err.message); ti.disabled = false; ti.textContent = "আপলোড"; }
+    };
+    pick.click(); return;
+  }
+  const td = e.target.closest("[data-tplimg-del]"); if (td){ delete getP(draft, td.dataset.tplimgDel).image; markDirty(); return renderCatalog(); }
+  if (e.target.closest("#domDiag")){
+    const b = $("domDiag"), o = $("domDiagOut"); b.disabled = true; o.innerHTML = '<p class="muted" style="margin-top:10px">চেক করছি...</p>';
+    try {
+      const rows = await api.domainDiag(), any = rows.some(r => r.ok);
+      o.innerHTML = `<ul style="list-style:none;padding:0;margin:12px 0 0;display:grid;gap:6px">${rows.map(r => `<li style="display:flex;gap:10px;align-items:center"><span class="badge ${r.ok ? "b-done" : "b-late"}">${r.ok ? "ঠিক আছে" : "সমস্যা"}</span><b>${esc(r.name)}</b><span class="muted" style="font-size:.85rem">${esc(r.detail)}</span></li>`).join("")}</ul>
+        <p class="muted" style="font-size:.85rem;margin-top:8px">${any ? "অন্তত একটা পথ খোলা আছে, ডোমেইন সার্চ লাইভ ফল দেখাবে।" : "কোনো পথই খোলা নেই, তাই সার্চে সব \"অজানা\" দেখাবে। হোস্টিং প্রোভাইডারকে বলুন সার্ভার থেকে বাইরের HTTPS (port 443) কল চালু করতে।"}</p>`;
+    } catch(err){ o.innerHTML = `<p class="err" style="margin-top:10px">${esc(err.message)}</p>`; }
+    b.disabled = false; return;
+  }
+  if (e.target.closest("#catUndo")){ draft = structuredClone(cat); dirty = false; return renderCatalog(); }
+  if (e.target.closest("#catReset")){
+    if (!confirm("সব প্যাকেজ, দাম আর অ্যাড-অন শুরুর মানে ফিরে যাবে। নিশ্চিত?")) return;
+    try { cat = (await api.resetCatalog()).catalog; draft = structuredClone(cat); dirty = false; renderCatalog(); toast("ডিফল্ট ক্যাটালগ ফিরে এসেছে।"); } catch(err){ toast(err.message); }
+  }
+  if (e.target.closest("#catSave")){
+    const clean = structuredClone(draft); clean.addons.forEach(a => delete a._new);
+    const btn = $("catSave"); btn.disabled = true;
+    try { cat = (await api.saveCatalog(clean)).catalog; draft = structuredClone(cat); dirty = false; renderCatalog(); toast("সেভ হয়েছে। সাইটে নতুন দাম দেখাচ্ছে।"); }
+    catch(err){ toast(err.message); btn.disabled = false; }
+  }
+});
+addEventListener("beforeunload", e => { if (dirty){ e.preventDefault(); e.returnValue = ""; } });
+
+/* ---------- payment gateway ---------- */
+async function loadPayments(){
+  try { const [a, b] = await Promise.all([api.paymentSettings(), api.payments()]); pset = a.settings; plist = b; if (sec === "payments") render(); } catch(e){ toast(e.message); }
+}
+function renderPayments(){
+  if (!pset){ $("main").innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; return; }
+  const p = pset.paystation, on = p.ready, rows = plist?.payments || [];
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>পেমেন্ট গেটওয়ে</h1><p>PayStation দিয়ে বিকাশ, নগদ, রকেট আর কার্ডে স্বয়ংক্রিয় পেমেন্ট। পেমেন্ট সফল হলে অর্ডার নিজে থেকেই নিশ্চিত হয়।</p></div>
+      <div class="tools">${on ? `<span class="badge b-done" style="font-size:.9rem;padding:4px 14px">অনলাইন পেমেন্ট চালু${p.sandbox ? " · Sandbox" : " · Live"}</span>` : '<span class="badge b-off" style="font-size:.9rem;padding:4px 14px">অনলাইন পেমেন্ট বন্ধ</span>'}</div></div>
+    ${p.enabled && p.sandbox ? '<div class="alert warn" style="margin-bottom:16px;cursor:default">' + I.alert + '<span><b style="font-size:1rem">Sandbox চালু আছে।</b> এখন কাস্টমারের আসল টাকা কাটবে না। পরীক্ষা শেষে Live করে দিন।</span></div>' : ""}
+    <div class="tiles">
+      ${tile("সফল অনলাইন পেমেন্ট", nf(plist?.month?.count || 0), "গত ৩০ দিনে")}
+      ${tile("অনলাইনে এসেছে", tkShort(plist?.month?.total || 0), "গত ৩০ দিনে")}
+      ${tile("ব্যর্থ / বাতিল", nf(rows.filter(r => ["failed", "canceled", "error", "mismatch"].includes(r.status)).length), "শেষ ১০০টা চেষ্টার মধ্যে")}
+      ${tile("ম্যানুয়াল Send Money", pset.manual_enabled ? "চালু" : "বন্ধ", "বিকাশ/নগদ নম্বর: প্যাকেজ ও দাম")}
+    </div>
+    <div class="grid g-main" style="margin-bottom:18px">
+      <form class="card" id="psForm" style="display:grid;gap:14px;align-content:start">
+        <div class="ch" style="margin:0"><h3>PayStation</h3><label class="switch"><input type="checkbox" name="ps_enabled" ${p.enabled ? "checked" : ""}><span></span>অনলাইন পেমেন্ট চালু</label></div>
+        <div class="f"><label>মোড</label><div class="seg" role="radiogroup" aria-label="মোড">
+          <label class="seg-r"><input type="radio" name="ps_mode" value="sandbox" ${p.sandbox ? "checked" : ""}><span>Sandbox (পরীক্ষা)</span></label>
+          <label class="seg-r"><input type="radio" name="ps_mode" value="live" ${p.sandbox ? "" : "checked"}><span>Live (আসল টাকা)</span></label></div>
+          <small class="muted" style="font-size:.82rem">Sandbox আর Live-এর Merchant ID/পাসওয়ার্ড আলাদা। যে মোড বাছবেন সেই মোডের তথ্য দিন।</small></div>
+        <div class="f"><label for="ps-mid">Merchant ID</label><input class="inp" id="ps-mid" name="ps_merchant_id" value="${esc(p.merchant_id)}" autocomplete="off" placeholder="PayStation থেকে পাওয়া Merchant ID"></div>
+        <div class="f"><label for="ps-pw">পাসওয়ার্ড ${p.password_set ? '<small>(সেভ করা আছে, বদলাতে চাইলে নতুন লিখুন)</small>' : ""}</label><input class="inp" id="ps-pw" name="ps_password" type="password" autocomplete="new-password" placeholder="${p.password_set ? "••••••••" : "PayStation থেকে পাওয়া পাসওয়ার্ড"}"></div>
+        <label class="checks" style="font-size:.92rem"><label><input type="checkbox" name="ps_pay_with_charge" ${p.pay_with_charge ? "checked" : ""}> গেটওয়ের চার্জ কাস্টমার দেবেন</label></label>
+        <div class="row2" style="border-top:1px solid var(--line);padding-top:14px"><label class="switch"><input type="checkbox" name="manual_enabled" ${pset.manual_enabled ? "checked" : ""}><span></span>ম্যানুয়াল Send Money-ও নেব (TrxID দিয়ে, আপনি নিজে যাচাই করবেন)</label></div>
+        <div class="row2"><button class="btn btn-primary" type="submit">সেভ করুন</button><button class="btn btn-ghost" type="button" id="psTest" ${p.merchant_id ? "" : "disabled"}>সংযোগ পরীক্ষা</button>${p.password_set ? '<button class="btn btn-ghost btn-sm" type="button" id="psClear">পাসওয়ার্ড মুছুন</button>' : ""}</div>
+        <p class="err" id="psErr" role="alert"></p>
+        ${ptest ? `<div class="alert ${ptest.ok ? "good" : "bad"}" style="cursor:default">${ptest.ok ? I.ok : I.alert}<span>${esc(ptest.text)}</span></div>` : ""}
+        ${pset.curl ? "" : '<div class="alert bad" style="cursor:default">' + I.alert + '<span>সার্ভারে PHP cURL চালু নেই, PayStation-এর সাথে কথা বলা যাবে না। cPanel → Select PHP Version থেকে curl চালু করুন।</span></div>'}
+      </form>
+      <div class="card" style="display:grid;gap:14px;align-content:start">
+        <h3>কীভাবে চালু করবেন</h3>
+        <ol class="steps-ol">
+          <li>PayStation-এ মার্চেন্ট অ্যাকাউন্ট খুলুন, ওরা Sandbox আর Live-এর Merchant ID ও পাসওয়ার্ড দেবে।</li>
+          <li>এখানে <b>Sandbox</b> বেছে Sandbox-এর তথ্য দিন, চালু করে সেভ করুন। <b>সংযোগ পরীক্ষা</b> চাপুন।</li>
+          <li>সাইট থেকে একটা ছোট অর্ডার দিয়ে পুরো পেমেন্ট করে দেখুন। অর্ডার নিজে থেকে "যাচাই হয়েছে" হলে সব ঠিক আছে।</li>
+          <li><b>Live</b> বেছে Live-এর তথ্য দিয়ে সেভ করুন। এখন থেকে আসল টাকা আসবে।</li>
+          <li>বন্ধ করতে চাইলে উপরের সুইচ বন্ধ করে সেভ করুন। তখন কাস্টমাররা শুধু ম্যানুয়াল Send Money দেখবেন।</li>
+        </ol>
+        <div class="f"><label>Callback / IPN URL <small>(PayStation চাইলে এটা দিন)</small></label><div class="row2"><input class="inp" readonly value="${esc(pset.callback_url)}" id="cbUrl" style="flex:1"><button class="btn btn-ghost btn-sm" type="button" id="cbCopy">কপি</button></div>
+          <small class="muted" style="font-size:.82rem">প্রতিটা পেমেন্টের সাথে এটা নিজে থেকেই পাঠানো হয়। সাইট HTTPS-এ থাকতে হবে, আর অনেক সময় PayStation সার্ভারের IP হোয়াইটলিস্ট করতে বলে।</small></div>
+        <p class="muted" style="font-size:.85rem">নিরাপত্তা: কাস্টমার পেমেন্ট শেষে ফিরে এলে সার্ভার নিজে PayStation-কে জিজ্ঞেস করে নিশ্চিত হয়। টাকার পরিমাণ আর ইনভয়েস না মিললে অর্ডার নিশ্চিত হয় না। একই পেমেন্ট দুবার গোনা হয় না।</p>
+      </div>
+    </div>
+    <div class="card" style="padding:10px 14px"><div class="ch" style="padding:8px 6px 0"><h3>সাম্প্রতিক অনলাইন পেমেন্ট</h3><small>শেষ ১০০টা চেষ্টা</small></div>
+      ${rows.length ? `<div class="tbl-wrap"><table class="tbl" style="min-width:860px"><thead><tr><th>সময়</th><th>অর্ডার</th><th>কাস্টমার</th><th class="r">টাকা</th><th>অবস্থা</th><th>মাধ্যম</th><th>TrxID</th><th>নোট</th></tr></thead><tbody>
+        ${rows.map(r => `<tr class="click" data-open="${r.order_id}"><td>${when(r.created)}</td><td><b>${esc(r.code)}</b><span class="sub">${esc(r.invoice)}</span></td><td>${esc(r.customer)}</td><td class="r num">${tk(r.amount)}</td>
+          <td>${pstat(r.status)}${r.sandbox ? ' <span class="badge b-pending">Sandbox</span>' : ""}</td><td>${esc(r.method || "—")}<span class="sub">${esc(r.payer || "")}</span></td><td>${esc(r.trx_id || "—")}</td><td class="muted" style="max-width:220px">${esc(r.note || "")}</td></tr>`).join("")}
+      </tbody></table></div>` : '<p class="empty">এখনো কোনো অনলাইন পেমেন্ট হয়নি।</p>'}</div>`;
+  $("psForm").addEventListener("submit", async e => {
+    e.preventDefault(); $("psErr").textContent = "";
+    const f = new FormData(e.target), data = {ps_merchant_id: f.get("ps_merchant_id"), ps_password: f.get("ps_password") || ""};
+    if (f.get("ps_enabled")) data.ps_enabled = 1;
+    if (f.get("ps_mode") === "sandbox") data.ps_sandbox = 1;
+    if (f.get("ps_pay_with_charge")) data.ps_pay_with_charge = 1;
+    if (f.get("manual_enabled")) data.manual_enabled = 1;
+    if (data.ps_enabled && !data.ps_sandbox && pset.paystation.sandbox && !confirm("Live মোড চালু করছেন। এখন থেকে কাস্টমারের আসল টাকা কাটবে। Live-এর Merchant ID আর পাসওয়ার্ড দিয়েছেন তো?")) return;
+    try { pset = (await api.savePaymentSettings(data)).settings; ptest = null; renderPayments(); toast(pset.paystation.ready ? "সেভ হয়েছে। চেকআউটে অনলাইন পেমেন্ট দেখাচ্ছে।" : "সেভ হয়েছে। অনলাইন পেমেন্ট বন্ধ আছে।"); }
+    catch(err){ $("psErr").textContent = err.message; }
+  });
+  $("psClear")?.addEventListener("click", async () => {
+    if (!confirm("সেভ করা পাসওয়ার্ড মুছবেন? অনলাইন পেমেন্ট বন্ধ হয়ে যাবে।")) return;
+    try { pset = (await api.savePaymentSettings({ps_merchant_id: p.merchant_id, ps_sandbox: p.sandbox ? 1 : "", ps_pay_with_charge: p.pay_with_charge ? 1 : "", manual_enabled: 1, ps_clear_password: 1})).settings; renderPayments(); } catch(err){ toast(err.message); }
+  });
+  $("psTest")?.addEventListener("click", async () => {
+    const b = $("psTest"); b.disabled = true; b.textContent = "পরীক্ষা হচ্ছে...";
+    try {
+      const r = await api.paymentTest();
+      ptest = !r.reachable ? {ok: false, text: "PayStation-এ পৌঁছানো যায়নি: " + r.message}
+        : r.status_code === "200" || r.status_code === "2001" ? {ok: true, text: `PayStation-এ সংযোগ ঠিক আছে (${r.sandbox ? "Sandbox" : "Live"})। Merchant ID চেনা গেছে কিনা নিশ্চিত হতে একটা ছোট পরীক্ষামূলক পেমেন্ট করে দেখুন। PayStation বলেছে: ${r.message || r.status_code}`}
+        : {ok: false, text: `PayStation উত্তর দিয়েছে কোড ${r.status_code}: ${r.message}`};
+    } catch(err){ ptest = {ok: false, text: err.message}; }
+    renderPayments();
+  });
+  $("cbCopy").addEventListener("click", async () => { try { await navigator.clipboard.writeText(pset.callback_url); toast("কপি হয়েছে।"); } catch(e){ $("cbUrl").select(); } });
+}
+
+function renderMe(){
+  const t = team.find(x => x.id === me.id);
+  if (t) me.avatar = t.avatar;
+  $("meBtn").innerHTML = avatarHTML(me.name, me.avatar); $("meBtn").hidden = false;
+}
+$("meBtn").addEventListener("click", () => openPerson("team", team.find(x => x.id === me.id) || {...me, active: true, running: 0, overdue: 0, done: 0, created: Date.now() / 1000}));
+
+/* ---------- Facebook Pixel ---------- */
+function renderMarketing(){
+  if (!mset){ $("main").innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; return; }
+  const m = mset, on = m.pixel_enabled && m.pixel_id, last = m.capi_last;
+  const EV = [["PageView", "ল্যান্ডিং পেজ বা ড্যাশবোর্ড খুললে"], ["InitiateCheckout", "কোনো প্যাকেজের \"এই প্যাকেজ নিন\" চাপলে, প্যাকেজের দাম সহ"], ["AddPaymentInfo", "চেকআউটে পেমেন্ট ধাপ পার হলে"],
+    ["Purchase", "অর্ডার জমা হলে (Send Money) বা অনলাইন পেমেন্ট সফল হলে, মোট টাকা সহ"], ["Contact", "হোয়াটসঅ্যাপ বোতামে ক্লিক করলে"]];
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>Facebook Pixel</h1><p>Pixel ID দিলেই সাইটে Pixel চালু হবে। কোড বসাতে হবে না।</p></div>
+      <div class="tools">${on ? '<span class="badge b-done" style="font-size:.9rem;padding:4px 14px">Pixel চালু</span>' : '<span class="badge b-off" style="font-size:.9rem;padding:4px 14px">Pixel বন্ধ</span>'}${m.capi_set ? ' <span class="badge b-run" style="font-size:.9rem;padding:4px 14px">Conversions API চালু</span>' : ""}</div></div>
+    <div class="grid g-main" style="margin-bottom:18px">
+      <form class="card" id="fbForm" style="display:grid;gap:14px;align-content:start">
+        <div class="ch" style="margin:0"><h3>Pixel</h3><label class="switch"><input type="checkbox" name="pixel_enabled" ${m.pixel_enabled ? "checked" : ""}><span></span>Pixel চালু</label></div>
+        <div class="f"><label for="fb-id">Pixel ID</label><input class="inp" id="fb-id" name="pixel_id" inputmode="numeric" value="${esc(m.pixel_id)}" placeholder="যেমন 1234567890123456" autocomplete="off">
+          <small class="muted" style="font-size:.82rem">Meta Events Manager → Data sources → আপনার Pixel → Settings-এ Pixel ID পাবেন। শুধু সংখ্যাগুলো দিন, পুরো কোড না।</small></div>
+        <div style="border-top:1px solid var(--line);padding-top:14px;display:grid;gap:12px">
+          <h3 style="font-size:1rem">Conversions API <small class="muted" style="font-weight:400">(ঐচ্ছিক, তবে দরকারি)</small></h3>
+          <p class="muted" style="font-size:.86rem">iPhone আর অ্যাড ব্লকারে ব্রাউজারের Pixel অনেক সময় আটকে যায়। Access token দিলে সার্ভার নিজেও Meta-কে Purchase জানাবে, ফলে Ad-এর হিসাব আর টার্গেটিং ভালো হয়। একই অর্ডার দুবার গোনা হয় না।</p>
+          <div class="f"><label for="fb-token">Access token ${m.capi_set ? '<small>(সেভ করা আছে, বদলাতে চাইলে নতুন দিন)</small>' : ""}</label><input class="inp" id="fb-token" name="capi_token" type="password" autocomplete="off" placeholder="${m.capi_set ? "••••••••" : "Events Manager → Settings → Conversions API → Generate access token"}"></div>
+          <div class="f"><label for="fb-test">Test event code <small>(পরীক্ষার সময় দিন, পরে খালি করে দিন)</small></label><input class="inp" id="fb-test" name="test_code" value="${esc(m.test_code)}" placeholder="যেমন TEST12345" autocomplete="off"></div>
+        </div>
+        <div class="row2"><button class="btn btn-primary" type="submit">সেভ করুন</button><button class="btn btn-ghost" type="button" id="fbTest" ${m.capi_set && m.pixel_id ? "" : "disabled"}>টেস্ট ইভেন্ট পাঠান</button>${m.capi_set ? '<button class="btn btn-ghost btn-sm" type="button" id="fbClear">Token মুছুন</button>' : ""}</div>
+        <p class="err" id="fbErr" role="alert"></p>
+        ${mtest ? `<div class="alert ${mtest.ok ? "good" : "bad"}" style="cursor:default">${mtest.ok ? I.ok : I.alert}<span>${esc(mtest.message)}${mtest.ok && m.test_code ? " · Events Manager → Test events-এ দেখুন।" : ""}</span></div>` : ""}
+        ${m.test_code ? '<div class="alert warn" style="cursor:default">' + I.alert + '<span>Test event code দেওয়া আছে, তাই সার্ভারের ইভেন্টগুলো শুধু Test events-এ যাচ্ছে, Ad-এর হিসাবে না। পরীক্ষা শেষে কোডটা মুছে সেভ করুন।</span></div>' : ""}
+      </form>
+      <div class="card" style="display:grid;gap:14px;align-content:start">
+        <h3>কোন ইভেন্ট কখন যায়</h3>
+        <ul class="lines">${EV.map(([e, w]) => `<li><b>${e}</b><span class="muted" style="text-align:right">${w}</span></li>`).join("")}</ul>
+        <p class="muted" style="font-size:.86rem">সব টাকা BDT-তে যায়। Purchase-এ অর্ডার কোড event ID হিসেবে যায়, তাই ব্রাউজার আর সার্ভারের একই Purchase Meta একবারই গোনে।</p>
+        <div class="box"><h4>সার্ভার থেকে শেষ পাঠানো</h4>${last ? `<p>${last.ok ? '<span class="badge b-done">সফল</span>' : '<span class="badge b-late">ব্যর্থ</span>'} ${esc(last.event)} · ${esc(last.order)} · ${ago(last.at)}</p><p class="muted" style="font-size:.86rem;margin-top:6px">${esc(last.message)}</p>` : '<p class="muted" style="font-size:.88rem">এখনো কিছু পাঠানো হয়নি।</p>'}</div>
+        <p class="muted" style="font-size:.84rem">চেক করতে: Chrome-এ "Meta Pixel Helper" extension দিয়ে সাইট খুলুন। Pixel চালু থাকলে PageView দেখাবে।</p>
+      </div>
+    </div>`;
+  $("fbForm").addEventListener("submit", async e => {
+    e.preventDefault(); $("fbErr").textContent = "";
+    const f = new FormData(e.target), data = {pixel_id: f.get("pixel_id"), capi_token: f.get("capi_token") || "", test_code: f.get("test_code") || ""};
+    if (f.get("pixel_enabled")) data.pixel_enabled = 1;
+    try { mset = (await api.saveMarketing(data)).settings; mtest = null; renderMarketing(); toast(mset.pixel_enabled ? "সেভ হয়েছে। সাইটে Pixel চালু।" : "সেভ হয়েছে। Pixel বন্ধ।"); }
+    catch(err){ $("fbErr").textContent = err.message; }
+  });
+  $("fbTest")?.addEventListener("click", async () => {
+    const b = $("fbTest"); b.disabled = true; b.textContent = "পাঠানো হচ্ছে...";
+    try { mtest = await api.capiTest(); } catch(err){ mtest = {ok: false, message: err.message}; }
+    renderMarketing();
+  });
+  $("fbClear")?.addEventListener("click", async () => {
+    if (!confirm("Conversions API token মুছবেন? ব্রাউজারের Pixel চলবে, সার্ভার থেকে ইভেন্ট যাবে না।")) return;
+    try { mset = (await api.saveMarketing({pixel_enabled: m.pixel_enabled ? 1 : "", pixel_id: m.pixel_id, test_code: m.test_code, capi_clear: 1})).settings; renderMarketing(); } catch(err){ toast(err.message); }
+  });
+}
+
+/* ---------- email (SMTP) ---------- */
+const MAILKIND = {otp: "OTP কোড", new_order: "নতুন অর্ডার", status: "অগ্রগতি", message: "মেসেজ", assign: "অ্যাসাইন", referral: "রেফারেল", payout: "রেফারেল পেমেন্ট", test: "টেস্ট"};
+const NOTIFY = [["new_order", "নতুন অর্ডার", "কাস্টমারকে অর্ডারের রসিদ, আর অ্যাডমিনকে নতুন অর্ডারের খবর"], ["status", "প্রোজেক্টের অগ্রগতি", "ধাপ বদলালে, পেমেন্ট যাচাই হলে, ডেলিভারি বা বাতিল হলে কাস্টমারকে"],
+  ["message", "নতুন মেসেজ", "চ্যাটে মেসেজ এলে অন্য পক্ষকে (একই অর্ডারে ১০ মিনিটে একবার)"], ["assign", "ডেভেলপার অ্যাসাইন", "নতুন প্রোজেক্ট পেলে ডেভেলপারকে"], ["referral", "রেফারেল", "রেফারেলে আয় হলে, টাকা তোলার অনুরোধ আর পেমেন্ট হলে"]];
+const PRESETS = {cpanel: h => ({host: "mail." + (h || "yourdomain.com"), port: 465, secure: "ssl"}), gmail: () => ({host: "smtp.gmail.com", port: 587, secure: "tls"}), zoho: () => ({host: "smtp.zoho.com", port: 465, secure: "ssl"})};
+function renderEmail(){
+  if (!eset){ $("main").innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; return; }
+  const e = eset, st = e.stats, smtp = e.transport !== "mail";
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>ইমেইল</h1><p>OTP দিয়ে ইমেইল যাচাই, পাসওয়ার্ড রিসেট আর অর্ডার, অগ্রগতি ও মেসেজের নোটিফিকেশন এই ইমেইল দিয়ে যাবে।</p></div>
+      <div class="tools">${e.ready ? '<span class="badge b-done" style="font-size:.9rem;padding:4px 14px">ইমেইল চালু</span>' : '<span class="badge b-off" style="font-size:.9rem;padding:4px 14px">ইমেইল বন্ধ</span>'}${e.ready && e.otp_required ? ' <span class="badge b-run" style="font-size:.9rem;padding:4px 14px">OTP বাধ্যতামূলক</span>' : ""}</div></div>
+    <div class="tiles">
+      ${tile("পাঠানো হয়েছে", nf(st.sent), "গত ৩০ দিনে")}
+      ${tile("যায়নি", nf(st.failed), st.failed ? '<span class="late">নিচের তালিকায় কারণ দেখুন</span>' : "গত ৩০ দিনে")}
+      ${tile("নতুন অ্যাকাউন্টে OTP", e.otp_required ? "চালু" : "বন্ধ", e.otp_required ? "ইমেইল যাচাই না করে অ্যাকাউন্ট খোলা যাবে না" : "যাচাই ঐচ্ছিক, প্রোফাইল থেকে করা যায়")}
+      ${tile("নোটিফিকেশন", BN(NOTIFY.filter(([k]) => e.notify[k]).length) + "/" + BN(NOTIFY.length), "ধরনের ইমেইল চালু")}
+    </div>
+    <div class="grid g-main" style="margin-bottom:18px">
+      <form class="card" id="emForm" style="display:grid;gap:14px;align-content:start" novalidate>
+        <div class="ch" style="margin:0"><h3>মেইল সার্ভার</h3><label class="switch"><input type="checkbox" name="enabled" ${e.enabled ? "checked" : ""}><span></span>ইমেইল পাঠানো চালু</label></div>
+        <div class="f"><label>কোন মাধ্যমে পাঠাবেন</label><div class="seg" role="radiogroup" aria-label="মাধ্যম">
+          <label class="seg-r"><input type="radio" name="transport" value="smtp" ${smtp ? "checked" : ""}><span>SMTP (সুপারিশকৃত)</span></label>
+          <label class="seg-r"><input type="radio" name="transport" value="mail" ${smtp ? "" : "checked"}><span>PHP mail()</span></label></div>
+          <small class="muted" style="font-size:.82rem">PHP mail()-এর ইমেইল প্রায়ই Spam-এ যায়। cPanel-এর ইমেইল অ্যাকাউন্ট দিয়ে SMTP ব্যবহার করুন।</small></div>
+        <div id="smtpBox" style="display:grid;gap:12px" ${smtp ? "" : "hidden"}>
+          <div class="row2"><span class="muted" style="font-size:.86rem">দ্রুত বসান:</span><button class="btn btn-ghost btn-sm" type="button" data-preset="cpanel">cPanel ইমেইল</button><button class="btn btn-ghost btn-sm" type="button" data-preset="gmail">Gmail</button><button class="btn btn-ghost btn-sm" type="button" data-preset="zoho">Zoho</button></div>
+          <div class="grid" style="grid-template-columns:minmax(0,1fr) 110px 150px;gap:10px">
+            <div class="f"><label for="em-host">SMTP হোস্ট</label><input class="inp" id="em-host" name="host" value="${esc(e.host)}" placeholder="mail.${esc(e.host_hint || "yourdomain.com")}" autocomplete="off"></div>
+            <div class="f"><label for="em-port">পোর্ট</label><input class="inp" id="em-port" name="port" type="number" min="1" max="65535" value="${e.port}"></div>
+            <div class="f"><label for="em-sec">নিরাপত্তা</label><select class="inp" id="em-sec" name="secure"><option value="ssl" ${e.secure === "ssl" ? "selected" : ""}>SSL (465)</option><option value="tls" ${e.secure === "tls" ? "selected" : ""}>STARTTLS (587)</option><option value="none" ${e.secure === "none" ? "selected" : ""}>নেই (সুপারিশ নয়)</option></select></div>
+          </div>
+          <div class="grid g2" style="gap:10px">
+            <div class="f"><label for="em-user">ইউজারনেম <small>(সাধারণত পুরো ইমেইল)</small></label><input class="inp" id="em-user" name="username" value="${esc(e.username)}" autocomplete="off" placeholder="noreply@${esc(e.host_hint || "yourdomain.com")}"></div>
+            <div class="f"><label for="em-pass">পাসওয়ার্ড ${e.password_set ? "<small>(সেভ করা আছে, বদলাতে চাইলে নতুন দিন)</small>" : ""}</label><input class="inp" id="em-pass" name="password" type="password" autocomplete="new-password" placeholder="${e.password_set ? "••••••••" : "ইমেইল অ্যাকাউন্টের পাসওয়ার্ড"}"></div>
+          </div>
+        </div>
+        <div class="grid g2" style="gap:10px;border-top:1px solid var(--line);padding-top:14px">
+          <div class="f"><label for="em-from">প্রেরকের ইমেইল (From)</label><input class="inp" id="em-from" name="from_email" type="email" value="${esc(e.from_email)}" placeholder="noreply@${esc(e.host_hint || "yourdomain.com")}"></div>
+          <div class="f"><label for="em-fname">প্রেরকের নাম</label><input class="inp" id="em-fname" name="from_name" value="${esc(e.from_name)}" placeholder="Techill"></div>
+          <div class="f"><label for="em-reply">Reply-To <small>(ঐচ্ছিক)</small></label><input class="inp" id="em-reply" name="reply_to" type="email" value="${esc(e.reply_to)}" placeholder="hello@${esc(e.host_hint || "yourdomain.com")}"></div>
+          <div class="f"><label for="em-admins">নতুন অর্ডারের খবর যাবে <small>(কমা দিয়ে একাধিক)</small></label><input class="inp" id="em-admins" name="admin_emails" value="${esc(e.admin_emails)}" placeholder="${esc(e.admin_fallback.join(", ") || "admin@yourdomain.com")}"></div>
+        </div>
+        <div style="border-top:1px solid var(--line);padding-top:14px;display:grid;gap:10px">
+          <label class="switch"><input type="checkbox" name="otp_required" ${e.otp_required ? "checked" : ""}><span></span>নতুন অ্যাকাউন্ট খুলতে ইমেইল OTP বাধ্যতামূলক</label>
+          <small class="muted" style="font-size:.82rem;margin-top:-4px">চালু থাকলে রেজিস্ট্রেশন আর চেকআউটে নতুন কাস্টমারকে ইমেইলে আসা ৬ ডিজিটের কোড দিতে হবে। ভুয়া ইমেইলে অ্যাকাউন্ট আর ভুয়া রেফারেল কমে।</small>
+          <h4 style="font-size:.95rem;margin-top:6px">কোন কোন ইমেইল যাবে</h4>
+          ${NOTIFY.map(([k, l, d]) => `<label class="checks" style="font-size:.92rem;display:flex;gap:10px;align-items:flex-start"><input type="checkbox" name="n_${k}" ${e.notify[k] ? "checked" : ""} style="margin-top:5px"><span><b>${l}</b><br><span class="muted" style="font-size:.84rem">${d}</span></span></label>`).join("")}
+          <small class="muted" style="font-size:.82rem">পাসওয়ার্ড রিসেট আর যাচাইয়ের কোড সবসময় যায়। কাস্টমার চাইলে নিজের প্রোফাইল থেকে অগ্রগতি/মেসেজের ইমেইল বন্ধ করতে পারেন।</small>
+        </div>
+        <div class="row2"><button class="btn btn-primary" type="submit">সেভ করুন</button>${e.password_set ? '<button class="btn btn-ghost btn-sm" type="button" id="emClear">পাসওয়ার্ড মুছুন</button>' : ""}</div>
+        <p class="err" id="emErr" role="alert"></p>
+        <div class="row2" style="border-top:1px solid var(--line);padding-top:14px"><input class="inp" id="emTo" type="email" placeholder="${esc(me.email)}" style="flex:1;min-width:180px" aria-label="টেস্ট ইমেইল যাবে"><button class="btn btn-ghost" type="button" id="emTest">টেস্ট ইমেইল পাঠান</button></div>
+        ${etest ? `<div class="alert ${etest.ok ? "good" : "bad"}" style="cursor:default">${etest.ok ? I.ok : I.alert}<span>${esc(etest.text)}</span></div>` : ""}
+        ${e.openssl ? "" : '<div class="alert bad" style="cursor:default">' + I.alert + '<span>সার্ভারে PHP OpenSSL চালু নেই, SSL/TLS দিয়ে পাঠানো যাবে না। cPanel → Select PHP Version থেকে openssl চালু করুন।</span></div>'}
+      </form>
+      <div class="card" style="display:grid;gap:14px;align-content:start">
+        <h3>cPanel-এ কীভাবে সেটআপ করবেন</h3>
+        <ol class="steps-ol">
+          <li>cPanel → <b>Email Accounts</b> → <b>Create</b>। যেমন <b>noreply@${esc(e.host_hint || "yourdomain.com")}</b>, একটা শক্ত পাসওয়ার্ড দিন।</li>
+          <li>সেই অ্যাকাউন্টের পাশে <b>Connect Devices</b> চাপুন। "Secure SSL/TLS Settings"-এ যে Outgoing Server আর পোর্ট (সাধারণত 465) লেখা, সেটা এখানে দিন।</li>
+          <li>ইউজারনেম = পুরো ইমেইল, পাসওয়ার্ড = ইমেইল অ্যাকাউন্টের পাসওয়ার্ড। From-এও একই ইমেইল দিন।</li>
+          <li>সেভ করে <b>টেস্ট ইমেইল পাঠান</b>। এলে উপরের সুইচ চালু করে আবার সেভ করুন।</li>
+          <li>cPanel → <b>Email Deliverability</b>-এ গিয়ে SPF আর DKIM "Valid" করুন, নইলে ইমেইল Spam-এ যেতে পারে।</li>
+        </ol>
+        <p class="muted" style="font-size:.85rem"><b>Gmail:</b> smtp.gmail.com, পোর্ট 587, STARTTLS। Google অ্যাকাউন্টে 2-Step Verification চালু করে <b>App password</b> বানিয়ে সেটা পাসওয়ার্ড হিসেবে দিন, সাধারণ পাসওয়ার্ড কাজ করবে না। দিনে ৫০০টার বেশি পাঠাবেন না।</p>
+        <p class="muted" style="font-size:.85rem">ইমেইল পাঠানো হয় পেজ লোড হয়ে যাওয়ার পর, তাই মেইল সার্ভার ধীর হলেও সাইট ধীর হবে না। OTP কোড সাথে সাথে যায়।</p>
+      </div>
+    </div>
+    <div class="card" style="padding:10px 14px"><div class="ch" style="padding:8px 6px 0"><h3>সাম্প্রতিক ইমেইল</h3><small>শেষ ৪০টা · মেসেজের লেখা রাখা হয় না</small></div>
+      ${e.log.length ? `<div class="tbl-wrap"><table class="tbl" style="min-width:760px"><thead><tr><th>সময়</th><th>প্রাপক</th><th>বিষয়</th><th>ধরন</th><th>অবস্থা</th></tr></thead><tbody>
+        ${e.log.map(l => `<tr><td>${when(l.created)}</td><td>${esc(l.to)}</td><td style="max-width:320px">${esc(l.subject)}</td><td>${MAILKIND[l.kind] || esc(l.kind)}</td><td>${l.status === "sent" ? '<span class="badge b-done">গেছে</span>' : l.status === "failed" ? '<span class="badge b-late">যায়নি</span>' : '<span class="badge b-pending">লাইনে</span>'}${l.error ? `<span class="sub" style="max-width:280px;white-space:normal">${esc(l.error)}</span>` : ""}</td></tr>`).join("")}
+      </tbody></table></div>` : '<p class="empty">এখনো কোনো ইমেইল পাঠানো হয়নি।</p>'}</div>`;
+  const form = $("emForm");
+  form.addEventListener("change", ev => { if (ev.target.name === "transport") $("smtpBox").hidden = ev.target.value !== "smtp"; });
+  form.querySelectorAll("[data-preset]").forEach(b => b.addEventListener("click", () => {
+    const v = PRESETS[b.dataset.preset](e.host_hint); $("em-host").value = v.host; $("em-port").value = v.port; $("em-sec").value = v.secure;
+    if (b.dataset.preset === "cpanel" && !$("em-user").value && e.host_hint) $("em-user").value = "noreply@" + e.host_hint;
+    if (!$("em-from").value && $("em-user").value.includes("@")) $("em-from").value = $("em-user").value;
+  }));
+  const collect = () => { const f = new FormData(form), d = Object.fromEntries(f); for (const k of ["enabled", "otp_required", ...NOTIFY.map(([k]) => "n_" + k)]) d[k] = f.get(k) ? 1 : ""; return d; };
+  form.addEventListener("submit", async ev => {
+    ev.preventDefault(); $("emErr").textContent = "";
+    try { eset = (await api.saveEmail(collect())).settings; etest = null; renderEmail(); toast(eset.ready ? "সেভ হয়েছে। ইমেইল চালু।" : "সেভ হয়েছে। ইমেইল বন্ধ আছে।"); stats = await api.stats(days).catch(() => stats); renderNav(); }
+    catch(err){ $("emErr").textContent = err.message; }
+  });
+  $("emClear")?.addEventListener("click", async () => {
+    if (!confirm("SMTP পাসওয়ার্ড মুছবেন? ইমেইল বন্ধ হয়ে যাবে।")) return;
+    try { eset = (await api.saveEmail({...collect(), enabled: "", password: "", clear_password: 1})).settings; renderEmail(); } catch(err){ toast(err.message); }
+  });
+  $("emTest").addEventListener("click", async () => {
+    const b = $("emTest"); b.disabled = true; b.textContent = "পাঠানো হচ্ছে...";
+    try { const r = await api.emailTest($("emTo").value.trim()); etest = {ok: r.sent, text: r.sent ? r.message : "পাঠানো যায়নি: " + r.message}; if (r.settings) eset = r.settings; }
+    catch(err){ etest = {ok: false, text: err.message}; }
+    renderEmail();
+  });
+}
+
+/* ---------- floating support button ---------- */
+const SUPCH = [["support_open", "বাটন খুলেছেন"], ["support_whatsapp", "WhatsApp"], ["support_messenger", "Messenger"], ["support_tawk", "লাইভ চ্যাট"]];
+/* ---------- site settings ---------- */
+function renderSite(){
+  if (!siteSet){ $("main").innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; return; }
+  const s = siteSet, v = k => esc(s[k] || "");
+  const inp = (k, label, ph = "", type = "text", max = 120) => `<div class="f"><label for="ss-${k}">${label}</label><input class="inp" id="ss-${k}" name="${k}" type="${type}" maxlength="${max}" value="${v(k)}" placeholder="${esc(ph)}"></div>`;
+  const ta = (k, label, max = 400, rows = 3) => `<div class="f"><label for="ss-${k}">${label}</label><textarea class="inp" id="ss-${k}" name="${k}" maxlength="${max}" rows="${rows}">${v(k)}</textarea></div>`;
+  const fav = s.favicon || "assets/favicon.png?v=2", favSm = s.favicon_sm || "assets/favicon-32.png?v=2";
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>সাইট সেটিং</h1><p>ফেভিকন, হোমপেজের লেখা, যোগাযোগের তথ্য আর ইনভয়েসের তথ্য। সেভ করলে সাথে সাথে সাইটে দেখাবে।</p></div>
+      <div class="tools"><a class="btn btn-ghost btn-sm" href="index.html" target="_blank" rel="noopener">সাইটে দেখুন ↗</a></div></div>
+    <div class="card" style="margin-bottom:18px">
+      <div class="ch" style="margin:0 0 10px"><h3>ফেভিকন (ব্রাউজার ট্যাবের আইকন)</h3></div>
+      <div class="fav">
+        <div class="fav-prev"><img src="${esc(fav)}" alt="ফেভিকন"><div><div class="fav-tab"><img src="${esc(favSm)}" alt=""><span>${v("seo_title") || v("name")}</span></div><small class="muted" style="font-size:.8rem">${s.favicon ? "আপনার আপলোড করা আইকন" : "ডিফল্ট Techill আইকন"}</small></div></div>
+        <div class="row2" style="flex-wrap:wrap;gap:8px"><label class="btn btn-primary btn-sm" style="cursor:pointer">নতুন আইকন আপলোড<input type="file" id="favFile" accept="image/png,image/jpeg,image/webp,image/gif" hidden></label>${s.favicon ? '<button class="btn btn-ghost btn-sm" type="button" id="favReset">ডিফল্টে ফেরান</button>' : ""}</div>
+        <small class="muted" style="font-size:.82rem;flex-basis:100%">বর্গাকার PNG দিন, ৫১২×৫১২ পিক্সেল সবচেয়ে ভালো। সার্ভার নিজেই ৩২ আর ১৯২ পিক্সেলের আইকন বানিয়ে নেবে।</small>
+      </div>
+    </div>
+    <form id="siteForm" novalidate>
+    <div class="ss-grid">
+      <div class="card"><h3>হোমপেজের লেখা</h3>
+        ${inp("hero_eyebrow", "উপরের ছোট লেখা", "", "text", 80)}
+        <div class="two">${inp("hero_title", "শিরোনাম", "", "text", 80)}${inp("hero_highlight", "শিরোনামের নীল অংশ", "", "text", 60)}</div>
+        ${ta("hero_sub", "শিরোনামের নিচের লেখা", 400, 3)}
+        <div class="two">${inp("trust1", "টিক চিহ্ন ১", "", "text", 50)}${inp("trust2", "টিক চিহ্ন ২", "", "text", 50)}</div>
+        ${inp("trust3", "টিক চিহ্ন ৩", "", "text", 50)}
+        ${inp("cta_title", "শেষের ব্যানারের শিরোনাম", "", "text", 100)}
+        ${inp("cta_text", "শেষের ব্যানারের লেখা", "", "text", 200)}
+        ${ta("footer_text", "ফুটারের পরিচিতি", 300, 2)}
+      </div>
+      <div style="display:grid;gap:18px">
+        <div class="card"><h3>যোগাযোগের তথ্য</h3>
+          <div class="two">${inp("whatsapp", "WhatsApp নম্বর", "01712345678", "tel", 30)}${inp("phone", "ফোন নম্বর", "01712345678", "tel", 30)}</div>
+          <div class="two">${inp("email", "ইমেইল", "hello@techill.top", "email", 190)}${inp("hours", "খোলার সময়", "সকাল ১০টা থেকে রাত ১০টা", "text", 80)}</div>
+          ${ta("address", "ঠিকানা", 300, 2)}
+          ${inp("facebook", "Facebook পেজের লিংক", "https://facebook.com/techillbd", "url", 255)}
+          <div class="two">${inp("instagram", "Instagram লিংক", "", "url", 255)}${inp("youtube", "YouTube লিংক", "", "url", 255)}</div>
+          <small class="muted" style="font-size:.82rem">WhatsApp নম্বর দিলে হোমপেজ আর ফুটারের সব WhatsApp বাটন এটাতেই যাবে। ফুটারে শুধু যেগুলো পূরণ করবেন সেগুলোই দেখাবে।</small>
+        </div>
+        <div class="card"><h3>ইনভয়েস</h3>
+          ${inp("company", "প্রতিষ্ঠানের নাম (ইনভয়েসের উপরে)", "Techill · by RedBolt IT", "text", 120)}
+          ${ta("invoice_note", "ইনভয়েসের নিচের নোট", 400, 2)}
+          <button class="btn btn-ghost btn-sm" type="button" id="invSample" style="justify-self:start">নমুনা ইনভয়েস দেখুন</button>
+        </div>
+        <div class="card"><h3>ব্র্যান্ড</h3>
+          ${inp("name", "সাইটের নাম", "Techill", "text", 60)}
+          <small class="muted" style="font-size:.82rem">Google-এর টাইটেল, বিবরণ আর শেয়ার ছবি এখন <a href="#seo" data-go="seo">SEO ও সোশ্যাল কার্ড</a> সেকশনে।</small>
+        </div>
+      </div>
+    </div>
+    <div class="ss-save"><p class="err" id="ssErr" role="alert" style="margin:0 auto 0 0"></p><button class="btn btn-primary" type="submit">সেভ করুন</button></div>
+    </form>`;
+  $("siteForm").addEventListener("submit", async ev => {
+    ev.preventDefault(); $("ssErr").textContent = "";
+    const b = ev.target.querySelector("button[type=submit]"); b.disabled = true;
+    try { siteSet = SITE = (await api.saveSite(Object.fromEntries(new FormData(ev.target)))).site; api.applyFavicon(SITE); renderSite(); toast("সেভ হয়েছে। সাইটে নতুন লেখা দেখাচ্ছে।"); }
+    catch(err){ $("ssErr").textContent = err.message; b.disabled = false; }
+  });
+  $("favFile").addEventListener("change", async ev => {
+    const f = ev.target.files[0]; if (!f) return;
+    try { siteSet = SITE = (await api.faviconUpload(f)).site; api.applyFavicon(SITE); renderSite(); toast("নতুন ফেভিকন বসানো হয়েছে।"); } catch(err){ toast(err.message); }
+  });
+  $("favReset")?.addEventListener("click", async () => {
+    try { siteSet = SITE = (await api.faviconReset()).site; renderSite(); toast("ডিফল্ট আইকন ফিরে এসেছে। ব্রাউজার রিফ্রেশ করলে ট্যাবে দেখাবে।"); } catch(err){ toast(err.message); }
+  });
+  $("main").querySelector("[data-go]").addEventListener("click", e => { e.preventDefault(); go("seo"); });
+  $("invSample").addEventListener("click", () => {
+    const f = Object.fromEntries(new FormData($("siteForm")));
+    showInvoice({code: "TC-NAMUNA", created: Math.floor(Date.now() / 1000), stack: "WooCommerce", pack: "বিজনেস", template: "ফ্যাশন হাউস", hours: 48, products: 40, domain: "rakibfashion.com",
+      lines: [{label: "বিজনেস প্যাকেজ", amt: 11999}, {label: "কুরিয়ার API ×১", amt: 2000}, {label: "রেফারেল ছাড়", amt: -1000}], total: 12999, pay_method: "bKash", pay_sender: "01711000000", pay_trx: "AB12CD34EF", pay_status: "verified", info: {admin_name: "রাকিব হাসান", phone: "01711000000"}},
+      {name: "রাকিব হাসান", email: "rakib@example.com"}, {...siteSet, ...f});
+  });
+}
+
+/* ---------- SEO & social card ---------- */
+let seoSet = null, seoTab = "google", seoLive = null, scard = null;
+const SCHEMA_T = [["ProfessionalService", "সার্ভিস ব্যবসা (প্রস্তাবিত)"], ["OnlineStore", "অনলাইন স্টোর"], ["LocalBusiness", "দোকান/অফিস আছে"], ["Organization", "প্রতিষ্ঠান"]];
+const CARD_TPL = [["aurora", "অরোরা", "linear-gradient(135deg,#071a3d,#0a84f0)"], ["clean", "ক্লিন", "linear-gradient(135deg,#f7f9fc,#dbeafe)"], ["bold", "বোল্ড", "#0a84f0"], ["night", "নাইট", "linear-gradient(135deg,#0b1220,#1e293b)"]];
+const CARD_FMT = {og: [1200, 630, "শেয়ার কার্ড", "১২০০×৬৩০ · লিংক শেয়ারে"], sq: [1080, 1080, "ফেসবুক পোস্ট", "১০৮০×১০৮০"], story: [1080, 1920, "স্টোরি/রিল", "১০৮০×১৯২০"]};
+const ACCENTS = ["#0a84f0", "#12a150", "#a54bb8", "#e8590c", "#d6336c", "#0f766e"];
+const clen = s => [...String(s || "")].length;
+const cut = (s, n) => { const a = [...String(s || "")]; return a.length > n ? a.slice(0, n - 1).join("") + "…" : a.join(""); };
+const hostOf = u => { try { return new URL(u).host; } catch(e){ return ""; } };
+// Share image as this admin page can load it (the public address may not point to this server yet).
+const ogSrc = s => !s.og_image ? "assets/og-card.jpg" : s.og_image.startsWith("data:") ? s.og_image : s.og_image + "?v=" + (s.updated_at || 0);
+
+function cardDefault(){
+  const s = seoSet.site;
+  return {tpl: "aurora", fmt: "og", title: s.hero_title, hi: s.hero_highlight, sub: [s.trust2, s.trust3].filter(Boolean).join(" · "), badge: s.trust1, foot: hostOf(seoSet.base), accent: "#0a84f0", logo: true, shot: true};
+}
+
+// Current form values merged over the saved settings, so previews and the score follow typing.
+function seoForm(){
+  const f = $("seoForm") ? Object.fromEntries(new FormData($("seoForm"))) : {};
+  return {...seoSet, ...f, index: $("seoForm") ? !!f.index : seoSet.index};
+}
+
+function seoChecks(v){
+  const tl = clen(v.title), dl = clen(v.description), s = seoSet.site, url = v.site_url || "";
+  const L = [
+    [tl >= 20 && tl <= 65, "টাইটেল ২০–৬৫ অক্ষরের মধ্যে", `এখন ${BN(tl)} অক্ষর। বেশি লম্বা হলে Google কেটে দেয়।`],
+    [dl >= 70 && dl <= 170, "বিবরণ ৭০–১৭০ অক্ষরের মধ্যে", `এখন ${BN(dl)} অক্ষর। কী সার্ভিস, দাম আর সুবিধা এক লাইনে বলুন।`],
+    [/^https:\/\//i.test(url), "সাইটের ঠিকানা https দিয়ে সেট করা", url ? "SSL (https) চালু করে ঠিকানাটা https:// দিয়ে দিন।" : "Google যেন একটাই ঠিকানা চেনে, তাই নিজের ডোমেইন দিন।"],
+    [!!v.index, "Google-কে ইনডেক্স করতে দেওয়া হচ্ছে", "বন্ধ থাকলে সাইট Google-এ আসবে না।"],
+    [!!seoSet.og_image, "নিজের সোশ্যাল কার্ড ছবি", "নিচের কার্ড মেকারে ১ ক্লিকে বানান।"],
+    [!!v.google_verify, "Google Search Console ভেরিফাই কোড", "ডানের ধাপ ১ দেখুন।"],
+    [!!(v.ga4_id || v.gtm_id), "Google Analytics বা Tag Manager", "কত ভিজিটর Google থেকে আসছে জানতে।"],
+    [!!(s.phone || s.whatsapp || s.email), "যোগাযোগের তথ্য (Google বিজনেস ডেটায় যায়)", "সাইট সেটিং থেকে ফোন বা WhatsApp দিন।"],
+    [!!(s.facebook || s.instagram || s.youtube), "সোশ্যাল পেজের লিংক", "সাইট সেটিং থেকে Facebook পেজের লিংক দিন। Google এটা দিয়ে ব্র্যান্ড চেনে।"]
+  ];
+  if (seoLive) seoLive.forEach(x => L.push(x));
+  return L;
+}
+
+function seoScore(){
+  const L = seoChecks(seoForm()).filter(x => x[0] !== null), ok = L.filter(x => x[0]).length;
+  return Math.round(ok / L.length * 100);
+}
+
+function seoPreview(){
+  const v = seoForm(), s = seoSet.site, base = v.site_url || seoSet.base, host = hostOf(base) || "example.com";
+  const t = v.og_title || v.title, d = v.og_desc || v.description, img = ogSrc(seoSet);
+  const fav = s.favicon_sm || s.favicon || "assets/favicon-32.png?v=2";
+  const crumbs = host + (new URL(base, location.href).pathname.replace(/\/$/, "").split("/").filter(Boolean).map(x => " › " + x).join(""));
+  if (seoTab === "google") return `<div class="sp-g"><div class="sp-g-site"><img src="${esc(fav)}" alt=""><div><b>${esc(s.name)}</b><small>https://${esc(crumbs)}</small></div></div>
+    <a class="sp-g-t">${esc(cut(v.title, 62))}</a><p>${esc(cut(v.description, 160))}</p></div>`;
+  if (seoTab === "facebook") return `<div class="sp-fb"><img class="sp-img" src="${esc(img)}" alt=""><div><small>${esc(host)}</small><b>${esc(t)}</b><p>${esc(d)}</p></div></div>`;
+  if (seoTab === "whatsapp") return `<div class="sp-wa"><div class="sp-wa-b"><div class="sp-wa-c"><img class="sp-img" src="${esc(img)}" alt=""><div><b>${esc(cut(t, 70))}</b><p>${esc(d)}</p><small>${esc(host)}</small></div></div><span>${esc(base)}</span><em>১০:৪২ ✓✓</em></div></div>`;
+  return `<div class="sp-x"><div class="sp-x-i"><img class="sp-img" src="${esc(img)}" alt=""><span>${esc(cut(t, 60))}</span></div><small>${esc(host)} থেকে</small></div>`;
+}
+
+function seoLiveUpdate(){
+  const L = seoChecks(seoForm()), sc = seoScore();
+  const ring = $("seoRing"); if (ring){ ring.style.setProperty("--p", sc); ring.style.setProperty("--c", sc >= 80 ? "var(--ok)" : sc >= 50 ? "#e8a400" : "var(--danger,#d93025)"); ring.querySelector("span").textContent = BN(sc); }
+  const sl = $("seoScoreTxt"); if (sl) sl.textContent = sc >= 80 ? "চমৎকার! Google-এর জন্য প্রায় তৈরি।" : sc >= 50 ? "ভালো শুরু। নিচের হলুদ কাজগুলো সেরে ফেলুন।" : "কয়েকটা জরুরি জিনিস বাকি।";
+  $("seoList") && ($("seoList").innerHTML = L.map(([ok, l, hint]) => `<li class="${ok === null ? "off" : ok ? "" : "no"}"><i>${ok === null ? "–" : ok ? "✓" : "!"}</i><div>${l}${ok ? "" : `<small>${hint}</small>`}</div></li>`).join(""));
+  $("seoPrev") && ($("seoPrev").innerHTML = seoPreview());
+  document.querySelectorAll("[data-cnt]").forEach(el => {
+    const inp = $(el.dataset.cnt), n = clen(inp.value || inp.placeholder), [lo, hi] = el.dataset.range.split("-").map(Number);
+    el.textContent = `${BN(n)} অক্ষর · ভালো ${BN(lo)}–${BN(hi)}`; el.className = "seo-cnt " + (n >= lo && n <= hi ? "ok" : "warn");
+  });
+}
+
+function renderSeo(){
+  if (!seoSet){ $("main").innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; return; }
+  const s = seoSet, v = k => esc(s[k] || "");
+  scard = scard || {...cardDefault(), ...(s.card || {})};
+  const inp = (k, label, ph = "", max = 120, extra = "") => `<div class="f"><label for="so-${k}">${label}</label><input class="inp" id="so-${k}" name="${k}" maxlength="${max}" value="${v(k)}" placeholder="${esc(ph)}" autocomplete="off" ${extra}></div>`;
+  const ta = (k, label, ph = "", max = 300, rows = 2) => `<div class="f"><label for="so-${k}">${label}</label><textarea class="inp" id="so-${k}" name="${k}" maxlength="${max}" rows="${rows}" placeholder="${esc(ph)}" style="min-height:0">${v(k)}</textarea></div>`;
+  const cnt = (id, range) => `<span class="seo-cnt" data-cnt="${id}" data-range="${range}"></span>`;
+  const enc = encodeURIComponent(s.base), ping = s.last_ping;
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>SEO ও সোশ্যাল কার্ড</h1><p>Google সার্চে সাইট কেমন দেখাবে, Facebook/WhatsApp-এ লিংক শেয়ার করলে কোন ছবি আর লেখা আসবে, আর Google-এ ইনডেক্স করার সব কিছু এক জায়গায়।</p></div>
+      <div class="tools"><a class="btn btn-ghost btn-sm" href="https://search.google.com/search-console" target="_blank" rel="noopener">Search Console ↗</a></div></div>
+    <div class="seo-grid">
+      <form id="seoForm" novalidate>
+        <div class="card"><div class="ch" style="margin:0"><h3>Google সার্চ রেজাল্ট</h3><label class="switch"><input type="checkbox" name="index" ${s.index ? "checked" : ""}><span></span>Google-এ দেখান</label></div>
+          ${inp("site_url", "সাইটের ঠিকানা <small>(যে ঠিকানায় মানুষ সাইটে আসে)</small>", s.detected, 255, 'inputmode="url"')}
+          ${inp("title", "টাইটেল <small>(Google-এ নীল লেখা, ব্রাউজার ট্যাবেও)</small>", "", 90)}${cnt("so-title", "20-65")}
+          ${ta("description", "বিবরণ <small>(টাইটেলের নিচের ধূসর লেখা)</small>", "", 300, 3)}${cnt("so-description", "70-170")}
+          ${inp("keywords", "কি-ওয়ার্ড <small>(কমা দিয়ে, যেমন: ই-কমার্স ওয়েবসাইট, অনলাইন দোকান)</small>", "ই-কমার্স ওয়েবসাইট, WooCommerce বাংলাদেশ, অনলাইন দোকান", 500)}
+          <div class="f"><label for="so-schema_type">ব্যবসার ধরন <small>(Google-কে বলে দেয় আপনি কী)</small></label><select class="inp" id="so-schema_type" name="schema_type">${SCHEMA_T.map(([k, l]) => `<option value="${k}" ${s.schema_type === k ? "selected" : ""}>${l}</option>`).join("")}</select></div>
+          <small class="seo-hint">যোগাযোগ, ঠিকানা, সোশ্যাল লিংক আর প্যাকেজের দাম স্বয়ংক্রিয়ভাবে Google-এর structured data (schema.org) হিসেবে যায়, আলাদা কিছু করতে হবে না।</small>
+        </div>
+        <div class="card"><h3>সোশ্যাল শেয়ার (Facebook, WhatsApp, Messenger, X)</h3>
+          <div class="seo-img"><img src="${esc(ogSrc(s))}" alt="শেয়ার ছবি"><div style="display:grid;gap:8px">
+            <b style="font-size:.92rem">${s.og_image ? "আপনার শেয়ার ছবি" : "ডিফল্ট Techill কার্ড"}</b>
+            <div class="row2"><a class="btn btn-primary btn-sm" href="#cardMaker" id="toMaker">কার্ড মেকারে বানান</a><label class="btn btn-ghost btn-sm" style="cursor:pointer">নিজের ছবি দিন<input type="file" id="ogFile" accept="image/png,image/jpeg,image/webp" hidden></label>${s.og_image ? '<button class="btn btn-ghost btn-sm" type="button" id="ogReset">ডিফল্টে ফেরান</button>' : ""}</div>
+            <small class="seo-hint">১২০০×৬৩০ পিক্সেল। অন্য মাপের ছবি মাঝখান থেকে কেটে নেওয়া হবে।</small></div></div>
+          ${inp("og_title", "শেয়ার টাইটেল <small>(খালি রাখলে উপরের টাইটেল)</small>", s.title, 90)}
+          ${ta("og_desc", "শেয়ার বিবরণ <small>(খালি রাখলে উপরের বিবরণ)</small>", s.description, 300, 2)}
+          ${inp("og_alt", "ছবির বর্ণনা <small>(চোখে কম দেখেন এমন মানুষের জন্য)</small>", "Techill-এর ই-কমার্স ওয়েবসাইট প্যাকেজ", 200)}
+          <div class="two">${inp("twitter_site", "X (Twitter) username", "@techillbd", 60)}${inp("fb_app_id", "Facebook App ID <small>(ঐচ্ছিক)</small>", "", 30, 'inputmode="numeric"')}</div>
+        </div>
+        <div class="card"><h3>ভেরিফিকেশন ও অ্যানালিটিক্স</h3>
+          ${inp("google_verify", "Google Search Console কোড", '<meta name="google-site-verification" content="..."> পুরোটা পেস্ট করুন', 400)}
+          <div class="two">${inp("bing_verify", "Bing Webmaster কোড", "msvalidate.01-এর কোড", 400)}${inp("fb_verify", "Facebook ডোমেইন ভেরিফিকেশন", "facebook-domain-verification", 400)}</div>
+          <div class="two">${inp("ga4_id", "Google Analytics 4 ID", "G-AB12CD34EF", 30)}${inp("gtm_id", "Google Tag Manager ID", "GTM-AB12CD3", 30)}</div>
+          <small class="seo-hint">পুরো &lt;meta&gt; ট্যাগ পেস্ট করলেও চলবে, কোডটা নিজেই বের করে নেবে। Facebook ডোমেইন ভেরিফাই করলে Pixel-এর ইভেন্ট নিয়ন্ত্রণে থাকে।</small>
+          <details class="seo-adv"${s.head_code ? " open" : ""}><summary>অ্যাডভান্সড: &lt;head&gt;-এ নিজের কোড</summary>
+            ${ta("head_code", "অন্য কোনো সার্ভিসের ট্যাগ (Hotjar, Clarity, Pinterest ইত্যাদি)", "<script>...<\/script>", 5000, 4)}
+            <small class="seo-hint">শুধু বিশ্বস্ত সার্ভিসের কোড দিন। ভুল কোডে হোমপেজ ভেঙে যেতে পারে।</small></details>
+        </div>
+        <div class="ss-save" style="margin-top:0"><p class="err" id="soErr" role="alert" style="margin:0 auto 0 0"></p><button class="btn btn-primary" type="submit">সেভ করুন</button></div>
+      </form>
+      <div class="seo-side">
+        <div class="card"><div class="seo-hero"><div class="seo-ring" id="seoRing"><b><span>০</span><small>/১০০</small></b></div><div style="flex:1;min-width:180px"><h3>SEO স্কোর</h3><p class="muted" id="seoScoreTxt" style="font-size:.9rem"></p>
+          <button class="btn btn-ghost btn-sm" type="button" id="seoLiveBtn" style="margin-top:8px">লাইভ সাইট চেক করুন</button></div></div>
+          <ul class="seo-list" id="seoList"></ul></div>
+        <div class="card"><div class="ch" style="margin:0 0 10px;gap:10px;flex-wrap:wrap"><h3>প্রিভিউ</h3><div class="seo-tabs" id="seoTabs">${[["google", "Google"], ["facebook", "Facebook"], ["whatsapp", "WhatsApp"], ["x", "X"]].map(([k, l]) => `<button type="button" data-tab="${k}" aria-pressed="${seoTab === k}">${l}</button>`).join("")}</div></div>
+          <div class="sp" id="seoPrev"></div>
+          <small class="seo-hint" style="display:block;margin-top:8px">Facebook আর WhatsApp পুরনো ছবি মনে রাখে। ছবি বদলের পর <a href="https://developers.facebook.com/tools/debug/?q=${enc}" target="_blank" rel="noopener">Sharing Debugger</a>-এ "Scrape Again" চাপুন।</small></div>
+        <div class="card"><h3>Google-এ ইনডেক্স করুন</h3>
+          <ol class="seo-steps">
+            <li><div><b>Search Console-এ সাইট যোগ করুন</b><p><a href="https://search.google.com/search-console/welcome" target="_blank" rel="noopener">Search Console</a> → "URL prefix"-এ আপনার ঠিকানা দিন → "HTML tag" বেছে কোডটা বাম দিকের "Google Search Console কোড" ঘরে দিয়ে সেভ করুন → Verify।</p></div></li>
+            <li><div><b>Sitemap জমা দিন</b><p>Search Console → Sitemaps → নিচের ঠিকানা দিয়ে Submit।</p>
+              <div class="seo-copy"><code>${esc(s.sitemap)}</code><button class="btn btn-ghost btn-sm" type="button" data-copy="${esc(s.sitemap)}">কপি</button></div></div></li>
+            <li><div><b>ইনডেক্সের অনুরোধ</b><p>Search Console-এর উপরের সার্চ বারে হোমপেজের ঠিকানা দিয়ে "Request indexing"। সাধারণত ২ থেকে ৭ দিনে Google-এ আসে।</p></div></li>
+            <li><div><b>Bing, Yandex (IndexNow)</b><p>এক ক্লিকে জানিয়ে দিন। Bing Webmaster-এ Search Console থেকে import করলে আলাদা ভেরিফাই লাগে না।</p>
+              <div class="row2"><button class="btn btn-ghost btn-sm" type="button" id="seoPing">এখনই জানান</button>${ping ? `<small class="${ping.ok ? "" : "err"}" style="font-size:.82rem">${ping.ok ? "✓ " : ""}${esc(ping.msg)} · ${esc(new Date(ping.at * 1000).toLocaleString("bn-BD", {dateStyle: "medium", timeStyle: "short"}))}</small>` : ""}</div></div></li>
+          </ol>
+          <div class="seo-tools" style="margin-top:12px"><a class="btn btn-ghost btn-sm" href="${esc(s.robots)}" target="_blank" rel="noopener">robots.txt ↗</a><a class="btn btn-ghost btn-sm" href="${esc(s.sitemap)}" target="_blank" rel="noopener">sitemap.xml ↗</a>
+            <a class="btn btn-ghost btn-sm" href="https://search.google.com/test/rich-results?url=${enc}" target="_blank" rel="noopener">Rich Results টেস্ট ↗</a><a class="btn btn-ghost btn-sm" href="https://pagespeed.web.dev/analysis?url=${enc}" target="_blank" rel="noopener">PageSpeed ↗</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="cardMaker" style="margin-top:18px"><div class="ch" style="margin:0"><div><h3>সোশ্যাল কার্ড মেকার</h3><p class="muted" style="font-size:.88rem">ডিজাইনার ছাড়াই শেয়ার ছবি, ফেসবুক পোস্ট আর স্টোরির ছবি বানান। লিখলেই ছবি বদলায়।</p></div></div>
+      <div class="cm">
+        <div class="cm-stage"><canvas id="cmCanvas" width="1200" height="630" aria-label="সোশ্যাল কার্ডের প্রিভিউ"></canvas></div>
+        <div class="cm-ctl" id="cmCtl">
+          <div class="f"><label>মাপ</label><div class="cm-chips" data-k="fmt">${Object.entries(CARD_FMT).map(([k, [, , l, d]]) => `<button type="button" data-v="${k}" aria-pressed="${scard.fmt === k}"><span>${l}<br><small class="muted" style="font-size:.74rem">${d}</small></span></button>`).join("")}</div></div>
+          <div class="f"><label>ডিজাইন</label><div class="cm-chips" data-k="tpl">${CARD_TPL.map(([k, l, bg]) => `<button type="button" data-v="${k}" aria-pressed="${scard.tpl === k}"><span class="sw" style="background:${bg}"></span>${l}</button>`).join("")}</div></div>
+          <div class="f"><label>রং</label><div class="cm-col">${ACCENTS.map(c => `<button type="button" data-accent="${c}" style="background:${c}" aria-label="${c}" aria-pressed="${scard.accent === c}"></button>`).join("")}<input type="color" id="cmColor" value="${esc(scard.accent)}" aria-label="নিজের রং"></div></div>
+          <div class="f"><label for="cm-title">শিরোনাম</label><input class="inp" id="cm-title" data-f="title" maxlength="80" value="${esc(scard.title)}"></div>
+          <div class="f"><label for="cm-hi">শিরোনামের রঙিন অংশ</label><input class="inp" id="cm-hi" data-f="hi" maxlength="60" value="${esc(scard.hi)}"></div>
+          <div class="f"><label for="cm-sub">ছোট লেখা</label><input class="inp" id="cm-sub" data-f="sub" maxlength="120" value="${esc(scard.sub)}"></div>
+          <div class="seo-grid" style="grid-template-columns:1fr 1fr;gap:10px"><div class="f"><label for="cm-badge">ব্যাজ</label><input class="inp" id="cm-badge" data-f="badge" maxlength="40" value="${esc(scard.badge)}"></div>
+            <div class="f"><label for="cm-foot">নিচের লেখা</label><input class="inp" id="cm-foot" data-f="foot" maxlength="60" value="${esc(scard.foot)}"></div></div>
+          <div class="cm-tg"><label><input type="checkbox" data-t="logo" ${scard.logo ? "checked" : ""}> লোগো</label><label><input type="checkbox" data-t="shot" ${scard.shot ? "checked" : ""}> ওয়েবসাইটের স্ক্রিনশট</label></div>
+          <div class="row2"><button class="btn btn-primary" type="button" id="cmSave">শেয়ার ছবি হিসেবে বসান</button><button class="btn btn-ghost" type="button" id="cmDl">PNG ডাউনলোড</button><button class="btn btn-ghost btn-sm" type="button" id="cmReset">শুরুর লেখায় ফেরান</button></div>
+          <small class="seo-hint" id="cmHint"></small>
+        </div>
+      </div>
+    </div>`;
+  seoLiveUpdate(); drawCardNow();
+  $("seoForm").addEventListener("input", seoLiveUpdate);
+  $("seoForm").addEventListener("change", seoLiveUpdate);
+  $("seoTabs").addEventListener("click", e => { const b = e.target.closest("[data-tab]"); if (!b) return; seoTab = b.dataset.tab; $("seoTabs").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); $("seoPrev").innerHTML = seoPreview(); });
+  $("seoForm").addEventListener("submit", async ev => {
+    ev.preventDefault(); $("soErr").textContent = "";
+    const b = ev.target.querySelector("button[type=submit]"); b.disabled = true;
+    const f = new FormData(ev.target), d = Object.fromEntries(f); d.index = f.get("index") ? 1 : "";
+    try { seoSet = (await api.saveSeo(d)).settings; if (SITE){ SITE.seo_title = seoSet.title; SITE.seo_desc = seoSet.description; } renderSeo(); toast("সেভ হয়েছে। হোমপেজে নতুন SEO ট্যাগ বসে গেছে।"); }
+    catch(err){ $("soErr").textContent = err.message; b.disabled = false; }
+  });
+  $("main").querySelectorAll("[data-copy]").forEach(b => b.addEventListener("click", async () => { try { await navigator.clipboard.writeText(b.dataset.copy); toast("কপি হয়েছে।"); } catch(e){ toast(b.dataset.copy); } }));
+  $("toMaker").addEventListener("click", e => { e.preventDefault(); $("cardMaker").scrollIntoView({behavior: "smooth"}); });
+  $("ogFile").addEventListener("change", async ev => {
+    const f = ev.target.files[0]; if (!f) return;
+    try { seoSet = (await api.ogUpload(f)).settings; renderSeo(); toast("নতুন শেয়ার ছবি বসানো হয়েছে।"); } catch(err){ toast(err.message); }
+  });
+  $("ogReset")?.addEventListener("click", async () => { try { seoSet = (await api.ogReset()).settings; renderSeo(); toast("ডিফল্ট কার্ড ফিরে এসেছে।"); } catch(err){ toast(err.message); } });
+  $("seoPing").addEventListener("click", async ev => {
+    ev.target.disabled = true;
+    try { seoSet = (await api.seoPing()).settings; renderSeo(); toast(seoSet.last_ping?.msg || "পাঠানো হয়েছে।"); } catch(err){ toast(err.message); ev.target.disabled = false; }
+  });
+  $("seoLiveBtn").addEventListener("click", seoLiveCheck);
+  // card maker
+  const ctl = $("cmCtl");
+  ctl.addEventListener("input", e => { const k = e.target.dataset.f; if (k){ scard[k] = e.target.value; drawCardSoon(); } if (e.target.id === "cmColor"){ scard.accent = e.target.value; ctl.querySelectorAll("[data-accent]").forEach(x => x.setAttribute("aria-pressed", false)); drawCardSoon(); } });
+  ctl.addEventListener("change", e => { const t = e.target.dataset.t; if (t){ scard[t] = e.target.checked; drawCardNow(); } });
+  ctl.addEventListener("click", e => {
+    const ch = e.target.closest(".cm-chips button"), ac = e.target.closest("[data-accent]");
+    if (ch){ const k = ch.parentElement.dataset.k; scard[k] = ch.dataset.v; ch.parentElement.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === ch)); drawCardNow(); }
+    if (ac){ scard.accent = ac.dataset.accent; $("cmColor").value = scard.accent; ctl.querySelectorAll("[data-accent]").forEach(x => x.setAttribute("aria-pressed", x === ac)); drawCardNow(); }
+  });
+  $("cmReset").addEventListener("click", () => { scard = {...cardDefault(), fmt: scard.fmt, tpl: scard.tpl, accent: scard.accent}; ["title", "hi", "sub", "badge", "foot"].forEach(k => $("cm-" + k).value = scard[k]); drawCardNow(); });
+  $("cmDl").addEventListener("click", () => $("cmCanvas").toBlob(b => { const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = `${(seoSet.name || "techill").toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${scard.fmt}.png`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }, "image/png"));
+  $("cmSave").addEventListener("click", async ev => {
+    const b = ev.target; b.disabled = true; b.textContent = "বসানো হচ্ছে...";
+    try {
+      const blob = await new Promise(r => $("cmCanvas").toBlob(r, "image/jpeg", .9));   // JPG keeps it small enough for WhatsApp previews
+      seoSet = (await api.ogUpload(blob, JSON.stringify(scard))).settings; renderSeo(); toast("কার্ডটা এখন শেয়ার ছবি। লিংক শেয়ার করলে এটাই দেখাবে।");
+    } catch(err){ toast(err.message); b.disabled = false; b.textContent = "শেয়ার ছবি হিসেবে বসান"; }
+  });
+}
+
+// Fetches the public pages from this browser to confirm the server really sends the tags (index.php and .htaccess at work).
+async function seoLiveCheck(){
+  if (api.demo){ toast("ডেমো মোডে লাইভ চেক চলে না। আসল সার্ভারে চালান।"); return; }
+  const b = $("seoLiveBtn"); b.disabled = true; b.textContent = "চেক হচ্ছে...";
+  const get = async u => { try { const r = await fetch(u + (u.includes("?") ? "&" : "?") + "t=" + Date.now(), {cache: "no-store", credentials: "omit"}); return r.ok ? await r.text() : ""; } catch(e){ return ""; } };
+  const [home, robots, map] = await Promise.all([get("./"), get("robots.txt"), get("sitemap.xml")]);
+  seoLive = [
+    [/property="og:image"/.test(home) && /application\/ld\+json/.test(home), "লাইভ: হোমপেজে SEO ট্যাগ সার্ভার থেকেই আসছে", "index.php আপলোড হয়েছে কিনা আর .htaccess ফাইলটা আছে কিনা দেখুন (cPanel File Manager → Settings → Show Hidden Files)।"],
+    [/Sitemap:/i.test(robots), "লাইভ: robots.txt কাজ করছে", "seo.php আর .htaccess আপলোড করুন। হোস্টে mod_rewrite চালু থাকতে হবে।"],
+    [/<urlset/.test(map), "লাইভ: sitemap.xml কাজ করছে", "seo.php আর .htaccess আপলোড করুন।"]
+  ];
+  seoLiveUpdate(); b.disabled = false; b.textContent = "আবার চেক করুন";
+  toast(seoLive.every(x => x[0]) ? "লাইভ সাইট ঠিক আছে।" : "কিছু জিনিস কাজ করছে না, তালিকা দেখুন।");
+}
+
+/* card drawing (canvas, so the same picture is previewed, saved and downloaded) */
+let cardImgs = null, cardTimer = 0;
+function cardAssets(){
+  if (cardImgs) return cardImgs;
+  const load = src => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.onerror = () => r(null); i.src = src; });
+  const font = document.fonts ? Promise.all(['64px "Tiro Bangla"', 'italic 64px "Tiro Bangla"'].map(f => document.fonts.load(f, "অনলাইন দোকান Techill ৳০১২").catch(() => {}))) : Promise.resolve();
+  return cardImgs = Promise.all([load("assets/logo-dark.png?v=2"), load("assets/logo-light.png?v=2"), load("assets/hero-shop.webp"), font]).then(([ld, ll, shot]) => ({ld, ll, shot}));
+}
+function drawCardSoon(){ clearTimeout(cardTimer); cardTimer = setTimeout(drawCardNow, 60); }
+async function drawCardNow(){
+  const cv = $("cmCanvas"); if (!cv) return;
+  const imgs = await cardAssets(); if (!$("cmCanvas")) return;
+  const [W, H] = CARD_FMT[scard.fmt]; cv.width = W; cv.height = H; cv.classList.toggle("tall", H > W);
+  drawCard(cv.getContext("2d"), W, H, scard, imgs);
+  $("cmSave").disabled = scard.fmt !== "og";
+  $("cmHint").textContent = scard.fmt === "og" ? "শেয়ার কার্ড বসালে Facebook, WhatsApp, Messenger আর X-এ লিংকের সাথে এই ছবি যাবে।" : "এই মাপটা পোস্ট বা স্টোরিতে দেওয়ার জন্য: ডাউনলোড করে ফেসবুকে আপলোড করুন। শেয়ার ছবি হিসেবে শুধু ১২০০×৬৩০ মাপ বসানো যায়।";
+}
+const hex2 = h => { h = h.replace("#", ""); if (h.length === 3) h = [...h].map(c => c + c).join(""); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); };
+const mix = (a, b, t) => { const x = hex2(a), y = hex2(b); return "rgb(" + x.map((v, i) => Math.round(v + (y[i] - v) * t)).join(",") + ")"; };
+const rgba = (h, a) => `rgba(${hex2(h).join(",")},${a})`;
+function rrect(g, x, y, w, h, r){ g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+function glow(g, x, y, r, col){ const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, col); gr.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); }
+// Word-wraps coloured runs of text; returns lines of [{w, col}].
+function wrapRuns(g, runs, maxW){
+  const words = runs.flatMap(r => String(r.t || "").split(/\s+/).filter(Boolean).map(w => ({w, col: r.col}))), sp = g.measureText(" ").width, lines = [];
+  let line = [], lw = 0;
+  for (const t of words){ const tw = g.measureText(t.w).width; if (line.length && lw + sp + tw > maxW){ lines.push(line); line = []; lw = 0; } lw += (line.length ? sp : 0) + tw; line.push(t); }
+  if (line.length) lines.push(line);
+  return lines;
+}
+function drawCard(g, W, H, c, im){
+  const A = c.accent || "#0a84f0", FF = '"Tiro Bangla","Noto Serif Bengali",Georgia,serif', story = H > W * 1.3;
+  const T = {
+    aurora: {bg(){ const l = g.createLinearGradient(0, 0, W, H); l.addColorStop(0, "#06142f"); l.addColorStop(1, mix(A, "#06142f", .55)); g.fillStyle = l; g.fillRect(0, 0, W, H);
+      glow(g, W * .92, H * .05, W * .55, rgba(A, .55)); glow(g, W * .05, H * 1.02, W * .45, "rgba(165,75,184,.38)"); }, ink: "#fff", sub: "rgba(255,255,255,.8)", hi: mix(A, "#ffffff", .5), logo: im.ld, bb: A, bi: "#fff"},
+    clean: {bg(){ g.fillStyle = "#f7f9fc"; g.fillRect(0, 0, W, H); glow(g, W * .95, H * .1, W * .5, rgba(A, .22)); glow(g, W * .02, H * .98, W * .4, rgba(A, .12));
+      g.strokeStyle = rgba(A, .08); g.lineWidth = 2; for (let x = -H; x < W; x += 46){ g.beginPath(); g.moveTo(x, H); g.lineTo(x + H, 0); g.stroke(); } g.fillStyle = "rgba(247,249,252,.82)"; g.fillRect(0, 0, W, H); },
+      ink: "#121822", sub: "#4a5568", hi: A, logo: im.ll, bb: A, bi: "#fff"},
+    bold: {bg(){ g.fillStyle = A; g.fillRect(0, 0, W, H); g.fillStyle = "rgba(255,255,255,.07)"; for (let i = 0; i < 6; i++){ g.beginPath(); g.arc(W * .88, H * .12, W * (.12 + i * .12), 0, 7); g.lineWidth = 26; g.strokeStyle = "rgba(255,255,255," + (.06 - i * .008) + ")"; g.stroke(); } },
+      ink: "#fff", sub: "rgba(255,255,255,.88)", hi: "#ffe066", logo: im.ld, bb: "#fff", bi: A},
+    night: {bg(){ g.fillStyle = "#0b1220"; g.fillRect(0, 0, W, H); g.fillStyle = "rgba(255,255,255,.06)"; for (let x = 20; x < W; x += 34) for (let y = 20; y < H; y += 34) g.fillRect(x, y, 2, 2);
+      glow(g, W * .8, H * .9, W * .5, rgba(A, .35)); }, ink: "#e9eef5", sub: "#98a4b7", hi: mix(A, "#ffffff", .25), logo: im.ld, bb: "rgba(255,255,255,.1)", bi: "#fff", bs: A}
+  }[c.tpl] || {};
+  T.bg();
+  const P = story ? 90 : Math.round(W * .06), shot = c.shot && im.shot;
+  const textW = story || !shot ? W - P * 2 : W * (H >= W ? .5 : .54) - P;
+  let y = P + (story ? 60 : 0);
+  if (c.logo && T.logo){ const lh = story ? 62 : W === H ? 50 : 44, lw = T.logo.width * lh / T.logo.height; g.drawImage(T.logo, P, y, lw, lh); y += lh + (story ? 90 : H * .085); }
+  else y += story ? 40 : H * .03;
+  // headline: shrink until it fits in 3 lines (4 on a story)
+  let fs = story ? 104 : W === H ? 76 : 68, lines;
+  const ss = story ? 44 : W === H ? 34 : 30, bs = story ? 40 : W === H ? 32 : 28;
+  g.font = `${ss}px ${FF}`; const subN = c.sub ? Math.min(3, wrapRuns(g, [{t: c.sub}], textW).length) : 0;
+  const rest = (subN ? ss * .5 + subN * ss * 1.45 : 0) + (c.badge || c.foot ? (story ? 60 : H * .06) + bs * 1.9 : 0);
+  for (;;){ g.font = `${fs}px ${FF}`; lines = wrapRuns(g, [{t: c.title, col: T.ink}, {t: c.hi, col: T.hi}], textW);
+    if ((lines.length <= (story ? 4 : 3) && (story || y + lines.length * fs * 1.34 + rest <= H - P * .8)) || fs < 36) break; fs -= 4; }
+  g.textBaseline = "alphabetic"; const lh = fs * 1.34, sp = g.measureText(" ").width;
+  for (const ln of lines){ y += lh; let x = P; for (const t of ln){ g.fillStyle = t.col; g.fillText(t.w, x, y - fs * .28); x += g.measureText(t.w).width + sp; } }
+  if (c.sub){ g.font = `${ss}px ${FF}`; y += ss * .5;
+    for (const ln of wrapRuns(g, [{t: c.sub, col: T.sub}], textW).slice(0, 3)){ y += ss * 1.45; g.fillStyle = T.sub; g.fillText(ln.map(t => t.w).join(" "), P, y); } }
+  let fx0 = P, fy0 = 0; const bh = bs * 1.9;
+  if (c.badge || c.foot) y += story ? 60 : H * .06;
+  if (c.badge){ g.font = `${bs}px ${FF}`; const bw = g.measureText(c.badge).width + bs * 1.3;
+    g.save(); g.shadowColor = "rgba(0,0,0,.18)"; g.shadowBlur = 18; g.shadowOffsetY = 6; rrect(g, P, y, bw, bh, bh / 2); g.fillStyle = T.bb; g.fill(); g.restore();
+    if (T.bs){ rrect(g, P, y, bw, bh, bh / 2); g.lineWidth = 2.5; g.strokeStyle = T.bs; g.stroke(); }
+    g.fillStyle = T.bi; g.fillText(c.badge, P + bs * .65, y + bh * .66); fx0 = P + bw + bs * .9; }
+  fy0 = y + bh * .64;
+  if (c.badge || c.foot) y += bh;
+  // the web address sits beside the badge
+  if (c.foot){ const fz = story ? 34 : W === H ? 26 : 24; g.font = `${fz}px ${FF}`;
+    g.fillStyle = c.tpl === "bold" ? "#fff" : A; g.beginPath(); g.arc(fx0 + fz * .35, fy0 - fz * .32, fz * .3, 0, 7); g.fill();
+    g.fillStyle = T.sub; g.fillText(c.foot, fx0 + fz * 1.05, fy0); }
+  if (shot){
+    let fx, fy, fw, fh;
+    if (story){ fx = W * .1; fy = Math.max(y + 90, H * .5); fw = W * .8; fh = H - fy + 60; }
+    else { fx = W * (H >= W ? .56 : .6); fy = H * .13; fw = W * (H >= W ? .5 : .46); fh = H * .97; }
+    const bar = Math.round(fw * .07), r = Math.round(fw * .045);
+    g.save(); g.shadowColor = "rgba(8,20,48,.45)"; g.shadowBlur = 50; g.shadowOffsetY = 24; rrect(g, fx, fy, fw, fh, r); g.fillStyle = "#fff"; g.fill(); g.restore();
+    g.save(); rrect(g, fx, fy, fw, fh, r); g.clip();
+    g.fillStyle = "#eef2f7"; g.fillRect(fx, fy, fw, bar);
+    ["#ff5f57", "#febc2e", "#28c840"].forEach((col, i) => { g.fillStyle = col; g.beginPath(); g.arc(fx + bar * .55 + i * bar * .45, fy + bar / 2, bar * .14, 0, 7); g.fill(); });
+    g.fillStyle = "#fff"; rrect(g, fx + bar * 1.9, fy + bar * .22, fw - bar * 2.4, bar * .56, bar * .28); g.fill();
+    const s = im.shot, k = fw / s.width; g.drawImage(s, 0, 0, s.width, Math.min(s.height, (fh - bar) / k), fx, fy + bar, fw, Math.min(s.height * k, fh - bar));
+    g.restore();
+  }
+}
+
+/* ---------- invoice ---------- */
+let invOrder = null;
+function showInvoice(o, cust, site){
+  invOrder = o; $("inv").innerHTML = api.invoiceHTML(o, cust || o.customer || {}, site || SITE);
+  $("invModal").hidden = false; $("invPdf").focus();
+}
+$("invPdf").addEventListener("click", async () => {
+  const b = $("invPdf"); b.disabled = true; b.textContent = "PDF তৈরি হচ্ছে...";
+  await api.invoicePDF($("inv").firstElementChild, `invoice-${invOrder.code}.pdf`);
+  b.disabled = false; b.textContent = "PDF ডাউনলোড";
+});
+$("invPrint").addEventListener("click", () => print());
+$("invClose").addEventListener("click", () => $("invModal").hidden = true);
+$("invModal").addEventListener("click", e => { if (e.target.id === "invModal") $("invModal").hidden = true; });
+addEventListener("keydown", e => { if (e.key === "Escape" && !$("invModal").hidden) { $("invModal").hidden = true; e.stopPropagation(); } }, true);
+
+function renderSupport(){
+  if (!sset){ $("main").innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; return; }
+  const s = sset, pub = s.public, c = s.clicks || {};
+  const tawkVal = s.tawk_property ? (s.tawk_property === "demo" ? "demo" : `https://tawk.to/chat/${s.tawk_property}/${s.tawk_widget || "default"}`) : "";
+  const ch = pub ? [pub.messenger && ["Messenger", "linear-gradient(135deg,#00b2ff,#006aff 55%,#a033ff)", pub.messenger.replace("https://", "")], pub.whatsapp && ["WhatsApp", "#25d366", "+" + pub.whatsapp], pub.tawk && ["লাইভ চ্যাট", "#0a84f0", "tawk.to"]].filter(Boolean) : [];
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>সাপোর্ট বাটন</h1><p>সাইটের ডান কোণে ভাসমান বাটন। ক্লিক করলে তিনটা অপশন খোলে: Messenger, WhatsApp আর tawk.to লাইভ চ্যাট। এটা সেলস সাপোর্টের জন্য, তাই ল্যান্ডিং পেজে থাকে।</p></div>
+      <div class="tools">${pub ? '<span class="badge b-done" style="font-size:.9rem;padding:4px 14px">সাইটে দেখাচ্ছে</span>' : '<span class="badge b-off" style="font-size:.9rem;padding:4px 14px">বন্ধ</span>'}</div></div>
+    <div class="tiles">${SUPCH.map(([k, l]) => tile(l, nf(c[k] || 0), "গত ৩০ দিনে আলাদা ভিজিটর")).join("")}</div>
+    <div class="grid g-main">
+      <form class="card" id="supForm" style="display:grid;gap:14px;align-content:start" novalidate>
+        <div class="ch" style="margin:0"><h3>বাটন</h3><label class="switch"><input type="checkbox" name="enabled" ${s.enabled ? "checked" : ""}><span></span>সাইটে দেখান</label></div>
+        <div class="f"><label for="sp-greet">উপরের ছোট লেখা</label><input class="inp" id="sp-greet" name="greeting" maxlength="80" value="${esc(s.greeting)}" placeholder="প্যাকেজ নিয়ে প্রশ্ন? সরাসরি কথা বলুন"></div>
+        <div class="f"><label for="sp-ms">Messenger <small>(ফেসবুক পেজের username বা লিংক)</small></label><input class="inp" id="sp-ms" name="messenger" value="${esc(s.messenger)}" placeholder="techillbd বা https://facebook.com/techillbd" autocomplete="off">
+          <small class="muted" style="font-size:.82rem">ক্লিক করলে m.me লিংক দিয়ে Messenger অ্যাপ (ফোনে) বা messenger.com (কম্পিউটারে) খুলবে। পেজের Settings → Messaging-এ মেসেজ চালু রাখুন।</small></div>
+        <div class="grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:10px">
+          <div class="f"><label for="sp-wa">WhatsApp নম্বর</label><input class="inp" id="sp-wa" name="whatsapp" type="tel" value="${esc(s.whatsapp)}" placeholder="${s.catalog_whatsapp ? esc(s.catalog_whatsapp) + " (প্যাকেজ পেজের নম্বর)" : "01712345678"}"></div>
+          <div class="f"><label for="sp-wat">আগে থেকে লেখা মেসেজ</label><input class="inp" id="sp-wat" name="wa_text" maxlength="300" value="${esc(s.wa_text)}"></div>
+        </div>
+        <small class="muted" style="font-size:.82rem;margin-top:-6px">খালি রাখলে প্যাকেজ ও দাম পেজের হোয়াটসঅ্যাপ নম্বর ব্যবহার হবে। ফোনে WhatsApp অ্যাপ খুলবে, কম্পিউটারে সরাসরি WhatsApp Web।</small>
+        <div class="f"><label for="sp-tawk">tawk.to লাইভ চ্যাট <small>(Direct Chat Link বা পুরো widget কোড)</small></label><textarea class="inp" id="sp-tawk" name="tawk" rows="3" placeholder="https://tawk.to/chat/xxxxxxxxxxxxxxxxxxxxxxxx/1abcdefgh" style="min-height:70px">${esc(tawkVal)}</textarea>
+          <small class="muted" style="font-size:.82rem">tawk.to-তে ফ্রি অ্যাকাউন্ট খুলুন → Administration → Channels → Chat Widget → Direct Chat Link কপি করে এখানে দিন। tawk.to-এর নিজের ভাসমান বাটন লুকানো থাকবে, এই মেনু থেকেই চ্যাট খুলবে। এজেন্টরা tawk.to অ্যাপ থেকে উত্তর দেবেন।</small></div>
+        <label class="checks" style="font-size:.92rem;display:flex;gap:10px;align-items:center"><input type="checkbox" name="on_dashboard" ${s.on_dashboard ? "checked" : ""}> কাস্টমার ড্যাশবোর্ডেও দেখান <span class="muted" style="font-size:.84rem">(সেখানে প্রোজেক্ট চ্যাট তো আছেই)</span></label>
+        <div class="row2"><button class="btn btn-primary" type="submit">সেভ করুন</button><a class="btn btn-ghost btn-sm" href="index.html" target="_blank" rel="noopener">সাইটে দেখুন ↗</a></div>
+        <p class="err" id="spErr" role="alert"></p>
+      </form>
+      <div class="card" style="display:grid;gap:14px;align-content:start">
+        <h3>কাস্টমার যা দেখবে</h3>
+        <div style="background:var(--sunk);border-radius:16px;padding:18px;display:grid;justify-items:end;gap:10px">
+          ${pub ? `${pub.greeting ? `<span style="background:var(--ink);color:var(--bg);border-radius:14px 14px 4px 14px;padding:6px 12px;font-size:.84rem">${esc(pub.greeting)}</span>` : ""}
+            ${ch.map(([t, bg, sub]) => `<div style="display:flex;gap:10px;align-items:center"><span style="background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:5px 11px;text-align:right;line-height:1.25"><b style="font-size:.9rem">${t}</b><br><small class="muted" style="font-size:.74rem">${esc(sub)}</small></span><span style="width:42px;height:42px;border-radius:50%;background:${bg};display:block"></span></div>`).join("")}
+            <span style="width:52px;height:52px;border-radius:50%;background:var(--blue);display:grid;place-items:center;color:#fff;font-size:1.4rem">×</span>`
+          : '<p class="muted" style="justify-self:center">বাটন বন্ধ, বা কোনো মাধ্যম দেওয়া হয়নি।</p>'}
+        </div>
+        <p class="muted" style="font-size:.85rem">কোন মাধ্যমে বেশি মানুষ যোগাযোগ করছে উপরের সংখ্যায় দেখুন। প্রতিটা ক্লিক Facebook Pixel-এ "Contact" ইভেন্ট হিসেবেও যায়।</p>
+        <p class="muted" style="font-size:.85rem">Facebook-এর পুরনো "Chat Plugin" (সাইটের ভেতরে Messenger চ্যাট) Meta ২০২৪-এ বন্ধ করে দিয়েছে। তাই Messenger বাটন সরাসরি আপনার পেজের ইনবক্সে নিয়ে যায়।</p>
+      </div>
+    </div>`;
+  $("supForm").addEventListener("submit", async ev => {
+    ev.preventDefault(); $("spErr").textContent = "";
+    const f = new FormData(ev.target), d = Object.fromEntries(f); d.enabled = f.get("enabled") ? 1 : ""; d.on_dashboard = f.get("on_dashboard") ? 1 : "";
+    try { sset = (await api.saveSupport(d)).settings; renderSupport(); toast(sset.public ? "সেভ হয়েছে। সাইটে বাটন দেখাচ্ছে।" : "সেভ হয়েছে। বাটন দেখাচ্ছে না।"); }
+    catch(err){ $("spErr").textContent = err.message; }
+  });
+}
+
+/* ---------- referral program ---------- */
+const RSTAT = {pending: ["অপেক্ষায়", "b-pending"], earned: ["আয় হয়েছে", "b-done"], cancelled: ["বাতিল", "b-cancel"], rejected: ["আপনি বাতিল করেছেন", "b-late"]};
+const rstat = st => `<span class="badge ${(RSTAT[st] || ["", "b-off"])[1]}">${(RSTAT[st] || [st])[0]}</span>`;
+const POST = {requested: ["অপেক্ষায়", "b-pending"], paid: ["পাঠানো হয়েছে", "b-done"], rejected: ["বাতিল", "b-cancel"]};
+function renderReferral(){
+  if (!rdata){ $("main").innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; return; }
+  const {settings: s, totals: t, top, referrals, payouts} = rdata;
+  const RF = {all: ["সব", () => true], pending: ["অপেক্ষায়", r => r.status === "pending"], earned: ["আয় হয়েছে", r => r.status === "earned"], cancelled: ["বাতিল", r => r.status === "cancelled" || r.status === "rejected"]};
+  const list = referrals.filter(RF[rFilter][1]), reqs = payouts.filter(p => p.status === "requested");
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>রেফারেল</h1><p>কাস্টমার বন্ধুকে আনলে প্রতিটা সফল অর্ডারে ${tk(s.reward)} পান, বন্ধু পান ${tk(s.discount)} ছাড়। কাস্টমার ড্যাশবোর্ডে নিজের লিংক আর আয় দেখেন।</p></div>
+      <div class="tools">${s.enabled ? '<span class="badge b-done" style="font-size:.9rem;padding:4px 14px">চালু</span>' : '<span class="badge b-off" style="font-size:.9rem;padding:4px 14px">বন্ধ</span>'}</div></div>
+    ${reqs.length ? `<div class="alert warn" style="margin-bottom:16px;cursor:default">${I.gift}<span><b style="font-size:1rem">${BN(reqs.length)}টা টাকা তোলার অনুরোধ অপেক্ষায়</b> · মোট ${tk(t.requested)}। বিকাশ/নগদে পাঠিয়ে "পাঠিয়েছি" চাপুন।</span></div>` : ""}
+    <div class="tiles">
+      ${tile("মোট রেফারেল অর্ডার", nf(t.n), `${nf(t.earned_n)}টা সফল · ${nf(t.pending_n)}টা অপেক্ষায়`)}
+      ${tile("রেফারেলে আসা বিক্রি", tkShort(t.revenue), "সফল রেফারেল অর্ডারের মোট")}
+      ${tile("কাস্টমারদের আয়", tkShort(t.earned), `পাঠানো ${tk(t.paid)} · অপেক্ষায় ${tk(t.requested)}`)}
+      ${tile("নতুন কাস্টমারকে ছাড়", tkShort(t.discounts), "বাতিল অর্ডার বাদে")}
+    </div>
+    <div class="grid g-main" style="margin-bottom:18px">
+      <div class="card" style="padding:10px 14px"><div class="ch" style="padding:8px 6px 0"><h3>টাকা তোলার অনুরোধ</h3><small>অপেক্ষায় থাকাগুলো আগে</small></div>
+        ${payouts.length ? `<div class="tbl-wrap"><table class="tbl" style="min-width:640px"><thead><tr><th>কাস্টমার</th><th class="r">টাকা</th><th>কোথায় পাঠাবেন</th><th>অবস্থা</th><th></th></tr></thead><tbody>
+          ${payouts.map(p => `<tr><td><b>${esc(p.user)}</b><span class="sub">${esc(p.email)} · ${ago(p.created)}</span></td><td class="r num"><b>${tk(p.amount)}</b>${p.status === "requested" && p.balance < p.amount ? '<span class="sub late">ব্যালেন্সের চেয়ে বেশি</span>' : ""}</td>
+            <td>${MNAME[p.method] || esc(p.method)}<span class="sub"><b>${esc(p.account)}</b></span></td>
+            <td><span class="badge ${POST[p.status][1]}">${POST[p.status][0]}</span>${p.trx ? `<span class="sub">TrxID ${esc(p.trx)}</span>` : ""}${p.note ? `<span class="sub">${esc(p.note)}</span>` : ""}</td>
+            <td class="r">${p.status === "requested" ? `<div class="row2" style="justify-content:flex-end;flex-wrap:nowrap"><input class="inp" data-trx="${p.id}" placeholder="TrxID" style="width:120px;padding:5px 8px" aria-label="TrxID"><button class="btn btn-ok btn-sm" type="button" data-paid="${p.id}">পাঠিয়েছি</button><button class="btn btn-ghost btn-sm" type="button" data-prej="${p.id}">বাতিল</button></div>` : ""}</td></tr>`).join("")}
+        </tbody></table></div>` : '<p class="empty">এখনো কেউ টাকা তুলতে চাননি।</p>'}</div>
+      <form class="card" id="refForm" style="display:grid;gap:12px;align-content:start" novalidate>
+        <div class="ch" style="margin:0"><h3>নিয়ম</h3><label class="switch"><input type="checkbox" name="enabled" ${s.enabled ? "checked" : ""}><span></span>চালু</label></div>
+        <div class="grid g2" style="gap:10px">
+          <div class="f"><label for="rf-rew">রেফারারের আয় (৳)</label><input class="inp" id="rf-rew" name="reward" type="number" min="0" step="1" value="${s.reward}"></div>
+          <div class="f"><label for="rf-dis">নতুন কাস্টমারের ছাড় (৳)</label><input class="inp" id="rf-dis" name="discount" type="number" min="0" step="1" value="${s.discount}"></div>
+          <div class="f"><label for="rf-min">ছাড় পেতে কমপক্ষে অর্ডার (৳)</label><input class="inp" id="rf-min" name="min_order" type="number" min="0" step="1" value="${s.min_order}"></div>
+          <div class="f"><label for="rf-pmin">কমপক্ষে কত হলে তোলা যাবে (৳)</label><input class="inp" id="rf-pmin" name="payout_min" type="number" min="0" step="1" value="${s.payout_min}"></div>
+        </div>
+        <div class="f"><label for="rf-trig">রেফারারের আয় কখন যোগ হবে</label><select class="inp" id="rf-trig" name="trigger"><option value="delivered" ${s.trigger === "delivered" ? "selected" : ""}>পেমেন্ট যাচাই হয়ে ওয়েবসাইট ডেলিভারি হলে (সুপারিশকৃত)</option><option value="paid" ${s.trigger === "paid" ? "selected" : ""}>পেমেন্ট যাচাই হলেই</option></select></div>
+        <label class="checks" style="font-size:.92rem;display:flex;gap:10px;align-items:center"><input type="checkbox" name="first_order_only" ${s.first_order_only ? "checked" : ""}> ছাড় শুধু নতুন কাস্টমারের প্রথম অর্ডারে</label>
+        <div class="row2"><button class="btn btn-primary" type="submit">সেভ করুন</button></div>
+        <p class="err" id="rfErr" role="alert"></p>
+        <p class="muted" style="font-size:.84rem">নিরাপত্তা: নিজের কোড নিজে ব্যবহার করা যায় না (ইমেইল আর ফোন মিলিয়ে দেখা হয়)। অর্ডার বাতিল হলে বা পেমেন্ট না এলে আয় যোগ হয় না। সন্দেহজনক কোনো রেফারেল নিচের তালিকা থেকে বাতিল করতে পারেন।</p>
+      </form>
+    </div>
+    <div class="grid g2" style="margin-bottom:18px;grid-template-columns:minmax(0,1fr) minmax(0,2fr)">
+      <div class="card"><div class="ch"><h3>সেরা রেফারার</h3></div>
+        <ul class="people">${top.map(r => `<li>${avatarHTML(r.name)}<div><b>${esc(r.name)}</b><small>${esc(r.code || "")} · ${BN(r.n)}টা রেফারেল</small></div><div style="text-align:right"><b>${tk(r.earned)}</b><small>আয়</small></div></li>`).join("") || '<li class="empty">এখনো কেউ নেই</li>'}</ul></div>
+      <div class="card" style="padding:10px 14px"><div class="ch" style="padding:8px 6px 0"><h3>রেফারেল অর্ডার</h3>
+        <div class="chips">${Object.entries(RF).map(([k, [l, f]]) => `<button type="button" data-rf="${k}" aria-pressed="${rFilter === k}">${l} (${BN(referrals.filter(f).length)})</button>`).join("")}</div></div>
+        ${list.length ? `<div class="tbl-wrap"><table class="tbl" style="min-width:720px"><thead><tr><th>অর্ডার</th><th>রেফারার → নতুন কাস্টমার</th><th class="r">অর্ডার</th><th class="r">ছাড় / আয়</th><th>অবস্থা</th><th></th></tr></thead><tbody>
+          ${list.map(r => `<tr class="click" data-open="${r.order_id}"><td><b>${esc(r.order)}</b><span class="sub">${when(r.created)} · ${esc(r.code)}</span></td><td>${esc(r.referrer)} → ${esc(r.referee)}</td><td class="r num">${tk(r.total)}</td><td class="r num">${tk(r.discount)} / ${tk(r.reward)}</td>
+            <td>${rstat(r.status)}${r.note ? `<span class="sub">${esc(r.note)}</span>` : ""}</td>
+            <td class="r">${r.status === "rejected" ? `<button class="btn btn-ghost btn-sm" type="button" data-rrestore="${r.id}">ফিরিয়ে আনুন</button>` : r.status !== "cancelled" ? `<button class="btn btn-ghost btn-sm" type="button" data-rreject="${r.id}">বাতিল করুন</button>` : ""}</td></tr>`).join("")}
+        </tbody></table></div>` : '<p class="empty">কোনো রেফারেল অর্ডার নেই।</p>'}</div>
+    </div>`;
+  $("refForm").addEventListener("submit", async ev => {
+    ev.preventDefault(); $("rfErr").textContent = "";
+    const f = new FormData(ev.target), d = Object.fromEntries(f); d.enabled = f.get("enabled") ? 1 : ""; d.first_order_only = f.get("first_order_only") ? 1 : "";
+    try { rdata = await api.saveReferral(d); renderReferral(); toast("সেভ হয়েছে।"); } catch(err){ $("rfErr").textContent = err.message; }
+  });
+}
+$("main").addEventListener("click", async e => {
+  if (sec !== "referral") return;
+  const f = e.target.closest("[data-rf]"); if (f){ rFilter = f.dataset.rf; return renderReferral(); }
+  const done = async (p, msg) => { try { rdata = await p; renderReferral(); toast(msg); stats = await api.stats(days).catch(() => stats); renderNav(); } catch(err){ toast(err.message); } };
+  const paid = e.target.closest("[data-paid]");
+  if (paid){ const id = paid.dataset.paid, trx = document.querySelector(`[data-trx="${id}"]`).value.trim(); if (!trx){ toast("যে TrxID দিয়ে টাকা পাঠিয়েছেন সেটা দিন।"); document.querySelector(`[data-trx="${id}"]`).focus(); return; } return done(api.payoutOp({id, op: "paid", trx}), "পেমেন্ট সম্পন্ন হিসেবে রাখা হয়েছে। কাস্টমারকে ইমেইলে জানানো হবে।"); }
+  const rej = e.target.closest("[data-prej]");
+  if (rej){ const note = prompt("কেন বাতিল করছেন? কাস্টমার এই কারণটা দেখবেন।"); if (!note) return; return done(api.payoutOp({id: rej.dataset.prej, op: "rejected", note}), "অনুরোধ বাতিল হয়েছে, টাকা কাস্টমারের ব্যালেন্সে ফিরে গেছে।"); }
+  const rr = e.target.closest("[data-rreject]");
+  if (rr){ e.stopPropagation(); const note = prompt("কেন বাতিল করছেন? (যেমন: নিজের আরেকটা অ্যাকাউন্ট)"); if (note === null) return; return done(api.referralOp({id: rr.dataset.rreject, op: "reject", note}), "রেফারেল বাতিল হয়েছে।"); }
+  const rs = e.target.closest("[data-rrestore]");
+  if (rs){ e.stopPropagation(); return done(api.referralOp({id: rs.dataset.rrestore, op: "restore"}), "রেফারেল আবার চালু হয়েছে।"); }
+}, true);
+
+/* ---------- people drawer (customers & team) ---------- */
+// kind: "customer" | "team"; p: the person, or null to add a new one
+function openPerson(kind, p){
+  const isNew = !p, cust = kind === "customer", self = p && p.id === me.id;
+  const ordersHere = cust && p ? p.orders : 0;
+  drawerId = "person";
+  $("drawer").innerHTML = `
+    <div class="dr-h"><div><h2 id="drTitle">${isNew ? (cust ? "নতুন কাস্টমার" : "নতুন টিম মেম্বার") : esc(p.name)}</h2>
+      <p>${isNew ? (cust ? "কাস্টমারের হয়ে অ্যাকাউন্ট খুলে দিন, পরে তিনি নিজে লগইন করবেন।" : "ডেভেলপার শুধু তাকে দেওয়া প্রোজেক্ট দেখবেন।") : esc(p.email)}</p></div>
+      <button class="icon-btn" type="button" id="drClose" aria-label="বন্ধ করুন">${ic('<path d="M6 6l12 12M18 6L6 18"/>')}</button></div>
+    <div class="dr-b">
+      ${!isNew ? `<div class="box"><h4>প্রোফাইল ছবি</h4><div class="photo-row">${avatarHTML(p.name, p.avatar, "lg")}<div class="row2">
+        <input type="file" id="pPhoto" accept="image/jpeg,image/png,image/webp" hidden><button class="btn btn-ghost btn-sm" type="button" id="pPhotoPick">${p.avatar ? "ছবি বদলান" : "ছবি দিন"}</button>
+        ${p.avatar ? '<button class="btn btn-ghost btn-sm" type="button" id="pPhotoDel">সরান</button>' : ""}</div></div></div>` : ""}
+      ${!isNew ? `<div class="box"><dl class="kv">
+        ${cust ? `<dt>অর্ডার</dt><dd>${BN(p.orders)}টা · ${BN(p.running)}টা চলমান</dd><dt>মোট পেমেন্ট</dt><dd>${tk(p.spent)}</dd><dt>শেষ অর্ডার</dt><dd>${p.last_order ? ago(p.last_order) : "—"}</dd>`
+               : `<dt>রোল</dt><dd>${p.role === "admin" ? "অ্যাডমিন" : "ডেভেলপার"}</dd><dt>চলমান প্রোজেক্ট</dt><dd>${BN(p.running)}${p.overdue ? ` · <span class="late">${BN(p.overdue)}টা দেরি</span>` : ""}</dd><dt>সম্পন্ন</dt><dd>${BN(p.done)}টা</dd>`}
+        <dt>যোগ দিয়েছেন</dt><dd>${dateOnly(p.created)}</dd><dt>অবস্থা</dt><dd>${p.active ? '<span class="badge b-done">সক্রিয়</span>' : '<span class="badge b-off">বন্ধ</span>'}</dd></dl>
+        ${cust && p.orders ? `<div class="row2" style="margin-top:12px"><button class="btn btn-ghost btn-sm" type="button" id="pOrders">সব অর্ডার দেখুন</button></div>` : ""}</div>` : ""}
+      <form class="box" id="pForm" style="display:grid;gap:12px"><h4>${isNew ? "তথ্য" : "তথ্য বদলান"}</h4>
+        <div class="f"><label for="p-name">নাম</label><input class="inp" id="p-name" name="name" value="${esc(p?.name || "")}" required></div>
+        <div class="f"><label for="p-email">ইমেইল <small>(লগইনের জন্য)</small></label><input class="inp" id="p-email" name="email" type="email" value="${esc(p?.email || "")}" required></div>
+        ${cust ? `<div class="f"><label for="p-phone">মোবাইল <small>(ঐচ্ছিক)</small></label><input class="inp" id="p-phone" name="phone" type="tel" value="${esc(p?.phone || "")}" placeholder="01XXXXXXXXX"></div>` : ""}
+        ${isNew ? `<div class="f"><label for="p-pass">পাসওয়ার্ড <small>(৮+ অক্ষর, পরে তাকে জানিয়ে দিন)</small></label><input class="inp" id="p-pass" name="password" type="text" minlength="8" required></div>` : ""}
+        ${!cust && (isNew || !self) ? `<div class="f"><label for="p-role">রোল</label><select class="inp" id="p-role" name="role"><option value="developer" ${p?.role !== "admin" ? "selected" : ""}>ডেভেলপার</option><option value="admin" ${p?.role === "admin" ? "selected" : ""}>অ্যাডমিন</option></select></div>` : ""}
+        <div class="row2"><button class="btn btn-primary" type="submit">${isNew ? "অ্যাকাউন্ট খুলুন" : "সেভ করুন"}</button></div>
+        <p class="err" id="pErr" role="alert"></p></form>
+      ${!isNew ? `<form class="box" id="pwForm" style="display:grid;gap:10px"><h4>পাসওয়ার্ড রিসেট</h4>
+        <div class="row2"><input class="inp" name="password" type="text" minlength="8" placeholder="নতুন পাসওয়ার্ড (৮+ অক্ষর)" style="flex:1" aria-label="নতুন পাসওয়ার্ড" required><button class="btn btn-ghost btn-sm" type="submit">বদলান</button></div></form>
+      ${self ? "" : `<div class="box"><h4>অ্যাকাউন্ট</h4>
+        <p class="muted" style="font-size:.88rem;margin-bottom:10px">${cust ? "বন্ধ করলে তিনি আর লগইন করতে পারবেন না, তবে অর্ডার আর চ্যাট থেকে যাবে।" : "বন্ধ করলে তিনি লগইন করতে পারবেন না। মুছে ফেললে তার চলমান প্রোজেক্টগুলো আবার অ্যাসাইন করতে হবে।"}</p>
+        <div class="row2"><button class="btn btn-ghost btn-sm" type="button" id="pToggle">${p.active ? "অ্যাকাউন্ট বন্ধ করুন" : "অ্যাকাউন্ট চালু করুন"}</button>
+        <button class="btn btn-danger btn-sm" type="button" id="pDelete" ${ordersHere ? "disabled" : ""}>মুছে ফেলুন</button></div>
+        ${ordersHere ? '<p class="muted" style="font-size:.82rem;margin-top:8px">এই কাস্টমারের অর্ডার আছে, তাই মোছা যাবে না (অর্ডার, চ্যাট আর ফাইল হারিয়ে যেত)। বদলে অ্যাকাউন্ট বন্ধ করুন।</p>' : ""}</div>`}` : ""}
+    </div>`;
+  $("drawer").hidden = false; $("drawerBg").hidden = false; $("drClose").addEventListener("click", closeDrawer); $("p-name").focus();
+  const save = cust ? api.customerSave : api.teamSave;
+  const done = async (r, msg) => {
+    if (cust) customers = r.customers; else team = r.team;
+    stats = await api.stats(days).catch(() => stats); renderNav(); render(); toast(msg);
+  };
+  $("pForm").addEventListener("submit", async e => {
+    e.preventDefault(); $("pErr").textContent = "";
+    const data = Object.fromEntries(new FormData(e.target));
+    try {
+      if (isNew){ await done(await save({op: "create", ...data}), cust ? "কাস্টমার যোগ হয়েছে।" : "টিম মেম্বার যোগ হয়েছে। তিনি dashboard.html থেকে লগইন করবেন।"); closeDrawer(); return; }
+      let r = await save({op: "update", id: p.id, ...data});
+      if (!cust && data.role && data.role !== p.role) r = await save({op: "role", id: p.id, role: data.role});
+      await done(r, "সেভ হয়েছে।");
+      openPerson(kind, (cust ? customers : team).find(x => x.id === p.id));
+    } catch(err){ $("pErr").textContent = err.message; }
+  });
+  $("pwForm")?.addEventListener("submit", async e => {
+    e.preventDefault();
+    try { await save({op: "password", id: p.id, password: new FormData(e.target).get("password")}); e.target.reset(); toast("পাসওয়ার্ড বদলানো হয়েছে। নতুন পাসওয়ার্ডটা তাকে জানিয়ে দিন।"); } catch(err){ toast(err.message); }
+  });
+  $("pToggle")?.addEventListener("click", async () => {
+    try { await done(await save({op: "toggle", id: p.id}), p.active ? "অ্যাকাউন্ট বন্ধ হয়েছে।" : "অ্যাকাউন্ট চালু হয়েছে।"); openPerson(kind, (cust ? customers : team).find(x => x.id === p.id)); } catch(err){ toast(err.message); }
+  });
+  $("pDelete")?.addEventListener("click", async () => {
+    if (!confirm(`${p.name}-এর অ্যাকাউন্ট পুরোপুরি মুছে ফেলবেন? এটা ফেরানো যাবে না।`)) return;
+    try {
+      const r = await save({op: "delete", id: p.id});
+      await done(r, r.unassigned ? `মুছে ফেলা হয়েছে। তার ${BN(r.unassigned)}টা চলমান প্রোজেক্ট এখন অ্যাসাইন ছাড়া, অর্ডার থেকে নতুন ডেভেলপার দিন।` : "মুছে ফেলা হয়েছে।");
+      if (!cust) orders = (await api.orders()).orders;
+      closeDrawer();
+    } catch(err){ toast(err.message); }
+  });
+  const reopen = async () => {
+    if (cust) customers = (await api.customers()).customers; else team = (await api.team()).team;
+    if (p.id === me.id) renderMe();
+    render(); openPerson(kind, (cust ? customers : team).find(x => x.id === p.id));
+  };
+  $("pPhotoPick")?.addEventListener("click", () => $("pPhoto").click());
+  $("pPhoto")?.addEventListener("change", async e => {
+    const f = e.target.files[0]; if (!f) return;
+    const b = $("pPhotoPick"); b.disabled = true; b.textContent = "আপলোড হচ্ছে...";
+    try { await api.avatarUpload(f, p.id); toast("ছবি আপডেট হয়েছে।"); await reopen(); } catch(err){ toast(err.message); b.disabled = false; b.textContent = "ছবি দিন"; }
+  });
+  $("pPhotoDel")?.addEventListener("click", async () => { try { await api.avatarRemove(p.id); toast("ছবি সরানো হয়েছে।"); await reopen(); } catch(err){ toast(err.message); } });
+  $("pOrders")?.addEventListener("click", () => { closeDrawer(); oQuery = p.email; oFilter = "all"; go("orders"); });
+}
+
+/* ---------- team ---------- */
+function renderTeam(){
+  const devs = team.filter(t => t.role === "developer"), admins = team.filter(t => t.role === "admin");
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>টিম ও ডেভেলপার</h1><p>ডেভেলপাররা শুধু তাদের দেওয়া প্রোজেক্ট দেখেন। অ্যাডমিন সব দেখেন, দাম আর পেমেন্ট বদলাতে পারেন।</p></div>
+      <div class="tools"><button class="btn btn-primary btn-sm" type="button" id="addMember">${I.plus} নতুন মেম্বার</button></div></div>
+    <div class="tiles">
+      ${tile("মোট ডেভেলপার", nf(devs.length), nf(devs.filter(t => t.active).length) + " জন সক্রিয়")}
+      ${tile("অ্যাডমিন", nf(admins.length), "সব কিছু দেখতে ও বদলাতে পারেন")}
+      ${tile("চলমান প্রোজেক্ট", nf(team.reduce((s, t) => s + t.running, 0)), nf(stats?.orders?.unassigned || 0) + "টা এখনো অ্যাসাইন হয়নি")}
+      ${tile("দেরি হচ্ছে", nf(team.reduce((s, t) => s + t.overdue, 0)), "ডেডলাইন পেরিয়ে গেছে")}
+    </div>
+    <div class="card" style="padding:10px 14px"><div class="tbl-wrap"><table class="tbl" style="min-width:700px"><thead><tr><th>নাম</th><th>রোল</th><th class="r">চলমান</th><th class="r">দেরি</th><th class="r">সম্পন্ন</th><th>অবস্থা</th><th></th></tr></thead><tbody>
+      ${team.map(t => `<tr class="click" data-member="${t.id}"><td><div class="who-cell">${avatarHTML(t.name, t.avatar, "sm")}<div><b>${esc(t.name)}</b>${t.id === me.id ? ' <span class="badge b-admin">আপনি</span>' : ""}<span class="sub">${esc(t.email)}</span></div></div></td>
+        <td>${t.role === "admin" ? "অ্যাডমিন" : "ডেভেলপার"}</td>
+        <td class="r">${BN(t.running)}</td><td class="r ${t.overdue ? "late" : ""}">${BN(t.overdue)}</td><td class="r">${BN(t.done)}</td>
+        <td>${t.active ? '<span class="badge b-done">সক্রিয়</span>' : '<span class="badge b-off">বন্ধ</span>'}</td>
+        <td class="r"><button class="btn btn-ghost btn-sm" type="button" data-member="${t.id}">এডিট</button></td></tr>`).join("")}
+    </tbody></table></div></div>`;
+}
+$("main").addEventListener("click", e => {
+  if (sec !== "team") return;
+  if (e.target.closest("#addMember")) return openPerson("team", null);
+  const m = e.target.closest("[data-member]"); if (m) openPerson("team", team.find(t => t.id === +m.dataset.member));
+});
+
+/* ---------- customers ---------- */
+const CF = {all: ["সব", () => true], active: ["এখন প্রোজেক্ট চলছে", c => c.running > 0], repeat: ["একাধিকবার অর্ডার", c => c.orders > 1], none: ["অর্ডার করেননি", c => !c.orders], blocked: ["বন্ধ", c => !c.active]};
+function renderCustomers(){
+  const q = custQ.toLowerCase();
+  const list = customers.filter(CF[custF][1]).filter(c => !q || [c.name, c.email, c.phone].some(v => String(v || "").toLowerCase().includes(q)));
+  const focus = document.activeElement?.id === "cq";
+  const total = customers.reduce((s, c) => s + c.spent, 0), buyers = customers.filter(c => c.orders > 0), repeat = customers.filter(c => c.orders > 1).length;
+  const month = Date.now() / 1000 - 30 * 86400;
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>কাস্টমার</h1><p>কাস্টমার যোগ, এডিট, বন্ধ বা মুছে ফেলা যায়। কারো নামে ক্লিক করুন।</p></div>
+      <div class="tools"><input class="search" type="search" id="cq" placeholder="নাম, ইমেইল, ফোন" value="${esc(custQ)}" aria-label="কাস্টমার খুঁজুন"><button class="btn btn-primary btn-sm" type="button" id="addCust">${I.plus} নতুন কাস্টমার</button></div></div>
+    <div class="tiles">
+      ${tile("মোট কাস্টমার", nf(customers.length), nf(customers.filter(c => c.created > month).length) + " জন গত ৩০ দিনে যোগ দিয়েছেন")}
+      ${tile("অর্ডার করেছেন", nf(buyers.length), pct(buyers.length, customers.length) + " অ্যাকাউন্ট")}
+      ${tile("আবার অর্ডার করেছেন", nf(repeat), pct(repeat, buyers.length) + " ক্রেতা ফিরে এসেছেন")}
+      ${tile("কাস্টমার প্রতি গড় আয়", buyers.length ? tk(total / buyers.length) : "—", "মোট " + tk(total))}
+    </div>
+    <div class="chips" style="margin-bottom:14px">${Object.entries(CF).map(([k, [l, f]]) => `<button type="button" data-cf="${k}" aria-pressed="${custF === k}">${l} (${BN(customers.filter(f).length)})</button>`).join("")}</div>
+    <div class="card" style="padding:10px 14px">${list.length ? `<div class="tbl-wrap"><table class="tbl" style="min-width:820px"><thead><tr><th>কাস্টমার</th><th>ফোন</th><th class="r">অর্ডার</th><th class="r">চলমান</th><th class="r">মোট পেমেন্ট</th><th>শেষ অর্ডার</th><th>অবস্থা</th><th></th></tr></thead><tbody>
+      ${list.map(c => `<tr class="click" data-cust="${c.id}"><td><div class="who-cell">${avatarHTML(c.name, c.avatar, "sm")}<div><b>${esc(c.name)}</b><span class="sub">${esc(c.email)} · ${dateOnly(c.created)}</span></div></div></td><td>${esc(c.phone || "—")}</td><td class="r">${BN(c.orders)}</td><td class="r">${BN(c.running)}</td><td class="r num">${tk(c.spent)}</td><td>${c.last_order ? ago(c.last_order) : "—"}</td>
+        <td>${c.active ? '<span class="badge b-done">সক্রিয়</span>' : '<span class="badge b-off">বন্ধ</span>'}</td><td class="r"><button class="btn btn-ghost btn-sm" type="button" data-cust="${c.id}">এডিট</button></td></tr>`).join("")}
+    </tbody></table></div>` : `<p class="empty">${customers.length ? "কাউকে পাওয়া যায়নি।" : "লোড হচ্ছে..."}</p>`}</div>`;
+  if (focus){ const i = $("cq"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
+}
+$("main").addEventListener("click", e => {
+  if (sec !== "customers") return;
+  if (e.target.closest("#addCust")) return openPerson("customer", null);
+  const f = e.target.closest("[data-cf]"); if (f){ custF = f.dataset.cf; return renderCustomers(); }
+  const r = e.target.closest("[data-cust]"); if (r) openPerson("customer", customers.find(c => c.id === +r.dataset.cust));
+});
+
+/* ---------- boot ---------- */
+async function boot(){
+  if (!me) return showAuth();
+  if (me.role !== "admin") return showAuth(`এই পেজ শুধু অ্যাডমিনের জন্য। আপনার প্রোজেক্টগুলো <a href="dashboard.html">ড্যাশবোর্ডে</a> দেখুন।`);
+  $("auth").hidden = true; $("shell").hidden = false; $("logoutBtn").hidden = false; $("dashLink").hidden = false;
+  sec = SECTIONS.some(([k]) => k === location.hash.slice(1)) ? location.hash.slice(1) : "overview";
+  render();
+  try { await loadAll(); } catch(e){ if (e.status === 401 || e.status === 403) return showAuth(); toast(e.message); return; }
+  renderNav(); renderLive(); renderMe(); go(sec);
+  setInterval(() => { if (!document.hidden) refreshStats(); }, 30000);
+  setInterval(() => { if (!document.hidden && sec !== "catalog") refreshOrders().then(() => { if (["orders", "board"].includes(sec) && !document.activeElement?.closest("select,input")) render(); }); }, 60000);
+}
+(async () => {
+  me = await api.init();
+  api.catalog().then(r => { SITE = r.site || null; api.applyFavicon(SITE); }).catch(() => {});
+  boot();
+})();
+</script>
+</body>
+</html>
