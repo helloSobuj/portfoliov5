@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Techill ড্যাশবোর্ড</title>
+<link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tiro+Bangla:ital@0;1&display=swap">
@@ -483,13 +485,13 @@ table.tbl{width:100%;border-collapse:collapse;font-size:.92rem;min-width:720px}
 </div>
 <div class="modal" id="invModal" role="dialog" aria-modal="true" aria-label="ইনভয়েস" hidden>
   <div class="inv-wrap">
-    <div class="inv-acts"><button class="btn btn-primary btn-sm" type="button" id="invPrint">প্রিন্ট / PDF</button><button class="btn btn-ghost btn-sm" type="button" id="invClose">বন্ধ করুন</button></div>
-    <article class="inv" id="inv"></article>
+    <div class="inv-acts"><button class="btn btn-primary btn-sm" type="button" id="invPdf">PDF ডাউনলোড</button><button class="btn btn-ghost btn-sm" type="button" id="invPrint">প্রিন্ট</button><button class="btn btn-ghost btn-sm" type="button" id="invClose">বন্ধ করুন</button></div>
+    <div id="inv"></div>
   </div>
 </div>
 <div class="toast" id="toast" role="status" hidden></div>
 
-<script src="assets/api.js?v=12"></script>
+<script src="assets/api.js?v=13"></script>
 <script>
 const api = window.TechillAPI;
 const $ = id => document.getElementById(id);
@@ -695,22 +697,17 @@ $("ordersView").addEventListener("click", e => {
 });
 
 /* ---------- invoice ---------- */
+let invOrder = null, SITE = null;
 function showInvoice(o){
-  const i = o.info || {}, paid = o.pay_status === "verified" && !o.cancelled;
-  $("inv").innerHTML = `
-    <div class="inv-top"><img src="assets/logo-light.png" alt="Techill by RedBolt IT"><div><h2>ইনভয়েস</h2><p>${esc(o.code)} · ${when(o.created)}</p></div></div>
-    <div class="inv-meta">
-      <div><h4>বিল প্রাপক</h4><b>${esc(i.admin_name || me.name)}</b><br>${esc(i.phone || "")}<br>${esc(me.email)}${i.address ? "<br>" + esc(i.address) : ""}</div>
-      <div><h4>প্রোজেক্ট</h4>${o.domain ? esc(o.domain) + "<br>" : ""}${esc(o.stack)} · ${esc(o.pack)} প্যাকেজ<br>টেমপ্লেট: ${esc(o.template)}<br>ডেলিভারি: ${BN(o.hours)} ঘণ্টা · ${BN(o.products)}টা প্রোডাক্ট</div>
-    </div>
-    <table><thead><tr><th>বিবরণ</th><th class="r">টাকা</th></tr></thead><tbody>
-      ${o.lines.map(l => `<tr><td>${esc(l.label)}</td><td class="r">${l.amt < 0 ? "−" : ""}${tk(Math.abs(l.amt))}</td></tr>`).join("")}
-      <tr class="inv-tot"><td>মোট</td><td class="r">${tk(o.total)}</td></tr>
-    </tbody></table>
-    <p>পেমেন্ট: ${MNAME[o.pay_method] || esc(o.pay_method)} · ${esc(o.pay_sender)} · TrxID ${esc(o.pay_trx)} &nbsp; <span class="stamp ${o.cancelled ? "void" : paid ? "paid" : "due"}">${o.cancelled ? "বাতিল" : paid ? "পরিশোধিত" : "যাচাই বাকি"}</span></p>
-    <div class="inv-foot"><span>Techill.top · hello@techill.top</span><span>সব দাম বাংলাদেশি টাকায়</span></div>`;
-  $("invModal").hidden = false; $("invClose").focus();
+  invOrder = o;
+  $("inv").innerHTML = api.invoiceHTML(o, isStaff() && o.customer ? o.customer : {name: me.name, email: me.email, phone: me.phone}, SITE);
+  $("invModal").hidden = false; $("invPdf").focus();
 }
+$("invPdf").addEventListener("click", async () => {
+  const b = $("invPdf"); b.disabled = true; b.textContent = "PDF তৈরি হচ্ছে...";
+  await api.invoicePDF($("inv").firstElementChild, `invoice-${invOrder.code}.pdf`);
+  b.disabled = false; b.textContent = "PDF ডাউনলোড";
+});
 $("invClose").addEventListener("click", () => $("invModal").hidden = true);
 $("invPrint").addEventListener("click", () => print());
 $("invModal").addEventListener("click", e => { if (e.target.id === "invModal") $("invModal").hidden = true; });
@@ -1191,6 +1188,7 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) poll
   me = await api.init();
   const payFlag = (location.hash.match(/pay=(\w+)/) || [])[1];
   api.catalog().then(r => {
+    SITE = r.site || null; api.applyFavicon(SITE);
     if (r.pixel) api.initPixel(r.pixel.id);
     AUTH = r.auth || AUTH; REFCFG = r.referral || null;
     $("forgotBtn").hidden = !AUTH.email;

@@ -839,6 +839,45 @@ const SUPPORT_DEFAULTS = ['enabled' => true, 'messenger' => '', 'whatsapp' => ''
 
 function support_settings(bool $reload = false): array { return settings_load('support', SUPPORT_DEFAULTS, $reload); }
 
+/* ---------- site settings (brand, landing page text, contact, invoice) ---------- */
+
+// Defaults are the texts the landing page ships with, so the admin form starts from what visitors see.
+const SITE_DEFAULTS = [
+    'name' => 'Techill', 'favicon' => null, 'favicon_sm' => null,
+    'seo_title' => 'Techill — ২৪ ঘণ্টায় আপনার অনলাইন দোকান',
+    'seo_desc' => '২৪ ঘণ্টায় আপনার নিজের অনলাইন দোকান। WooCommerce ও Laravel ই-কমার্স ওয়েবসাইট, COD, বিকাশ, কুরিয়ার আর Pixel সেটআপ সহ।',
+    'hero_eyebrow' => 'বাংলাদেশের অনলাইন ব্যবসার জন্য', 'hero_title' => 'মাত্র ২৪ ঘণ্টায় আপনার নিজের', 'hero_highlight' => 'অনলাইন দোকান',
+    'hero_sub' => 'ফেসবুক ইনবক্সে অর্ডার নেওয়ার ঝামেলা শেষ। টেমপ্লেট বাছুন, তথ্য দিন, বাকিটা আমাদের। COD, বিকাশ আর কুরিয়ার সেটআপ করা অবস্থায় ওয়েবসাইট হাতে পাবেন।',
+    'trust1' => '৳৬,৯৯৯ থেকে শুরু', 'trust2' => 'কোনো মাসিক চার্জ নেই', 'trust3' => 'হোয়াটসঅ্যাপে সাপোর্ট',
+    'cta_title' => 'আজ অর্ডার করুন, কাল থেকে বিক্রি শুরু', 'cta_text' => 'প্রশ্ন থাকলে হোয়াটসঅ্যাপে সরাসরি কথা বলুন।',
+    'footer_text' => 'বাংলাদেশের ছোট ও মাঝারি অনলাইন ব্যবসার জন্য দ্রুত, সাশ্রয়ী ই-কমার্স ওয়েবসাইট।',
+    'whatsapp' => '', 'phone' => '', 'email' => 'hello@techill.top', 'hours' => 'সকাল ১০টা থেকে রাত ১০টা', 'address' => '',
+    'facebook' => '', 'instagram' => '', 'youtube' => '',
+    'company' => 'Techill · by RedBolt IT', 'invoice_note' => 'Techill-এর সাথে কাজ করার জন্য ধন্যবাদ। কোনো প্রশ্ন থাকলে আমাদের সাথে যোগাযোগ করুন।',
+];
+
+function site_settings(bool $reload = false): array { return settings_load('site', SITE_DEFAULTS, $reload); }
+
+// Square PNG icon from an uploaded image (centred, transparent padding), stored in media/.
+function save_icon(string $tmp, int $size): string {
+    $src = @imagecreatefromstring((string)file_get_contents($tmp));
+    if (!$src) fail('ছবিটা পড়া যায়নি, অন্য একটা PNG বা JPG দিন।');
+    [$w, $h] = [imagesx($src), imagesy($src)];
+    $dst = imagecreatetruecolor($size, $size);
+    imagealphablending($dst, false); imagesavealpha($dst, true);
+    imagefill($dst, 0, 0, imagecolorallocatealpha($dst, 0, 0, 0, 127));
+    imagealphablending($dst, true);
+    $scale = $size / max($w, $h); $dw = (int)round($w * $scale); $dh = (int)round($h * $scale);
+    imagecopyresampled($dst, $src, intdiv($size - $dw, 2), intdiv($size - $dh, 2), 0, 0, $dw, $dh, $w, $h);
+    $name = 'media/' . bin2hex(random_bytes(16)) . '.png';
+    if (!is_dir(__DIR__ . '/media')) @mkdir(__DIR__ . '/media', 0755, true);
+    imagesavealpha($dst, true);
+    $ok = imagepng($dst, __DIR__ . '/' . $name, 9);
+    imagedestroy($src); imagedestroy($dst);
+    if (!$ok) fail('আইকন সেভ করা যায়নি।', 500);
+    return $name;
+}
+
 /* ---------- order emails ---------- */
 
 const STAGE_NAMES = ['তথ্য জমা', 'পেমেন্ট যাচাই', 'সেটআপ চলছে', 'রিভিউ', 'ডেলিভারি'];

@@ -94,6 +94,94 @@ window.TechillAPI = (() => {
       probe("ব্রাউজার → DNS: Cloudflare", "https://cloudflare-dns.com/dns-query?name=google.com&type=NS&ct=application/dns-json", c => c === 200)]);
   }
 
+  /* ---------- favicon (demo) ---------- */
+  // Square PNG data URL from an image file, centred with transparent padding.
+  function iconData(file, size) {
+    return new Promise((res, rej) => {
+      const img = new Image(), url = URL.createObjectURL(file);
+      img.onload = () => { const c = document.createElement("canvas"); c.width = c.height = size; const k = size / Math.max(img.width, img.height), w = img.width * k, h = img.height * k;
+        c.getContext("2d").drawImage(img, (size - w) / 2, (size - h) / 2, w, h); URL.revokeObjectURL(url); res(c.toDataURL("image/png")); };
+      img.onerror = () => rej(Object.assign(new Error("ছবিটা পড়া যায়নি, অন্য একটা PNG বা JPG দিন।"), {status: 400}));
+      img.src = url;
+    });
+  }
+
+  /* ---------- invoice (shared by the customer dashboard and the admin panel) ---------- */
+  const INV_CSS = `
+.tinv{letter-spacing:0;background:#fff;color:#121822;font-family:"Tiro Bangla","Noto Serif Bengali",Georgia,serif;width:100%;max-width:794px;margin:0 auto;padding:44px 48px 36px;border-radius:16px;position:relative;overflow:hidden;font-size:15px;line-height:1.55}
+.tinv *{box-sizing:border-box}
+.tinv::before{content:"";position:absolute;left:0;right:0;top:0;height:6px;background:linear-gradient(90deg,#0a84f0,#12a150,#a54bb8)}
+.tinv .ih{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding-bottom:22px;border-bottom:1px solid #e1e7ef}
+.tinv .ih img{height:44px;width:auto;display:block}
+.tinv .co{margin-top:10px;font-size:12.5px;color:#5a6578;line-height:1.6}
+.tinv .it{text-align:right}
+.tinv .it h2{margin:0;font-size:30px;color:#0759b8;font-weight:700}
+.tinv .it .no{font-weight:700;font-size:14px;margin-top:2px}
+.tinv .it .dt{color:#5a6578;font-size:13px}
+.tinv .st{display:inline-block;margin-top:8px;border:2px solid currentColor;border-radius:8px;padding:1px 12px;font-weight:700;font-size:13px;}
+.tinv .st.paid{color:#12a150}.tinv .st.due{color:#b26a00}.tinv .st.void{color:#d93025}
+.tinv .im{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:22px 0}
+.tinv .im div{background:#f6f9fd;border:1px solid #e8eef6;border-radius:12px;padding:14px 16px;font-size:13.5px}
+.tinv .im h4{margin:0 0 6px;font-size:11.5px;color:#5a6578}
+.tinv .im b{font-size:15px}
+.tinv table{width:100%;border-collapse:collapse}
+.tinv th{text-align:left;font-size:11.5px;color:#5a6578;padding:10px 12px;background:#f6f9fd;border-bottom:1px solid #e1e7ef}
+.tinv td{padding:11px 12px;border-bottom:1px solid #eef3f9;vertical-align:top}
+.tinv td.n{width:34px;color:#8a94a6}
+.tinv .r{text-align:right;white-space:nowrap}
+.tinv .neg{color:#12a150}
+.tinv .tot{display:flex;justify-content:flex-end;margin-top:14px}
+.tinv .tot div{min-width:260px;display:grid;gap:6px;font-size:14px}
+.tinv .tot p{margin:0;display:flex;justify-content:space-between;gap:16px}
+.tinv .tot .g{border-top:2px solid #121822;padding-top:10px;font-size:19px;font-weight:700}
+.tinv .pay{margin-top:22px;padding:12px 16px;border-radius:12px;background:#f6f9fd;border:1px dashed #cdd8e6;font-size:13.5px}
+.tinv .nt{margin-top:22px;font-size:13px;color:#5a6578}
+.tinv .ft{margin-top:26px;padding-top:14px;border-top:1px solid #e1e7ef;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:12px;color:#8a94a6}
+@media (max-width:600px){.tinv{padding:28px 20px}.tinv .ih{flex-direction:column}.tinv .it{text-align:left}.tinv .im{grid-template-columns:1fr}}`;
+  function invStyle() { if (!document.getElementById("tinvCss")) { const st = document.createElement("style"); st.id = "tinvCss"; st.textContent = INV_CSS; document.head.appendChild(st); } }
+  const bnN = n => String(n).replace(/\d/g, d => "০১২৩৪৫৬৭৮৯"[d]);
+  const tkN = n => "৳" + bnN(Math.round(n).toLocaleString("en-IN"));
+  const escH = x => String(x ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+  const PAYN = {bKash: "বিকাশ", Nagad: "নগদ", Rocket: "রকেট", PayStation: "অনলাইন (PayStation)"};
+  // o: an order as the API returns it; cust: {name, email, phone} of the buyer; site: site settings.
+  function invoiceHTML(o, cust, site) {
+    invStyle(); site = {...SITE_DEF, ...(site || {})}; cust = cust || {};
+    const i = o.info || {}, paid = o.pay_status === "verified" && !o.cancelled;
+    const d = new Date((o.created || 0) * 1000).toLocaleDateString("bn-BD", {year: "numeric", month: "long", day: "numeric"});
+    const lines = o.lines || [], sub = lines.filter(l => l.amt > 0).reduce((a, l) => a + l.amt, 0), disc = lines.filter(l => l.amt < 0).reduce((a, l) => a + l.amt, 0);
+    const contact = [site.address, [site.phone, site.whatsapp && "WhatsApp +" + bnN(site.whatsapp)].filter(Boolean).join(" · "), site.email].filter(Boolean).map(escH).join("<br>");
+    return `<article class="tinv">
+      <div class="ih"><div><img src="assets/logo-light.png" alt="${escH(site.name)}" crossorigin="anonymous"><div class="co"><b>${escH(site.company || site.name)}</b>${contact ? "<br>" + contact : ""}</div></div>
+        <div class="it"><h2>ইনভয়েস</h2><div class="no">#${escH(o.code)}</div><div class="dt">${d}</div><span class="st ${o.cancelled ? "void" : paid ? "paid" : "due"}">${o.cancelled ? "বাতিল" : paid ? "পরিশোধিত" : "যাচাই বাকি"}</span></div></div>
+      <div class="im">
+        <div><h4>বিল প্রাপক</h4><b>${escH(i.admin_name || cust.name || "")}</b><br>${escH(i.phone || cust.phone || "")}${cust.email ? "<br>" + escH(cust.email) : ""}${i.address ? "<br>" + escH(i.address) : ""}</div>
+        <div><h4>প্রোজেক্ট</h4>${o.domain ? `<b>${escH(o.domain)}</b><br>` : ""}${escH(o.stack)} · ${escH(o.pack)} প্যাকেজ<br>টেমপ্লেট: ${escH(o.template)}<br>ডেলিভারি: ${bnN(o.hours)} ঘণ্টা · ${bnN(o.products)}টা প্রোডাক্ট</div>
+      </div>
+      <table><thead><tr><th>#</th><th>বিবরণ</th><th class="r">টাকা</th></tr></thead><tbody>
+        ${lines.map((l, k) => `<tr><td class="n">${bnN(k + 1)}</td><td>${escH(l.label)}</td><td class="r${l.amt < 0 ? " neg" : ""}">${l.amt < 0 ? "−" : ""}${tkN(Math.abs(l.amt))}</td></tr>`).join("")}
+      </tbody></table>
+      <div class="tot"><div><p><span>সাবটোটাল</span><span>${tkN(sub)}</span></p>${disc ? `<p><span>ছাড়</span><span class="neg">−${tkN(-disc)}</span></p>` : ""}<p class="g"><span>মোট</span><span>${tkN(o.total)}</span></p></div></div>
+      <div class="pay"><b>পেমেন্ট:</b> ${escH(PAYN[o.pay_method] || o.pay_method || "")}${o.pay_sender ? " · " + escH(o.pay_sender) : ""}${o.pay_trx ? " · TrxID " + escH(o.pay_trx) : ""}</div>
+      ${site.invoice_note ? `<p class="nt">${escH(site.invoice_note)}</p>` : ""}
+      <div class="ft"><span>${escH(site.name)}${site.email ? " · " + escH(site.email) : ""}</span><span>সব দাম বাংলাদেশি টাকায় · কম্পিউটারে তৈরি ইনভয়েস, স্বাক্ষর লাগে না</span></div>
+    </article>`;
+  }
+  // Downloads the rendered invoice as a PDF. html2pdf.js (html2canvas + jsPDF) renders the page as
+  // the browser draws it, so Bangla text keeps its shaping (no letter-spacing in INV_CSS: it makes
+  // html2canvas draw letter by letter and breaks conjuncts). Falls back to the print dialog offline.
+  let pdfLib = null;
+  async function invoicePDF(el, filename) {
+    try {
+      pdfLib = pdfLib || await new Promise((res, rej) => { if (window.html2pdf) return res(window.html2pdf);
+        const sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+        sc.onload = () => window.html2pdf ? res(window.html2pdf) : rej(); sc.onerror = rej; document.head.appendChild(sc); });
+      if (document.fonts && document.fonts.ready) await document.fonts.ready;
+      await pdfLib().set({margin: [8, 8, 8, 8], filename, image: {type: "jpeg", quality: 0.96}, html2canvas: {scale: 2, useCORS: true, backgroundColor: "#ffffff"},
+        jsPDF: {unit: "mm", format: "a4", orientation: "portrait"}, pagebreak: {mode: ["avoid-all"]}}).from(el).save();
+      return true;
+    } catch (e) { print(); return false; }
+  }
+
   /* ---------- visitor id ---------- */
   const vid = (() => {
     try { let v = localStorage.getItem("techill_vid"); if (!/^[a-f0-9]{32}$/.test(v || "")) { v = [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, "0")).join(""); localStorage.setItem("techill_vid", v); } return v; }
@@ -142,6 +230,10 @@ window.TechillAPI = (() => {
   const otpRequired = () => emailReady() && !!demoEmail().otp_required;
   const SUP_DEF = {enabled: true, messenger: "techillbd", whatsapp: "8801700000000", wa_text: "আসসালামু আলাইকুম, Techill-এর প্যাকেজ নিয়ে জানতে চাই।", tawk_property: "demo", tawk_widget: "default", on_dashboard: false, greeting: "প্যাকেজ নিয়ে প্রশ্ন? সরাসরি কথা বলুন"};
   const demoSupport = () => ({...SUP_DEF, ...(ls.get(SUPKEY) || {})});
+  // Same defaults as SITE_DEFAULTS in lib.php.
+  const SITE_DEF = {"name": "Techill", "favicon": null, "favicon_sm": null, "seo_title": "Techill — ২৪ ঘণ্টায় আপনার অনলাইন দোকান", "seo_desc": "২৪ ঘণ্টায় আপনার নিজের অনলাইন দোকান। WooCommerce ও Laravel ই-কমার্স ওয়েবসাইট, COD, বিকাশ, কুরিয়ার আর Pixel সেটআপ সহ।", "hero_eyebrow": "বাংলাদেশের অনলাইন ব্যবসার জন্য", "hero_title": "মাত্র ২৪ ঘণ্টায় আপনার নিজের", "hero_highlight": "অনলাইন দোকান", "hero_sub": "ফেসবুক ইনবক্সে অর্ডার নেওয়ার ঝামেলা শেষ। টেমপ্লেট বাছুন, তথ্য দিন, বাকিটা আমাদের। COD, বিকাশ আর কুরিয়ার সেটআপ করা অবস্থায় ওয়েবসাইট হাতে পাবেন।", "trust1": "৳৬,৯৯৯ থেকে শুরু", "trust2": "কোনো মাসিক চার্জ নেই", "trust3": "হোয়াটসঅ্যাপে সাপোর্ট", "cta_title": "আজ অর্ডার করুন, কাল থেকে বিক্রি শুরু", "cta_text": "প্রশ্ন থাকলে হোয়াটসঅ্যাপে সরাসরি কথা বলুন।", "footer_text": "বাংলাদেশের ছোট ও মাঝারি অনলাইন ব্যবসার জন্য দ্রুত, সাশ্রয়ী ই-কমার্স ওয়েবসাইট।", "whatsapp": "", "phone": "", "email": "hello@techill.top", "hours": "সকাল ১০টা থেকে রাত ১০টা", "address": "", "facebook": "", "instagram": "", "youtube": "", "company": "Techill · by RedBolt IT", "invoice_note": "Techill-এর সাথে কাজ করার জন্য ধন্যবাদ। কোনো প্রশ্ন থাকলে আমাদের সাথে যোগাযোগ করুন।"};
+  const SITEKEY = "techill_demo_site";
+  const demoSite = () => ({...SITE_DEF, ...(ls.get(SITEKEY) || {})});
   const REF_DEF = {enabled: true, reward: 1000, discount: 1000, min_order: 5000, trigger: "delivered", payout_min: 1000, first_order_only: true};
   const demoRef = () => ({...REF_DEF, ...(ls.get(RKEY) || {})});
   const demoMarketing = () => ls.get(MKEY) || {pixel_enabled: false, pixel_id: "", capi_token: "", test_code: "", capi_last: null};
@@ -585,7 +677,18 @@ window.TechillAPI = (() => {
     },
     async logout() { ls.del(SKEY); return {}; },
     async catalog() { const m = demoMarketing(); return {catalog: await demoCatalog(), payments: publicPay(), pixel: m.pixel_enabled && m.pixel_id ? {id: m.pixel_id} : null,
-      support: await publicSupport(), referral: publicReferral(), auth: {email: emailReady(), otp: otpRequired()}}; },
+      support: await publicSupport(), referral: publicReferral(), site: demoSite(), auth: {email: emailReady(), otp: otpRequired()}}; },
+    async site_save(f) {
+      const d = load(); needAdmin(d); const s = demoSite();
+      for (const k of ["name","seo_title","seo_desc","hero_eyebrow","hero_title","hero_highlight","hero_sub","trust1","trust2","trust3","cta_title","cta_text","footer_text","hours","address","company","invoice_note","phone"]) s[k] = String(f[k] ?? "").trim();
+      if (!s.name || !s.hero_title || !s.hero_highlight) bad("সাইটের নাম আর হিরো শিরোনাম ফাঁকা রাখা যাবে না।");
+      const em = String(f.email || "").trim().toLowerCase(); if (em && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) bad("যোগাযোগের ইমেইল সঠিক নয়।"); s.email = em;
+      let wa = digits(f.whatsapp); if (wa) { if (/^01[3-9]\d{8}$/.test(wa)) wa = "88" + wa; if (!/^\d{8,15}$/.test(wa)) bad("হোয়াটসঅ্যাপ নম্বর সঠিক নয় (যেমন 01712345678)।"); } s.whatsapp = wa;
+      for (const k of ["facebook","instagram","youtube"]) { let u = String(f[k] || "").trim(); if (u && !/^https?:\/\//i.test(u)) u = "https://" + u; s[k] = u; }
+      ls.set(SITEKEY, s); return {site: demoSite()};
+    },
+    async favicon_upload({big, small}) { const d = load(); needAdmin(d); const s = demoSite(); s.favicon = big; s.favicon_sm = small; ls.set(SITEKEY, s); return {site: demoSite()}; },
+    async favicon_reset() { const d = load(); needAdmin(d); const s = demoSite(); s.favicon = s.favicon_sm = null; ls.set(SITEKEY, s); return {site: demoSite()}; },
     async avatar_upload({file, user_id}) {
       const d = load(), u = needUser(d), id = +user_id || u.id;
       if (id !== u.id && !isAdmin(u)) bad("অন্যের ছবি বদলানো যায় না।", 403);
@@ -1146,6 +1249,21 @@ window.TechillAPI = (() => {
     emailTest: to => run("email_test", {to}, () => post("email_test", {to: to || ""})),
     supportSettings: () => run("support_settings", {}, () => http("support_settings")),
     saveSupport: data => run("support_save", data, () => post("support_save", data)),
+    saveSite: data => run("site_save", data, () => post("site_save", data)),
+    async faviconUpload(file) {
+      if (demo) return run("favicon_upload", {big: await iconData(file, 192), small: await iconData(file, 32)}, null);
+      return post("favicon_upload", {favicon: file});
+    },
+    faviconReset: () => run("favicon_reset", {}, () => post("favicon_reset", {})),
+    // Puts the admin's favicon on the current page (the static assets/favicon.png stays as the fallback).
+    applyFavicon(site) {
+      if (!site) return;
+      const set = (rel, href, sizes) => { let l = document.querySelector(`link[rel="${rel}"]${sizes ? `[sizes="${sizes}"]` : ""}`);
+        if (!l) { l = document.createElement("link"); l.rel = rel; if (sizes) l.sizes = sizes; document.head.appendChild(l); } l.href = href; };
+      if (site.favicon_sm) set("icon", site.favicon_sm);
+      if (site.favicon) set("apple-touch-icon", site.favicon);
+    },
+    invoiceHTML, invoicePDF,
     // Names the server could not answer for (registry down, host blocks outbound calls) are retried from the browser.
     domainCheck: async (stack, pack, name) => {
       const r = await run("domain_check", {stack, pack, name}, () => http("domain_check", {params: {stack, pack, name}}));
@@ -1205,7 +1323,7 @@ window.TechillAPI = (() => {
       this.track("view", {r: document.referrer, u, tz});
       setInterval(() => { if (!document.hidden) this.track("ping"); }, 30000);
     },
-    resetDemo() { [KEY, SKEY, CKEY, PKEY, MKEY, EKEY, SUPKEY, RKEY].forEach(k => ls.del(k)); },
+    resetDemo() { [KEY, SKEY, CKEY, PKEY, MKEY, EKEY, SUPKEY, RKEY, SITEKEY].forEach(k => ls.del(k)); },
     supportWidget
   };
 })();

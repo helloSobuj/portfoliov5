@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Techill অ্যাডমিন</title>
+<link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tiro+Bangla:ital@0;1&display=swap">
@@ -197,6 +199,23 @@ table.tbl{width:100%;border-collapse:collapse;font-size:.9rem}
 
 /* drawer */
 .drawer-bg{position:fixed;inset:0;background:rgb(8 12 20 / .45);z-index:40}
+/* invoice modal */
+.modal{position:fixed;inset:0;z-index:60;background:rgb(10 14 22 / .55);display:grid;place-items:start center;overflow-y:auto;padding:32px 16px}
+.modal[hidden]{display:none}
+.inv-wrap{width:100%;max-width:820px}
+.inv-acts{display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+@media print{body > *:not(#invModal){display:none!important}#invModal{position:static;background:none;padding:0;display:block}.inv-acts{display:none}.tinv{border-radius:0}}
+/* site settings */
+.ss-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+.ss-grid .card{display:grid;gap:12px;align-content:start}
+.ss-grid .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fav{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.fav-prev{display:flex;align-items:center;gap:10px}
+.fav-prev img{width:64px;height:64px;border-radius:14px;border:1px solid var(--line);background:repeating-conic-gradient(var(--sunk) 0 25%,var(--surface) 0 50%) 0 0/12px 12px;object-fit:contain}
+.fav-tab{display:flex;align-items:center;gap:8px;background:var(--sunk);border:1px solid var(--line);border-radius:10px 10px 0 0;padding:6px 12px;font-size:.82rem;max-width:220px}
+.fav-tab img{width:16px;height:16px}
+.ss-save{position:sticky;bottom:12px;z-index:5;display:flex;gap:10px;align-items:center;justify-content:flex-end;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 14px;box-shadow:var(--shadow);margin-top:18px}
+@media (max-width:900px){.ss-grid{grid-template-columns:1fr}.ss-grid .two{grid-template-columns:1fr}}
 .drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100%);background:var(--bg);z-index:41;overflow-y:auto;box-shadow:var(--shadow);border-left:1px solid var(--line)}
 .dr-h{position:sticky;top:0;background:var(--surface);border-bottom:1px solid var(--line);padding:16px 20px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;z-index:2}
 .dr-h h2{font-size:1.3rem;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -346,10 +365,16 @@ textarea.inp{resize:vertical;min-height:84px}
 
 <div class="drawer-bg" id="drawerBg" hidden></div>
 <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drTitle" hidden></aside>
+<div class="modal" id="invModal" role="dialog" aria-modal="true" aria-label="ইনভয়েস" hidden>
+  <div class="inv-wrap">
+    <div class="inv-acts"><button class="btn btn-primary btn-sm" type="button" id="invPdf">PDF ডাউনলোড</button><button class="btn btn-ghost btn-sm" type="button" id="invPrint">প্রিন্ট</button><button class="btn btn-ghost btn-sm" type="button" id="invClose">বন্ধ করুন</button></div>
+    <div id="inv"></div>
+  </div>
+</div>
 <div class="tip" id="tip" hidden></div>
 <div class="toast" id="toast" role="status" hidden></div>
 
-<script src="assets/api.js?v=12"></script>
+<script src="assets/api.js?v=13"></script>
 <script>
 const api = window.TechillAPI;
 const $ = id => document.getElementById(id);
@@ -385,6 +410,7 @@ const pstat = st => `<span class="badge ${(PSTAT[st] || ["", "b-off"])[1]}">${(P
 const DEV = {mobile: "মোবাইল", desktop: "ডেস্কটপ", tablet: "ট্যাবলেট"};
 const ic = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 const I = {
+  site: ic('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/>'),
   home: ic('<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/>'),
   orders: ic('<path d="M6 3h12l2 4v13H4V7z"/><path d="M4 7h16M9 11h6"/>'),
   board: ic('<rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="10" rx="1.5"/><rect x="17" y="4" width="4" height="13" rx="1.5"/>'),
@@ -407,11 +433,12 @@ const I = {
   support: ic('<path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="2.5" y="12.5" width="4" height="6" rx="1.6"/><rect x="17.5" y="12.5" width="4" height="6" rx="1.6"/><path d="M19.5 18.5c0 1.6-2.2 2.5-5.5 2.5h-1.5"/>'),
   gift: ic('<rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M12 8c-1.5-3-5-3.5-5-1.2C7 8 12 8 12 8zm0 0c1.5-3 5-3.5 5-1.2C17 8 12 8 12 8z"/>')
 };
-const SECTIONS = [["overview", "ওভারভিউ", I.home], ["orders", "অর্ডার", I.orders], ["board", "প্রোজেক্ট বোর্ড", I.board], ["analytics", "অ্যানালিটিক্স", I.chart], ["catalog", "প্যাকেজ ও দাম", I.catalog], ["payments", "পেমেন্ট গেটওয়ে", I.money], ["email", "ইমেইল", I.mail], ["marketing", "Facebook Pixel", I.fb], ["support", "সাপোর্ট বাটন", I.support], ["referral", "রেফারেল", I.gift], ["customers", "কাস্টমার", I.customers], ["team", "টিম ও ডেভেলপার", I.team]];
+const SECTIONS = [["overview", "ওভারভিউ", I.home], ["orders", "অর্ডার", I.orders], ["board", "প্রোজেক্ট বোর্ড", I.board], ["analytics", "অ্যানালিটিক্স", I.chart], ["catalog", "প্যাকেজ ও দাম", I.catalog], ["site", "সাইট সেটিং", I.site], ["payments", "পেমেন্ট গেটওয়ে", I.money], ["email", "ইমেইল", I.mail], ["marketing", "Facebook Pixel", I.fb], ["support", "সাপোর্ট বাটন", I.support], ["referral", "রেফারেল", I.gift], ["customers", "কাস্টমার", I.customers], ["team", "টিম ও ডেভেলপার", I.team]];
 
 let me = null, sec = "overview", days = 30, stats = null, orders = [], team = [], customers = [], cat = null, draft = null, dirty = false;
 let oFilter = "all", oQuery = "", oStack = "", boardDev = "", custQ = "", custF = "all", edStack = "woo", drawerId = null;
 let an = null, aDays = 30, aTab = "visitors";
+let siteSet = null, SITE = null;
 let pset = null, plist = null, ptest = null, mset = null, mtest = null, eset = null, etest = null, sset = null, rdata = null, rFilter = "all";
 let regionName = c => c;
 try { const dn = new Intl.DisplayNames(["bn"], {type: "region"}); regionName = c => { try { return dn.of(c) || c; } catch(e){ return c; } }; } catch(e){}
@@ -483,6 +510,7 @@ function go(s){
   if (s === "analytics") loadAnalytics();
   if (s === "payments") loadPayments();
   if (s === "email") api.emailSettings().then(r => { eset = r.settings; if (sec === "email") render(); }).catch(e => toast(e.message));
+  if (s === "site") api.catalog().then(r => { siteSet = r.site; if (sec === "site") render(); }).catch(e => toast(e.message));
   if (s === "support") api.supportSettings().then(r => { sset = r.settings; if (sec === "support") render(); }).catch(e => toast(e.message));
   if (s === "referral") api.referralAdmin().then(r => { rdata = r; if (sec === "referral") render(); }).catch(e => toast(e.message));
   if (s === "marketing") api.marketingSettings().then(r => { mset = r.settings; if (sec === "marketing") render(); }).catch(e => toast(e.message));
@@ -496,7 +524,7 @@ $("livePill").addEventListener("click", () => { aTab = "visitors"; go("analytics
 function render(){
   const m = $("main");
   if (!stats){ m.innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; return; }
-  ({overview: renderOverview, orders: renderOrders, board: renderBoard, analytics: renderAnalytics, catalog: renderCatalog, payments: renderPayments, marketing: renderMarketing, email: renderEmail, support: renderSupport, referral: renderReferral, team: renderTeam, customers: renderCustomers})[sec]();
+  ({overview: renderOverview, orders: renderOrders, board: renderBoard, analytics: renderAnalytics, catalog: renderCatalog, payments: renderPayments, marketing: renderMarketing, email: renderEmail, support: renderSupport, site: renderSite, referral: renderReferral, team: renderTeam, customers: renderCustomers})[sec]();
 }
 const rangeSeg = () => `<div class="seg" role="group" aria-label="সময়সীমা">${[7, 30, 90].map(d => `<button type="button" data-days="${d}" aria-pressed="${days === d}">${BN(d)} দিন</button>`).join("")}</div>`;
 $("main").addEventListener("click", async e => {
@@ -687,7 +715,7 @@ function renderDrawer(d){
   $("drawer").innerHTML = `
     <div class="dr-h"><div><h2 id="drTitle" style="word-break:break-all">${esc(pname(o))} ${statusBadge(o)}</h2><p>${o.domain ? esc(o.code) + " · " : ""}${esc(o.pack)} · ${esc(o.stack)} · ${esc(o.template)}</p></div><button class="icon-btn" type="button" id="drClose" aria-label="বন্ধ করুন">${ic('<path d="M6 6l12 12M18 6L6 18"/>')}</button></div>
     <div class="dr-b">
-      <div class="row2"><a class="btn btn-primary btn-sm" href="dashboard.html#o=${o.id}">চ্যাট ও অগ্রগতি আপডেট</a>${wa ? `<a class="btn btn-ghost btn-sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">হোয়াটসঅ্যাপ</a>` : ""}${o.site_url ? `<a class="btn btn-ghost btn-sm" href="${esc(o.site_url)}" target="_blank" rel="noopener noreferrer">সাইট ↗</a>` : ""}</div>
+      <div class="row2"><a class="btn btn-primary btn-sm" href="dashboard.html#o=${o.id}">চ্যাট ও অগ্রগতি আপডেট</a><button class="btn btn-ghost btn-sm" type="button" id="drInv">ইনভয়েস</button>${wa ? `<a class="btn btn-ghost btn-sm" href="https://wa.me/${wa}" target="_blank" rel="noopener">হোয়াটসঅ্যাপ</a>` : ""}${o.site_url ? `<a class="btn btn-ghost btn-sm" href="${esc(o.site_url)}" target="_blank" rel="noopener noreferrer">সাইট ↗</a>` : ""}</div>
       <div class="box"><h4>অগ্রগতি · ${BN(o.progress)}%</h4><div class="mini" style="width:100%;height:8px"><i style="width:${o.progress}%"></i></div>
         <dl class="kv" style="margin-top:12px"><dt>ধাপ</dt><dd>${STAGES[o.stage]}</dd><dt>ডেলিভারি</dt><dd class="${isLate(o) ? "late" : ""}">${when(o.deadline)}${o.stage < 4 && !o.cancelled ? " · " + left(o.deadline) : ""}</dd><dt>অর্ডারের সময়</dt><dd>${when(o.created)}</dd></dl></div>
       <div class="box"><h4>ডেভেলপার</h4><select class="inp" data-assign="${o.id}" ${o.cancelled ? "disabled" : ""}>${devOptions(o.developer?.id)}</select></div>
@@ -717,6 +745,7 @@ function renderDrawer(d){
         ${d.messages.length ? `<p style="font-size:.88rem;margin-top:8px"><b>সর্বশেষ:</b> ${esc(d.messages[d.messages.length - 1].body).slice(0, 160)}</p>` : ""}</div>
     </div>`;
   $("drClose").addEventListener("click", closeDrawer); $("drClose").focus();
+  $("drInv").addEventListener("click", () => showInvoice(o, o.customer));
   $("drawer").querySelectorAll("[data-doc]").forEach(b => b.addEventListener("click", () => {
     const url = api.fileUrl(b.dataset.doc);
     if (!url) return toast("ডেমো মোডে বড় ফাইল সেভ হয় না। আসল সার্ভারে খুলবে।");
@@ -1249,6 +1278,96 @@ function renderEmail(){
 
 /* ---------- floating support button ---------- */
 const SUPCH = [["support_open", "বাটন খুলেছেন"], ["support_whatsapp", "WhatsApp"], ["support_messenger", "Messenger"], ["support_tawk", "লাইভ চ্যাট"]];
+/* ---------- site settings ---------- */
+function renderSite(){
+  if (!siteSet){ $("main").innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; return; }
+  const s = siteSet, v = k => esc(s[k] || "");
+  const inp = (k, label, ph = "", type = "text", max = 120) => `<div class="f"><label for="ss-${k}">${label}</label><input class="inp" id="ss-${k}" name="${k}" type="${type}" maxlength="${max}" value="${v(k)}" placeholder="${esc(ph)}"></div>`;
+  const ta = (k, label, max = 400, rows = 3) => `<div class="f"><label for="ss-${k}">${label}</label><textarea class="inp" id="ss-${k}" name="${k}" maxlength="${max}" rows="${rows}">${v(k)}</textarea></div>`;
+  const fav = s.favicon || "assets/favicon.png", favSm = s.favicon_sm || "assets/favicon-32.png";
+  $("main").innerHTML = `
+    <div class="sec-h"><div><h1>সাইট সেটিং</h1><p>ফেভিকন, হোমপেজের লেখা, যোগাযোগের তথ্য আর ইনভয়েসের তথ্য। সেভ করলে সাথে সাথে সাইটে দেখাবে।</p></div>
+      <div class="tools"><a class="btn btn-ghost btn-sm" href="index.html" target="_blank" rel="noopener">সাইটে দেখুন ↗</a></div></div>
+    <div class="card" style="margin-bottom:18px">
+      <div class="ch" style="margin:0 0 10px"><h3>ফেভিকন (ব্রাউজার ট্যাবের আইকন)</h3></div>
+      <div class="fav">
+        <div class="fav-prev"><img src="${esc(fav)}" alt="ফেভিকন"><div><div class="fav-tab"><img src="${esc(favSm)}" alt=""><span>${v("seo_title") || v("name")}</span></div><small class="muted" style="font-size:.8rem">${s.favicon ? "আপনার আপলোড করা আইকন" : "ডিফল্ট Techill আইকন"}</small></div></div>
+        <div class="row2" style="flex-wrap:wrap;gap:8px"><label class="btn btn-primary btn-sm" style="cursor:pointer">নতুন আইকন আপলোড<input type="file" id="favFile" accept="image/png,image/jpeg,image/webp,image/gif" hidden></label>${s.favicon ? '<button class="btn btn-ghost btn-sm" type="button" id="favReset">ডিফল্টে ফেরান</button>' : ""}</div>
+        <small class="muted" style="font-size:.82rem;flex-basis:100%">বর্গাকার PNG দিন, ৫১২×৫১২ পিক্সেল সবচেয়ে ভালো। সার্ভার নিজেই ৩২ আর ১৯২ পিক্সেলের আইকন বানিয়ে নেবে।</small>
+      </div>
+    </div>
+    <form id="siteForm" novalidate>
+    <div class="ss-grid">
+      <div class="card"><h3>হোমপেজের লেখা</h3>
+        ${inp("hero_eyebrow", "উপরের ছোট লেখা", "", "text", 80)}
+        <div class="two">${inp("hero_title", "শিরোনাম", "", "text", 80)}${inp("hero_highlight", "শিরোনামের নীল অংশ", "", "text", 60)}</div>
+        ${ta("hero_sub", "শিরোনামের নিচের লেখা", 400, 3)}
+        <div class="two">${inp("trust1", "টিক চিহ্ন ১", "", "text", 50)}${inp("trust2", "টিক চিহ্ন ২", "", "text", 50)}</div>
+        ${inp("trust3", "টিক চিহ্ন ৩", "", "text", 50)}
+        ${inp("cta_title", "শেষের ব্যানারের শিরোনাম", "", "text", 100)}
+        ${inp("cta_text", "শেষের ব্যানারের লেখা", "", "text", 200)}
+        ${ta("footer_text", "ফুটারের পরিচিতি", 300, 2)}
+      </div>
+      <div style="display:grid;gap:18px">
+        <div class="card"><h3>যোগাযোগের তথ্য</h3>
+          <div class="two">${inp("whatsapp", "WhatsApp নম্বর", "01712345678", "tel", 30)}${inp("phone", "ফোন নম্বর", "01712345678", "tel", 30)}</div>
+          <div class="two">${inp("email", "ইমেইল", "hello@techill.top", "email", 190)}${inp("hours", "খোলার সময়", "সকাল ১০টা থেকে রাত ১০টা", "text", 80)}</div>
+          ${ta("address", "ঠিকানা", 300, 2)}
+          ${inp("facebook", "Facebook পেজের লিংক", "https://facebook.com/techillbd", "url", 255)}
+          <div class="two">${inp("instagram", "Instagram লিংক", "", "url", 255)}${inp("youtube", "YouTube লিংক", "", "url", 255)}</div>
+          <small class="muted" style="font-size:.82rem">WhatsApp নম্বর দিলে হোমপেজ আর ফুটারের সব WhatsApp বাটন এটাতেই যাবে। ফুটারে শুধু যেগুলো পূরণ করবেন সেগুলোই দেখাবে।</small>
+        </div>
+        <div class="card"><h3>ইনভয়েস</h3>
+          ${inp("company", "প্রতিষ্ঠানের নাম (ইনভয়েসের উপরে)", "Techill · by RedBolt IT", "text", 120)}
+          ${ta("invoice_note", "ইনভয়েসের নিচের নোট", 400, 2)}
+          <button class="btn btn-ghost btn-sm" type="button" id="invSample" style="justify-self:start">নমুনা ইনভয়েস দেখুন</button>
+        </div>
+        <div class="card"><h3>সার্চ ইঞ্জিন (SEO)</h3>
+          ${inp("name", "সাইটের নাম", "Techill", "text", 60)}
+          ${inp("seo_title", "পেজের টাইটেল (ব্রাউজার ট্যাবে)", "", "text", 90)}
+          ${ta("seo_desc", "পেজের বিবরণ (Google-এ দেখায়)", 300, 2)}
+        </div>
+      </div>
+    </div>
+    <div class="ss-save"><p class="err" id="ssErr" role="alert" style="margin:0 auto 0 0"></p><button class="btn btn-primary" type="submit">সেভ করুন</button></div>
+    </form>`;
+  $("siteForm").addEventListener("submit", async ev => {
+    ev.preventDefault(); $("ssErr").textContent = "";
+    const b = ev.target.querySelector("button[type=submit]"); b.disabled = true;
+    try { siteSet = SITE = (await api.saveSite(Object.fromEntries(new FormData(ev.target)))).site; api.applyFavicon(SITE); renderSite(); toast("সেভ হয়েছে। সাইটে নতুন লেখা দেখাচ্ছে।"); }
+    catch(err){ $("ssErr").textContent = err.message; b.disabled = false; }
+  });
+  $("favFile").addEventListener("change", async ev => {
+    const f = ev.target.files[0]; if (!f) return;
+    try { siteSet = SITE = (await api.faviconUpload(f)).site; api.applyFavicon(SITE); renderSite(); toast("নতুন ফেভিকন বসানো হয়েছে।"); } catch(err){ toast(err.message); }
+  });
+  $("favReset")?.addEventListener("click", async () => {
+    try { siteSet = SITE = (await api.faviconReset()).site; renderSite(); toast("ডিফল্ট আইকন ফিরে এসেছে। ব্রাউজার রিফ্রেশ করলে ট্যাবে দেখাবে।"); } catch(err){ toast(err.message); }
+  });
+  $("invSample").addEventListener("click", () => {
+    const f = Object.fromEntries(new FormData($("siteForm")));
+    showInvoice({code: "TC-NAMUNA", created: Math.floor(Date.now() / 1000), stack: "WooCommerce", pack: "বিজনেস", template: "ফ্যাশন হাউস", hours: 48, products: 40, domain: "rakibfashion.com",
+      lines: [{label: "বিজনেস প্যাকেজ", amt: 11999}, {label: "কুরিয়ার API ×১", amt: 2000}, {label: "রেফারেল ছাড়", amt: -1000}], total: 12999, pay_method: "bKash", pay_sender: "01711000000", pay_trx: "AB12CD34EF", pay_status: "verified", info: {admin_name: "রাকিব হাসান", phone: "01711000000"}},
+      {name: "রাকিব হাসান", email: "rakib@example.com"}, {...siteSet, ...f});
+  });
+}
+
+/* ---------- invoice ---------- */
+let invOrder = null;
+function showInvoice(o, cust, site){
+  invOrder = o; $("inv").innerHTML = api.invoiceHTML(o, cust || o.customer || {}, site || SITE);
+  $("invModal").hidden = false; $("invPdf").focus();
+}
+$("invPdf").addEventListener("click", async () => {
+  const b = $("invPdf"); b.disabled = true; b.textContent = "PDF তৈরি হচ্ছে...";
+  await api.invoicePDF($("inv").firstElementChild, `invoice-${invOrder.code}.pdf`);
+  b.disabled = false; b.textContent = "PDF ডাউনলোড";
+});
+$("invPrint").addEventListener("click", () => print());
+$("invClose").addEventListener("click", () => $("invModal").hidden = true);
+$("invModal").addEventListener("click", e => { if (e.target.id === "invModal") $("invModal").hidden = true; });
+addEventListener("keydown", e => { if (e.key === "Escape" && !$("invModal").hidden) { $("invModal").hidden = true; e.stopPropagation(); } }, true);
+
 function renderSupport(){
   if (!sset){ $("main").innerHTML = '<p class="empty">লোড হচ্ছে...</p>'; return; }
   const s = sset, pub = s.public, c = s.clicks || {};
@@ -1522,6 +1641,7 @@ async function boot(){
 }
 (async () => {
   me = await api.init();
+  api.catalog().then(r => { SITE = r.site || null; api.applyFavicon(SITE); }).catch(() => {});
   boot();
 })();
 </script>

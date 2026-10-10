@@ -42,7 +42,7 @@ try {
         case 'info_update':  $isPost || fail('POST only', 405); info_update();
         case 'admin_update': $isPost || fail('POST only', 405); staff_update();
         case 'track':        $isPost || fail('POST only', 405); track();
-        case 'catalog':      out(['catalog' => catalog(), 'payments' => public_payments(), 'pixel' => public_pixel(), 'support' => public_support(), 'referral' => public_referral(),
+        case 'catalog':      out(['catalog' => catalog(), 'payments' => public_payments(), 'pixel' => public_pixel(), 'support' => public_support(), 'referral' => public_referral(), 'site' => site_settings(),
                                  'auth' => ['email' => email_ready(), 'otp' => otp_required()]]);
         case 'catalog_save': $isPost || fail('POST only', 405); catalog_save();
         case 'admin_stats':  admin_stats();
@@ -79,6 +79,9 @@ try {
         case 'email_save':   $isPost || fail('POST only', 405); email_save();
         case 'email_test':   $isPost || fail('POST only', 405); email_test();
         case 'support_settings': support_get();
+        case 'site_save':    $isPost || fail('POST only', 405); site_save();
+        case 'favicon_upload': $isPost || fail('POST only', 405); favicon_upload();
+        case 'favicon_reset': $isPost || fail('POST only', 405); favicon_reset();
         case 'support_save': $isPost || fail('POST only', 405); support_save();
         case 'ref_check':    ref_check();
         case 'referral':     referral_me();
@@ -1346,6 +1349,66 @@ function support_out(): array {
     foreach (q("SELECT name, COUNT(DISTINCT vid) n FROM track_events WHERE name IN ('support_open','support_messenger','support_whatsapp','support_tawk') AND created_at > UTC_TIMESTAMP() - INTERVAL 30 DAY GROUP BY name")->fetchAll() as $r) $clicks[$r['name']] = (int)$r['n'];
     return support_settings() + ['catalog_whatsapp' => preg_replace('/\D/', '', (string)(catalog()['whatsapp'] ?? '')), 'clicks' => (object)$clicks, 'public' => public_support()];
 }
+/* ---------- site settings ---------- */
+
+function site_save(): void {
+    require_admin();
+    $s = site_settings();
+    $limits = ['name' => 60, 'seo_title' => 90, 'seo_desc' => 300, 'hero_eyebrow' => 80, 'hero_title' => 80, 'hero_highlight' => 60, 'hero_sub' => 400,
+        'trust1' => 50, 'trust2' => 50, 'trust3' => 50, 'cta_title' => 100, 'cta_text' => 200, 'footer_text' => 300,
+        'hours' => 80, 'address' => 300, 'company' => 120, 'invoice_note' => 400];
+    foreach ($limits as $k => $max) $s[$k] = str_in($k, $max);
+    foreach (['name', 'hero_title', 'hero_highlight'] as $k) if ($s[$k] === '') fail('সাইটের নাম আর হিরো শিরোনাম ফাঁকা রাখা যাবে না।');
+    $email = mb_strtolower(str_in('email', 190));
+    if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) fail('যোগাযোগের ইমেইল সঠিক নয়।');
+    $s['email'] = $email;
+    $phone = str_in('phone', 30);
+    $phone = strtr($phone, ['০' => '0', '১' => '1', '২' => '2', '৩' => '3', '৪' => '4', '৫' => '5', '৬' => '6', '৭' => '7', '৮' => '8', '৯' => '9']);
+    if ($phone !== '' && !preg_match('/^\+?[0-9][0-9 ()\-]{6,19}$/', $phone)) fail('ফোন নম্বর সঠিক নয়।');
+    $s['phone'] = $phone;
+    $wa = digits_only(str_in('whatsapp', 30));
+    if ($wa !== '') {
+        if (preg_match('/^01[3-9]\d{8}$/', $wa)) $wa = '88' . $wa;
+        if (!preg_match('/^\d{8,15}$/', $wa)) fail('হোয়াটসঅ্যাপ নম্বর সঠিক নয় (যেমন 01712345678)।');
+    }
+    $s['whatsapp'] = $wa;
+    foreach (['facebook', 'instagram', 'youtube'] as $k) {
+        $u = str_in($k, 255);
+        if ($u !== '' && !preg_match('#^https?://#i', $u)) $u = 'https://' . ltrim($u, '/');
+        if ($u !== '' && !filter_var($u, FILTER_VALIDATE_URL)) fail(ucfirst($k) . '-এর লিংক সঠিক নয়।');
+        $s[$k] = $u;
+    }
+    settings_store('site', $s);
+    out(['site' => site_settings(true)]);
+}
+
+function favicon_upload(): void {
+    require_admin();
+    if (!function_exists('imagecreatefromstring')) fail('সার্ভারে PHP GD extension নেই, তাই আইকন বানানো যাচ্ছে না।');
+    $f = $_FILES['favicon'] ?? null;
+    if (!$f || ($f['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) fail('ছবি আপলোড হয়নি, আবার চেষ্টা করুন।');
+    if ($f['size'] > 2 * 1024 * 1024) fail('ফেভিকনের ছবি 2MB-এর বেশি বড়।');
+    $mime = (new finfo(FILEINFO_MIME_TYPE))->file($f['tmp_name']);
+    if (!in_array($mime, ['image/png', 'image/jpeg', 'image/webp', 'image/gif'], true) || !($dim = @getimagesize($f['tmp_name']))) fail('শুধু PNG, JPG, WebP বা GIF ছবি দিন।');
+    if ($dim[0] < 32 || $dim[1] < 32) fail('ছবি কমপক্ষে 32×32 পিক্সেলের দিন (512×512 সবচেয়ে ভালো)।');
+    $s = site_settings();
+    $old = [$s['favicon'], $s['favicon_sm']];
+    $s['favicon'] = save_icon($f['tmp_name'], 192);
+    $s['favicon_sm'] = save_icon($f['tmp_name'], 32);
+    settings_store('site', $s);
+    foreach ($old as $p) delete_media($p);
+    out(['site' => site_settings(true)]);
+}
+
+function favicon_reset(): void {
+    require_admin();
+    $s = site_settings();
+    delete_media($s['favicon']); delete_media($s['favicon_sm']);
+    $s['favicon'] = $s['favicon_sm'] = null;
+    settings_store('site', $s);
+    out(['site' => site_settings(true)]);
+}
+
 function support_get(): void { require_admin(); out(['settings' => support_out()]); }
 
 function support_save(): void {

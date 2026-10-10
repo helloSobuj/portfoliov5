@@ -199,6 +199,7 @@ $OK = $I('<path d="M5 12.5l4.5 4.5L19 7"/>'); $NO = $I('<path d="M6 6l12 12M18 6
 ?><!doctype html>
 <html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
 <title>Techill ইনস্টলার</title>
+<link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tiro+Bangla&display=swap">
 <style>
