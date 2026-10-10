@@ -324,13 +324,91 @@ section{padding-block:104px}
 .eq .res small{color:inherit;opacity:.85}
 
 /* features */
-.feats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
-.feat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:28px 24px;display:grid;gap:10px;align-content:start;transition:border-color .2s,transform .2s}
-.feat:hover{border-color:var(--blue);transform:translateY(-2px)}
-.feat .ic{width:46px;height:46px;border-radius:12px;background:var(--blue-soft);color:var(--blue);display:grid;place-items:center;margin-bottom:8px}
+/* Features: a bento grid. Each card carries a small live visual that plays on hover, and a soft
+   spotlight follows the cursor (--mx/--my set from script). --a is the card's accent colour. */
+.feats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
+.feat{--mx:50%;--my:0%;position:relative;overflow:hidden;isolation:isolate;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:26px 24px 22px;display:grid;gap:8px;align-content:start;grid-template-rows:auto auto auto 1fr;
+  transition:border-color .3s,transform .3s,box-shadow .3s}
+.feat.w2{grid-column:span 2}
+.feat .glow{position:absolute;inset:0;z-index:-1;opacity:0;transition:opacity .3s;background:radial-gradient(420px circle at var(--mx) var(--my),color-mix(in srgb,var(--a) 16%,transparent),transparent 60%)}
+.feat::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;z-index:-1;opacity:0;transition:opacity .3s;
+  background:radial-gradient(260px circle at var(--mx) var(--my),var(--a),transparent 70%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+.feat:hover{transform:translateY(-4px);box-shadow:var(--shadow);border-color:color-mix(in srgb,var(--a) 35%,var(--line))}
+.feat:is(:hover,.play) .glow,.feat:hover::before{opacity:1}
+.feat .ic{width:46px;height:46px;border-radius:13px;background:color-mix(in srgb,var(--a) 13%,var(--surface));color:var(--a);display:grid;place-items:center;margin-bottom:6px;transition:transform .4s cubic-bezier(.3,1.6,.5,1)}
+.feat:is(:hover,.play) .ic{transform:rotate(-8deg) scale(1.08)}
 .feat .ic svg{width:22px;height:22px}
-.feat h3{font-size:1.12rem}
+.feat h3{font-size:1.15rem}
 .feat p{color:var(--muted);font-size:.94rem}
+.fv{align-self:end;margin-top:14px;min-height:96px;border-radius:14px;background:var(--bg);border:1px solid var(--line);padding:14px;position:relative;overflow:hidden;font-size:.8rem}
+/* payments */
+.fv-pay{display:flex;flex-wrap:wrap;gap:8px;align-content:center}
+.fv-pay span{padding:6px 12px;border-radius:999px;font-weight:700;color:var(--c);background:color-mix(in srgb,var(--c) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--c) 30%,transparent);transition:transform .35s cubic-bezier(.3,1.6,.5,1)}
+.fv-ok{display:inline-flex;align-items:center;gap:6px;width:100%;font-weight:700;color:var(--ok);opacity:0;transform:translateY(8px);transition:opacity .35s .25s,transform .35s .25s}
+.fv-ok svg{width:16px;height:16px}
+.feat:is(:hover,.play) .fv-pay span{transform:translateY(-3px)}
+.feat:is(:hover,.play) .fv-pay span:nth-child(2){transition-delay:.05s}.feat:is(:hover,.play) .fv-pay span:nth-child(3){transition-delay:.1s}.feat:is(:hover,.play) .fv-pay span:nth-child(4){transition-delay:.15s}.feat:is(:hover,.play) .fv-pay span:nth-child(5){transition-delay:.2s}
+.feat:is(:hover,.play) .fv-ok{opacity:1;transform:none}
+/* courier tracker */
+.fv-trk{display:grid;gap:7px}
+.fv-trk .d{display:flex;align-items:center;gap:8px;color:var(--muted);font-weight:600}
+.fv-trk .d i{width:10px;height:10px;border-radius:50%;border:2px solid var(--line);background:var(--surface);transition:background .3s,border-color .3s}
+.fv-trk .d.on{color:var(--ink)}.fv-trk .d.on i{background:var(--ok);border-color:var(--ok)}
+.feat:is(:hover,.play) .fv-trk .d i{background:var(--ok);border-color:var(--ok)}
+.feat:is(:hover,.play) .fv-trk .d{color:var(--ink)}
+.feat:is(:hover,.play) .fv-trk .d:nth-child(3) i{transition-delay:.25s}.feat:is(:hover,.play) .fv-trk .d:nth-child(4) i{transition-delay:.55s}
+/* fraud ring */
+.fv-ring{display:grid;grid-template-columns:64px 1fr;grid-template-rows:auto auto;column-gap:12px;align-items:center;align-content:center}
+.fv-ring svg{grid-row:span 2;width:64px;height:64px;transform:rotate(-90deg)}
+.fv-ring circle{fill:none;stroke-width:7}.fv-ring .bg{stroke:var(--line)}
+.fv-ring .fg{stroke:var(--ok);stroke-linecap:round;stroke-dasharray:163;stroke-dashoffset:60;transition:stroke-dashoffset .9s cubic-bezier(.3,0,.2,1)}
+.feat:is(:hover,.play) .fv-ring .fg{stroke-dashoffset:10}
+.fv-ring b{font-family:var(--display);font-size:1.5rem;color:var(--ok);align-self:end}.fv-ring small{color:var(--muted);align-self:start}
+/* pixel chart */
+.fv-chart{color:var(--a);padding:10px 0 0}
+.fv-chart svg{display:block;width:100%;height:90px}
+.fv-chart .ln{fill:none;stroke:currentColor;stroke-width:3;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:400;stroke-dashoffset:0}
+.feat:is(:hover,.play) .fv-chart .ln{animation:fvDraw 1.2s ease}
+.fv-chart .tag{position:absolute;right:12px;top:10px;font-weight:700;color:var(--ok);background:var(--surface);border:1px solid var(--line);padding:3px 10px;border-radius:999px}
+@keyframes fvDraw{from{stroke-dashoffset:400}}
+/* phone */
+.fv-phone{display:grid;place-items:center;padding:12px 0 0}
+.ph2{width:86px;height:104px;border:4px solid var(--ink);border-bottom:0;border-radius:16px 16px 0 0;padding:10px 8px;display:grid;gap:6px;align-content:start;background:var(--surface);transform:translateY(14px);transition:transform .45s cubic-bezier(.3,1.4,.5,1)}
+.ph2 i{height:8px;border-radius:4px;background:var(--line)}.ph2 i:first-child{height:28px;background:color-mix(in srgb,var(--a) 22%,var(--surface))}
+.ph2 b{font-size:.6rem;text-align:center;padding:4px;border-radius:6px;background:var(--a);color:#fff}
+.feat:is(:hover,.play) .ph2{transform:translateY(2px)}
+/* language switch */
+.fv-lang{display:grid;gap:8px;justify-items:start;align-content:center}
+.sw2{position:relative;display:inline-grid;grid-template-columns:1fr 1fr;border-radius:999px;background:var(--surface);border:1px solid var(--line);padding:3px}
+.sw2 b{position:relative;z-index:1;padding:4px 12px;font-size:.8rem;text-align:center;transition:color .3s}
+.sw2 b:first-child{color:#fff}
+.sw2 i{position:absolute;left:3px;top:3px;bottom:3px;width:calc(50% - 3px);border-radius:999px;background:var(--a);transition:transform .35s cubic-bezier(.3,1.4,.5,1)}
+.fv-lang small{font-weight:700;font-size:.95rem;transition:opacity .3s,transform .3s}
+.fv-lang .l2{position:absolute;left:14px;bottom:16px;opacity:0;transform:translateY(8px)}
+.feat:is(:hover,.play) .sw2 i{transform:translateX(100%)}
+.feat:is(:hover,.play) .sw2 b:first-child{color:var(--ink)}.feat:is(:hover,.play) .sw2 b:last-child{color:#fff}
+.feat:is(:hover,.play) .fv-lang .l1{opacity:0;transform:translateY(-8px)}.feat:is(:hover,.play) .fv-lang .l2{opacity:1;transform:none}
+/* admin dashboard */
+.fv-dash{display:grid;grid-template-columns:auto auto 1fr;gap:12px;align-items:end}
+.fv-dash>span:not(.bars){background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 12px;display:grid}
+.fv-dash small{color:var(--muted)}.fv-dash b{font-family:var(--display);font-size:1.25rem}
+.fv-dash .bars{display:flex;align-items:flex-end;gap:6px;height:68px}
+.fv-dash .bars i{flex:1;height:var(--h);border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,var(--a),color-mix(in srgb,var(--a) 25%,var(--surface)));transform-origin:bottom}
+.feat:is(:hover,.play) .fv-dash .bars i{animation:fvGrow .6s cubic-bezier(.3,1.4,.5,1) both}
+.feat:is(:hover,.play) .fv-dash .bars i:nth-child(2){animation-delay:.06s}.feat:is(:hover,.play) .fv-dash .bars i:nth-child(3){animation-delay:.12s}.feat:is(:hover,.play) .fv-dash .bars i:nth-child(4){animation-delay:.18s}.feat:is(:hover,.play) .fv-dash .bars i:nth-child(5){animation-delay:.24s}
+@keyframes fvGrow{from{transform:scaleY(.15)}}
+/* abandoned checkout */
+.fv-cart{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.fv-cart .who{display:grid}.fv-cart .who b{font-size:1rem;letter-spacing:.02em}.fv-cart .who small{color:var(--muted)}
+.fv-cart .call{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:var(--ok);color:#fff;font-weight:700}
+.fv-cart .call svg{width:16px;height:16px}
+.feat:is(:hover,.play) .fv-cart .call{animation:fvRing .5s 2}
+@keyframes fvRing{25%{transform:rotate(-6deg)}75%{transform:rotate(6deg)}}
+/* cards rise in the first time they come into view */
+.rv-on .feat{opacity:0;transform:translateY(22px)}
+.rv-on .feat.seen{opacity:1;transform:none;transition:opacity .6s var(--d,0s),transform .6s var(--d,0s),border-color .3s,box-shadow .3s}
+.rv-on .feat.seen:hover{transform:translateY(-4px)}
+@media (prefers-reduced-motion:reduce){.feat,.feat *{transition:none!important;animation:none!important}.rv-on .feat{opacity:1;transform:none}}
 
 /* how */
 .how{padding-block:0 32px}
@@ -716,6 +794,7 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
 
 @media (max-width:1040px){
   .feats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .feat.w2{grid-column:span 2}
   .flow{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
   .flow .step{padding:6px 2px 10px;justify-items:center;text-align:center}
   .flow .step h3{font-size:.72rem;line-height:1.3}
@@ -760,6 +839,7 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
   section{padding-block:72px}
   .container{padding-inline:16px}
   .grid-2,.feats{grid-template-columns:1fr}
+  .feat.w2{grid-column:auto}
   .prob{--cx:48px}
   .prob .face{padding:26px}
   .prob .pain::before{font-size:2.6rem}
@@ -952,15 +1032,15 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
         <h2>বিক্রির জন্য যা যা লাগে, সব এক জায়গায়</h2>
         <p>বাংলাদেশের ক্রেতা আর কুরিয়ার সিস্টেম মাথায় রেখে সাজানো।</p>
       </div>
-      <div class="feats">
-        <article class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg></span><h3>COD ও বিকাশ/নগদ</h3><p>ক্যাশ অন ডেলিভারি থেকে মোবাইল পেমেন্ট, সব চালু।</p></article>
-        <article class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7h11v9H2zM13 10h4l3 3v3h-7z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17" cy="17.5" r="1.6"/></svg></span><h3>কুরিয়ার ইন্টিগ্রেশন</h3><p>Steadfast, Pathao, RedX-এ সরাসরি অর্ডার পাঠান।</p></article>
-        <article class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 3v6c0 4.4-3.2 7.6-7.5 9-4.3-1.4-7.5-4.6-7.5-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></span><h3>ফ্রড চেকার</h3><p>অর্ডার কনফার্মের আগেই কাস্টমারের রিটার্ন রেকর্ড দেখুন।</p></article>
-        <article class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></span><h3>Pixel ও Conversion API</h3><p>Ad-এর প্রতিটা টাকার হিসাব, আরও ভালো টার্গেটিং।</p></article>
-        <article class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span><h3>মোবাইল-ফার্স্ট ডিজাইন</h3><p>৯০% ক্রেতা ফোন থেকে কেনে, তাই ফোনেই সবচেয়ে সুন্দর।</p></article>
-        <article class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg></span><h3>বাংলা ও ইংরেজি</h3><p>ক্রেতা যে ভাষায় স্বচ্ছন্দ, সেভাবেই দোকান দেখবে।</p></article>
-        <article class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg></span><h3>সহজ অ্যাডমিন প্যানেল</h3><p>পণ্য যোগ, দাম বদল, অর্ডার দেখা, সব নিজেই পারবেন।</p></article>
-        <article class="feat"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.2 11h11l2-8H6.5"/><circle cx="9" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/><path d="M12 8.5v3M12 13.5v.01"/></svg></span><h3>অসম্পূর্ণ অর্ডার ক্যাপচার</h3><p>চেকআউট ছেড়ে যাওয়া ক্রেতার নম্বর রেখে দেয়, ফোন দিয়ে বিক্রি করুন।</p></article>
+      <div class="feats bento" id="feats">
+        <article class="feat w2" style="--a:var(--blue)"><span class="glow"></span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg></span><h3>COD ও বিকাশ/নগদ</h3><p>ক্যাশ অন ডেলিভারি থেকে মোবাইল পেমেন্ট, সব চালু।</p><div class="fv fv-pay"><span style="--c:#e2136e">বিকাশ</span><span style="--c:#f6921e">নগদ</span><span style="--c:#8c3494">রকেট</span><span style="--c:#12a150">COD</span><span style="--c:#1a73e8">কার্ড</span><b class="fv-ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>৳১,৪৯০ পেমেন্ট পাওয়া গেছে</b></div></article>
+        <article class="feat " style="--a:var(--ok)"><span class="glow"></span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7h11v9H2zM13 10h4l3 3v3h-7z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17" cy="17.5" r="1.6"/></svg></span><h3>কুরিয়ার ইন্টিগ্রেশন</h3><p>Steadfast, Pathao, RedX-এ সরাসরি অর্ডার পাঠান।</p><div class="fv fv-trk"><span class="d on"><i></i>বুকড</span><span class="d on"><i></i>পিকআপ</span><span class="d"><i></i>ট্রানজিটে</span><span class="d"><i></i>ডেলিভারড</span></div></article>
+        <article class="feat " style="--a:var(--warn)"><span class="glow"></span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 3v6c0 4.4-3.2 7.6-7.5 9-4.3-1.4-7.5-4.6-7.5-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></span><h3>ফ্রড চেকার</h3><p>অর্ডার কনফার্মের আগেই কাস্টমারের রিটার্ন রেকর্ড দেখুন।</p><div class="fv fv-ring"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" class="bg"/><circle cx="32" cy="32" r="26" class="fg"/></svg><b>৯৪%</b><small>সাকসেস রেট</small></div></article>
+        <article class="feat w2" style="--a:var(--blue)"><span class="glow"></span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></span><h3>Pixel ও Conversion API</h3><p>Ad-এর প্রতিটা টাকার হিসাব, আরও ভালো টার্গেটিং।</p><div class="fv fv-chart"><svg viewBox="0 0 300 90" preserveAspectRatio="none"><defs><linearGradient id="fvg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".28"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs><path class="area" d="M0 80 L40 72 L80 74 L120 58 L160 52 L200 36 L240 30 L300 10 L300 90 L0 90Z" fill="url(#fvg)"/><path class="ln" d="M0 80 L40 72 L80 74 L120 58 L160 52 L200 36 L240 30 L300 10"/></svg><span class="tag">ROAS ↑ ২.৪x</span></div></article>
+        <article class="feat " style="--a:var(--ok)"><span class="glow"></span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span><h3>মোবাইল-ফার্স্ট ডিজাইন</h3><p>৯০% ক্রেতা ফোন থেকে কেনে, তাই ফোনেই সবচেয়ে সুন্দর।</p><div class="fv fv-phone"><span class="ph2"><i></i><i></i><i></i><b>অর্ডার করুন</b></span></div></article>
+        <article class="feat " style="--a:var(--warn)"><span class="glow"></span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg></span><h3>বাংলা ও ইংরেজি</h3><p>ক্রেতা যে ভাষায় স্বচ্ছন্দ, সেভাবেই দোকান দেখবে।</p><div class="fv fv-lang"><span class="sw2"><b>বাংলা</b><b>EN</b><i></i></span><small class="l1">নতুন কালেকশন</small><small class="l2">New Collection</small></div></article>
+        <article class="feat w2" style="--a:var(--blue)"><span class="glow"></span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg></span><h3>সহজ অ্যাডমিন প্যানেল</h3><p>পণ্য যোগ, দাম বদল, অর্ডার দেখা, সব নিজেই পারবেন।</p><div class="fv fv-dash"><span><small>আজকের অর্ডার</small><b>২৭</b></span><span><small>বিক্রি</small><b>৳৪২,৫০০</b></span><span class="bars"><i style="--h:40%"></i><i style="--h:65%"></i><i style="--h:50%"></i><i style="--h:80%"></i><i style="--h:95%"></i></span></div></article>
+        <article class="feat w2" style="--a:var(--danger)"><span class="glow"></span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.2 11h11l2-8H6.5"/><circle cx="9" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/><path d="M12 8.5v3M12 13.5v.01"/></svg></span><h3>অসম্পূর্ণ অর্ডার ক্যাপচার</h3><p>চেকআউট ছেড়ে যাওয়া ক্রেতার নম্বর রেখে দেয়, ফোন দিয়ে বিক্রি করুন।</p><div class="fv fv-cart"><span class="who"><b>০১৭৮৮ ••• ৩২১</b><small>চেকআউট ছেড়ে গেছে · ৫ মিনিট আগে</small></span><span class="call"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>কল করুন</span></div></article>
       </div>
     </div>
   </section>
@@ -1918,6 +1998,28 @@ $("i-email").addEventListener("input", () => { if (otpSkip || otpFor){ otpSkip =
   if ("IntersectionObserver" in window) new IntersectionObserver(([e]) => { const was = visible; visible = e.isIntersecting; if (visible && !was) show(cur); else if (!visible) clearTimeout(timer); }, {threshold: .35}).observe(box);
   else visible = true;
   show(0);
+})();
+</script>
+
+<script>
+/* Features: spotlight follows the cursor; touch screens play each card's visual once it is in view. */
+(() => {
+  const cards = [...document.querySelectorAll("#feats .feat")]; if (!cards.length) return;
+  cards.forEach((c, i) => {
+    c.style.setProperty("--d", (i % 4) * 0.08 + "s");
+    c.addEventListener("transitionend", () => c.style.setProperty("--d", "0s"), {once: true});
+    c.addEventListener("pointermove", e => { const r = c.getBoundingClientRect(); c.style.setProperty("--mx", e.clientX - r.left + "px"); c.style.setProperty("--my", e.clientY - r.top + "px"); });
+  });
+  if (!("IntersectionObserver" in window) || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  document.documentElement.classList.add("rv-on");
+  const touch = matchMedia("(hover: none)").matches;
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return;
+    e.target.classList.add("seen"); io.unobserve(e.target);
+    if (touch) setTimeout(() => e.target.classList.add("play"), 700);   // no hover on phones: play once when seen
+  }), {threshold: .35});
+  cards.forEach(c => io.observe(c));
+  if (touch) cards.forEach(c => c.addEventListener("click", () => { c.classList.remove("play"); void c.offsetWidth; c.classList.add("play"); }));
 })();
 </script>
 </body>
