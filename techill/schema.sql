@@ -1,5 +1,5 @@
 -- Techill: customer accounts, orders, progress, chat and files.
--- Import via phpMyAdmin, or open setup.php once and it runs this for you.
+-- install.php runs this for you; it can also be imported via phpMyAdmin.
 
 SET NAMES utf8mb4;
 

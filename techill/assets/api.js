@@ -1098,7 +1098,9 @@ window.TechillAPI = (() => {
     try {
       const res = await fetch("api.php?action=me", {credentials: "same-origin"});
       if (!(res.headers.get("content-type") || "").includes("application/json")) throw 0;
-      const data = await res.json(); csrf = data.csrf || ""; demo = false; return data.user || null;
+      const data = await res.json();
+      if (data.need_install) { location.replace("install.php"); return new Promise(() => {}); }   // not set up yet
+      csrf = data.csrf || ""; demo = false; return data.user || null;
     } catch (e) { demo = true; return (await mock.me()).user; }
   }
   return {

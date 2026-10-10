@@ -16,7 +16,7 @@ function cfg(string $key) {
 function db(): PDO {
     static $pdo = null;
     if ($pdo === null) {
-        $dsn = 'mysql:host=' . cfg('db_host') . ';dbname=' . cfg('db_name') . ';charset=utf8mb4';
+        $dsn = 'mysql:host=' . cfg('db_host') . (cfg('db_port') ? ';port=' . (int)cfg('db_port') : '') . ';dbname=' . cfg('db_name') . ';charset=utf8mb4';
         $pdo = new PDO($dsn, cfg('db_user'), cfg('db_pass'), [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -25,6 +25,25 @@ function db(): PDO {
         $pdo->exec("SET time_zone = '+00:00'");
     }
     return $pdo;
+}
+
+// Brings tables from an older install up to date. Safe to run many times.
+function migrate(): void {
+    $col = fn(string $t, string $c) => (bool)q('SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?', [$t, $c])->fetch();
+    db()->exec("ALTER TABLE users MODIFY role ENUM('customer','developer','admin') NOT NULL DEFAULT 'customer'");
+    if (!$col('users', 'active')) db()->exec('ALTER TABLE users ADD active TINYINT(1) NOT NULL DEFAULT 1 AFTER role');
+    if (!$col('orders', 'developer_id')) db()->exec('ALTER TABLE orders ADD developer_id INT UNSIGNED NULL AFTER info_json, ADD KEY ix_orders_dev (developer_id)');
+    if (!$col('orders', 'cancelled')) db()->exec('ALTER TABLE orders ADD cancelled TINYINT(1) NOT NULL DEFAULT 0 AFTER developer_id');
+    if (!$col('visits', 'city')) db()->exec('ALTER TABLE visits ADD browser VARCHAR(30) NULL AFTER device, ADD os VARCHAR(20) NULL AFTER browser,
+        ADD country CHAR(2) NULL AFTER os, ADD country_name VARCHAR(60) NULL AFTER country, ADD region VARCHAR(80) NULL AFTER country_name, ADD city VARCHAR(80) NULL AFTER region');
+    if (!$col('users', 'avatar')) db()->exec('ALTER TABLE users ADD avatar VARCHAR(60) NULL AFTER active');
+    if (!$col('users', 'email_verified_at')) db()->exec('ALTER TABLE users ADD email_verified_at DATETIME NULL AFTER avatar, ADD email_notify TINYINT(1) NOT NULL DEFAULT 1 AFTER email_verified_at,
+        ADD ref_code VARCHAR(12) NULL AFTER email_notify, ADD referred_by INT UNSIGNED NULL AFTER ref_code, ADD UNIQUE KEY uq_users_ref (ref_code)');
+    if (!$col('orders', 'referrer_id')) db()->exec('ALTER TABLE orders ADD referrer_id INT UNSIGNED NULL AFTER cancelled');
+    if (!$col('orders', 'domain')) db()->exec('ALTER TABLE orders ADD domain VARCHAR(253) NULL AFTER referrer_id');
+    if (!$col('domain_cache', 'source')) db()->exec('ALTER TABLE domain_cache ADD source VARCHAR(8) NULL AFTER status');
+    db()->exec("ALTER TABLE files MODIFY kind ENUM('logo','csv','attachment','license','nid') NOT NULL DEFAULT 'attachment'");
+    if (!$col('live_visitors', 'city')) db()->exec('ALTER TABLE live_visitors ADD browser VARCHAR(30) NULL AFTER device, ADD city VARCHAR(80) NULL AFTER browser, ADD country CHAR(2) NULL AFTER city');
 }
 
 function q(string $sql, array $args = []): PDOStatement {

@@ -6,6 +6,8 @@
 declare(strict_types=1);
 require __DIR__ . '/lib.php';
 
+// A fresh upload that has not been through install.php yet: send the browser to the installer.
+if (cfg('db_pass') === 'CHANGE_ME' && is_file(__DIR__ . '/install.php')) out(['error' => 'Techill এখনো ইনস্টল হয়নি।', 'need_install' => true], 503);
 start_session();
 $action = $_GET['action'] ?? '';
 $isPost = $_SERVER['REQUEST_METHOD'] === 'POST';
@@ -89,6 +91,7 @@ try {
     }
 } catch (PDOException $e) {
     error_log('techill api: ' . $e->getMessage());
+    if ($action === 'me' && is_file(__DIR__ . '/install.php')) out(['error' => 'ডেটাবেসে সংযোগ হয়নি।', 'need_install' => true], 503);
     fail('সার্ভারে সমস্যা হয়েছে, একটু পরে চেষ্টা করুন।', 500);
 }
 
