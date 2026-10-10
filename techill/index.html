@@ -173,12 +173,146 @@ section{padding-block:104px}
 
 /* money */
 .money{background:var(--surface);border-block:1px solid var(--line)}
+/* Income process player: 5 step tabs on top, an animated scene for the active step below.
+   Auto-plays while on screen; click, arrows or the controls take over. */
 .flow{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px;position:relative}
-.flow li{display:grid;gap:12px;align-content:start;position:relative}
-.flow .n{width:44px;height:44px;border-radius:50%;background:var(--blue-soft);color:var(--blue-ink);font-family:var(--display);font-weight:700;font-size:1.15rem;display:grid;place-items:center;position:relative;z-index:1}
-.flow li:not(:last-child)::after{content:"";position:absolute;top:22px;left:52px;right:-12px;height:2px;background:repeating-linear-gradient(90deg,var(--line) 0 8px,transparent 8px 14px)}
-.flow h3{font-size:1.12rem}
+.flow li{position:relative}
+.flow .step{all:unset;box-sizing:border-box;cursor:pointer;display:grid;gap:10px;align-content:start;width:100%;height:100%;padding:12px 12px 16px;border-radius:16px;position:relative;transition:background .3s,transform .3s}
+.flow .step:hover{background:var(--bg)}
+.flow .step:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.flow .n{width:44px;height:44px;border-radius:50%;background:var(--blue-soft);color:var(--blue-ink);font-family:var(--display);font-weight:700;font-size:1.15rem;display:grid;place-items:center;position:relative;z-index:1;transition:background .3s,color .3s,transform .3s}
+.flow h3{font-size:1.12rem;transition:color .3s}
 .flow p{color:var(--muted);font-size:.95rem}
+.flow .ln{position:absolute;top:34px;left:64px;right:-12px;height:2px;background:repeating-linear-gradient(90deg,var(--line) 0 8px,transparent 8px 14px);pointer-events:none}
+.flow .ln i{position:absolute;inset:0;background:var(--blue);transform-origin:left;transform:scaleX(0);transition:transform .6s ease}
+.flow li.done .ln i{transform:scaleX(1)}
+.flow li.done .n{background:var(--blue);color:var(--on-blue)}
+.flow .step[aria-selected="true"]{background:var(--blue-soft)}
+.flow .step[aria-selected="true"] .n{background:var(--blue);color:var(--on-blue);transform:scale(1.1);box-shadow:0 0 0 6px var(--surface),0 0 0 8px var(--blue)}
+.flow .step[aria-selected="true"] h3{color:var(--blue-ink)}
+.flow .pbar{height:3px;border-radius:2px;background:var(--line);overflow:hidden;margin-top:2px;opacity:0;transition:opacity .3s}
+.flow .pbar i{display:block;height:100%;width:100%;background:var(--blue);transform-origin:left;transform:scaleX(0)}
+.flow .step[aria-selected="true"] .pbar{opacity:1}
+.proc.playing .flow .step[aria-selected="true"] .pbar i{animation:fillbar var(--step) linear forwards}
+.proc.paused .flow .step[aria-selected="true"] .pbar i{transform:scaleX(1);opacity:.35}
+@keyframes fillbar{to{transform:scaleX(1)}}
+.stage{margin-top:28px;display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:28px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:var(--r);padding:28px;overflow:hidden}
+.st-k{font-size:.82rem;font-weight:700;color:var(--blue-ink);background:var(--blue-soft);padding:3px 10px;border-radius:999px}
+.st-cap h3{font-size:1.6rem;margin:12px 0 8px}
+.st-cap p{color:var(--muted);min-height:5.6em}
+.st-ctl{display:flex;gap:8px;margin-top:18px}
+.st-ctl .btn{display:inline-flex;align-items:center;gap:6px}
+.st-ctl svg{width:16px;height:16px}
+.st-ctl .ico-play,.proc.paused .st-ctl .ico-pause{display:none}
+.proc.paused .st-ctl .ico-play{display:inline-flex}
+.tally{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+.tally span{flex:1;min-width:130px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 14px;font-size:.82rem;color:var(--muted);display:grid}
+.tally b{font-family:var(--display);font-size:1.45rem;color:var(--ok);font-variant-numeric:tabular-nums;transition:transform .3s}
+.tally b.bump{animation:bump .5s}
+@keyframes bump{40%{transform:scale(1.25)}}
+.scenes{position:relative;height:320px;border-radius:18px;background:radial-gradient(120% 100% at 50% 0,var(--blue-soft),var(--surface) 70%);border:1px solid var(--line);overflow:hidden}
+.sc{position:absolute;inset:0;display:grid;place-items:center;opacity:0;visibility:hidden;transition:opacity .35s,visibility .35s}
+.sc.on{opacity:1;visibility:visible}
+.sc *{animation-fill-mode:both!important}
+.pchip{position:absolute;font-size:.82rem;font-weight:700;padding:6px 12px;border-radius:999px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);display:inline-flex;align-items:center;gap:6px;color:var(--ink)}
+.pchip svg{width:16px;height:16px;color:var(--ok)}
+/* phone */
+.ph{width:180px;height:268px;border-radius:26px;background:var(--surface);border:6px solid var(--ink);box-shadow:var(--shadow);padding:10px;display:grid;grid-template-rows:auto 1fr;gap:8px;position:relative}
+.ph-top{display:flex;justify-content:center;gap:6px}.ph-top i{width:8px;height:8px;border-radius:50%;background:var(--line)}.ph-top b{width:40px;height:8px;border-radius:4px;background:var(--line)}
+/* 1 · ad */
+.ad{display:grid;gap:8px;align-content:start}
+.ad-h{display:flex;gap:6px;align-items:center;font-size:.62rem;line-height:1.2}.ad-h small{display:block;color:var(--muted)}
+.av{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--ok));flex:none}
+.ad-img{height:118px;border-radius:10px;background:linear-gradient(135deg,var(--warn-soft),var(--blue-soft));position:relative;display:grid;place-items:center}
+.tee{width:62px;height:62px;background:var(--blue);clip-path:polygon(25% 0,38% 8%,62% 8%,75% 0,100% 18%,88% 38%,78% 32%,78% 100%,22% 100%,22% 32%,12% 38%,0 18%)}
+.pprice{position:absolute;right:6px;top:6px;font-size:.62rem;font-weight:700;background:var(--surface);padding:2px 6px;border-radius:6px}
+.ad-cta{display:flex;justify-content:space-between;align-items:center;font-size:.6rem;font-weight:700;gap:4px}
+.shop{background:var(--blue);color:var(--on-blue);padding:4px 8px;border-radius:6px;white-space:nowrap}
+.cur{position:absolute;width:26px;height:26px;left:62%;top:78%;z-index:3}
+.ripple{position:absolute;left:calc(62% - 4px);top:calc(78% - 4px);width:12px;height:12px;border-radius:50%;border:2px solid var(--blue);opacity:0}
+.c1{right:12%;top:16%;color:var(--blue-ink)}
+.s1.on .ad{animation:adin .6s ease}
+.s1.on .cur{animation:curmove 1.6s .5s cubic-bezier(.5,0,.3,1)}
+.s1.on .ripple{animation:rip .6s 2.1s ease-out}
+.s1.on .shop{animation:press .3s 2.05s}
+.s1.on .c1{animation:popin .45s 2.4s cubic-bezier(.3,1.6,.5,1)}
+@keyframes adin{from{opacity:0;transform:translateY(16px)}}
+@keyframes curmove{from{transform:translate(90px,70px);opacity:0}20%{opacity:1}}
+@keyframes rip{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(4)}}
+@keyframes press{50%{transform:scale(.9)}}
+@keyframes popin{from{opacity:0;transform:scale(.5) translateY(10px)}}
+/* 2 · order */
+.form{display:grid;gap:10px;align-content:start;padding-top:8px;position:relative}
+.fl{height:24px;border-radius:8px;border:1.5px solid var(--line);position:relative;overflow:hidden}
+.fl i{position:absolute;left:8px;top:8px;height:6px;border-radius:3px;background:var(--ink);opacity:.55;width:0}
+.go,.okb{margin-top:8px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;gap:5px;font-size:.66rem;font-weight:700}
+.go{background:var(--blue);color:var(--on-blue)}
+.okb{position:absolute;left:0;right:0;bottom:0;background:var(--ok);color:#fff;opacity:0}
+.okb svg{width:14px;height:14px}
+.toastx{position:absolute;right:6%;top:12%;display:flex;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:8px 12px;font-size:.75rem;line-height:1.3}
+.toastx small{display:block;color:var(--muted)}
+.tic{width:28px;height:28px;border-radius:9px;background:var(--ok-soft);color:var(--ok);display:grid;place-items:center}.tic svg{width:16px;height:16px}
+.moon{position:absolute;left:10%;top:12%;width:34px;height:34px;border-radius:50%;box-shadow:-8px 6px 0 0 var(--warn);transform:rotate(-20deg)}
+.s2.on .fl:nth-child(1) i{animation:typew .5s .2s forwards;--w:70%}
+.s2.on .fl:nth-child(2) i{animation:typew .5s .7s forwards;--w:55%}
+.s2.on .fl:nth-child(3) i{animation:typew .5s 1.2s forwards;--w:80%}
+.s2.on .go{animation:press .3s 1.8s}
+.s2.on .okb{animation:fadein .3s 2s forwards}
+.s2.on .toastx{animation:slidein .5s 2.3s cubic-bezier(.3,1.4,.5,1)}
+.s2.on .moon{animation:fadein .6s}
+@keyframes typew{from{width:0}to{width:var(--w)}}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@keyframes slidein{from{opacity:0;transform:translateX(40px)}}
+/* 3 · fraud */
+.fr{width:250px;background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:16px;display:grid;gap:10px;font-size:.82rem;position:relative}
+.fr-h{display:flex;gap:10px;align-items:center;line-height:1.25}.fr-h small{display:block;color:var(--muted)}.fr-h .av{width:34px;height:34px}
+.fr-r,.fr-s{display:flex;justify-content:space-between}.fr-r span,.fr-s span{color:var(--muted)}
+.fr-bar{height:10px;border-radius:5px;background:var(--line);overflow:hidden}
+.fr-bar i{display:block;height:100%;width:94%;border-radius:5px;background:linear-gradient(90deg,var(--warn),var(--ok));transform-origin:left;transform:scaleX(0)}
+.fr-s b{color:var(--ok);font-size:1.05rem}
+.safe{display:flex;align-items:center;gap:6px;justify-content:center;background:var(--ok);color:#fff;border-radius:10px;padding:8px;font-weight:700;opacity:0}
+.safe svg{width:16px;height:16px}
+.scan{position:absolute;left:calc(50% - 140px);width:280px;height:3px;top:20%;background:linear-gradient(90deg,transparent,var(--blue),transparent);opacity:0}
+.s3.on .fr{animation:adin .5s}
+.s3.on .scan{animation:scan 1.6s .3s ease-in-out}
+.s3.on .fr-bar i{animation:grow 1.4s .5s cubic-bezier(.3,0,.2,1) forwards}
+.s3.on .safe{animation:popin .45s 2.1s cubic-bezier(.3,1.6,.5,1) forwards}
+@keyframes scan{0%{opacity:1;top:18%}100%{opacity:0;top:82%}}
+@keyframes grow{to{transform:scaleX(1)}}
+/* 4 · courier */
+.road{position:relative;width:min(86%,360px);height:90px}
+.track{position:absolute;left:40px;right:40px;top:44px;height:3px;background:repeating-linear-gradient(90deg,var(--line) 0 10px,transparent 10px 16px)}
+.shop-ic,.home-ic{position:absolute;top:22px;width:44px;height:44px;border-radius:12px;background:var(--blue-soft);border:2px solid var(--blue)}
+.shop-ic{left:0}.home-ic{right:0;background:var(--ok-soft);border-color:var(--ok);border-radius:12px 12px 12px 12px}
+.shop-ic::after,.home-ic::after{content:"দোকান";position:absolute;top:50px;left:50%;transform:translateX(-50%);font-size:.72rem;font-weight:700;white-space:nowrap;color:var(--muted)}
+.home-ic::after{content:"ক্রেতা"}
+.truck{position:absolute;left:46px;top:26px;width:40px;height:40px;color:var(--blue-ink)}
+.truck svg{width:100%;height:100%}
+.stat{position:absolute;bottom:18%;display:flex;gap:8px}
+.stat span{font-size:.75rem;font-weight:700;padding:5px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--muted)}
+.c4{top:14%;left:50%;transform:translateX(-50%)}
+.s4.on .truck{animation:drive 2.4s .3s cubic-bezier(.45,0,.4,1) forwards}
+.s4.on .p1{animation:lit .3s .3s forwards}.s4.on .p2{animation:lit .3s 1.3s forwards}.s4.on .p3{animation:litok .3s 2.7s forwards}
+.s4.on .c4{animation:fadein .5s}
+@keyframes drive{0%{left:46px}100%{left:calc(100% - 92px)}}
+@keyframes lit{to{background:var(--blue-soft);color:var(--blue-ink);border-color:var(--blue)}}
+@keyframes litok{to{background:var(--ok);color:#fff;border-color:var(--ok)}}
+/* 5 · pixel */
+.chart{position:absolute;left:9%;bottom:22%;width:42%;height:52%;display:flex;align-items:flex-end;gap:10px;border-bottom:2px solid var(--line)}
+.chart i{flex:1;height:var(--h);border-radius:8px 8px 0 0;background:linear-gradient(180deg,var(--blue),var(--blue-soft));transform-origin:bottom;transform:scaleY(0)}
+.cpo{position:absolute;right:8%;top:24%;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:12px 16px;display:grid;gap:2px}
+.cpo small{color:var(--muted);font-size:.75rem}.cpo b{font-family:var(--display);font-size:1.6rem;color:var(--ok)}
+.cpo s{font-size:1rem;color:var(--muted);opacity:0}
+.c5{right:6%;bottom:9%}
+.s5.on .chart i{animation:growy .6s cubic-bezier(.3,1.4,.5,1) forwards}
+.s5.on .chart i:nth-child(2){animation-delay:.25s}.s5.on .chart i:nth-child(3){animation-delay:.5s}.s5.on .chart i:nth-child(4){animation-delay:.75s}
+.s5.on .cpo{animation:adin .5s .3s}.s5.on .cpo s{animation:fadein .3s 2s forwards}
+.s5.on .c5{animation:popin .45s 2.6s cubic-bezier(.3,1.6,.5,1)}
+@keyframes growy{to{transform:scaleY(1)}}
+@media (prefers-reduced-motion:reduce){
+  .sc *,.flow .pbar i,.flow .ln i{animation:none!important;transition:none!important}
+  .s2 .fl i{width:70%}.s2 .okb,.s3 .safe,.s5 .cpo s{opacity:1}.s3 .fr-bar i,.s5 .chart i{transform:none}.s4 .truck{left:calc(100% - 92px)}
+}
 .calc{margin-top:64px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:32px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:var(--r);padding:36px 40px}
 .calc .lbl{font-size:.85rem;color:var(--muted);font-weight:600}
 .calc h3{font-size:1.5rem;margin-top:6px}
@@ -466,10 +600,15 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
 
 @media (max-width:1040px){
   .feats{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .flow{grid-template-columns:1fr;gap:28px}
-  .flow li{grid-template-columns:44px 1fr;column-gap:18px}
-  .flow li .n{grid-row:span 2}
-  .flow li:not(:last-child)::after{top:52px;bottom:-24px;left:21px;right:auto;width:2px;height:auto;background:repeating-linear-gradient(180deg,var(--line) 0 8px,transparent 8px 14px)}
+  .flow{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+  .flow .step{padding:6px 2px 10px;justify-items:center;text-align:center}
+  .flow .step h3{font-size:.72rem;line-height:1.3}
+  .flow .step p{display:none}
+  .flow .n{width:36px;height:36px;font-size:1rem}
+  .flow .ln{top:24px;left:calc(50% + 22px);right:calc(-50% + 22px)}
+  .stage{grid-template-columns:1fr;padding:18px;gap:18px}
+  .st-cap h3{font-size:1.3rem}
+  .scenes{height:300px;order:-1}
   .tpls{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:8px}
   .tpl{flex:0 0 210px;scroll-snap-align:start}
   .groups{grid-template-columns:1fr}
@@ -603,13 +742,68 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;background:var(-
         <h2>এই ওয়েবসাইট কীভাবে আপনার আয় বাড়াবে</h2>
         <p>কাস্টমার আসা থেকে পার্সেল পৌঁছানো পর্যন্ত পুরো পথটা স্বয়ংক্রিয়।</p>
       </div>
-      <ol class="flow">
-        <li><span class="n">১</span><h3>Ad দেখে কাস্টমার আসে</h3><p>ফেসবুক Ad থেকে সরাসরি পণ্যের পেজে।</p></li>
-        <li><span class="n">২</span><h3>নিজেই অর্ডার করে</h3><p>দিনরাত ২৪ ঘণ্টা, আপনি ঘুমালেও।</p></li>
-        <li><span class="n">৩</span><h3>ফ্রড চেক হয়</h3><p>কাস্টমারের কুরিয়ার রেকর্ড দেখে আসল অর্ডার আলাদা।</p></li>
-        <li><span class="n">৪</span><h3>এক ক্লিকে কুরিয়ার</h3><p>Steadfast, Pathao বা RedX-এ অর্ডার চলে যায়।</p></li>
-        <li><span class="n">৫</span><h3>পরের Ad আরও সস্তা</h3><p>Pixel ডেটা শিখে ঠিক ক্রেতার কাছে Ad দেখায়।</p></li>
+      <div class="proc" id="proc">
+      <ol class="flow" role="tablist" aria-label="আয়ের ধাপ">
+        <li><button type="button" class="step" role="tab" id="pt0" aria-controls="pstage" aria-selected="true" data-k="0"><span class="n">১</span><h3>Ad দেখে কাস্টমার আসে</h3><p>ফেসবুক Ad থেকে সরাসরি পণ্যের পেজে।</p><span class="pbar"><i></i></span></button><span class="ln"><i></i></span></li>
+        <li><button type="button" class="step" role="tab" id="pt1" aria-controls="pstage" aria-selected="false" data-k="1"><span class="n">২</span><h3>নিজেই অর্ডার করে</h3><p>দিনরাত ২৪ ঘণ্টা, আপনি ঘুমালেও।</p><span class="pbar"><i></i></span></button><span class="ln"><i></i></span></li>
+        <li><button type="button" class="step" role="tab" id="pt2" aria-controls="pstage" aria-selected="false" data-k="2"><span class="n">৩</span><h3>ফ্রড চেক হয়</h3><p>কাস্টমারের কুরিয়ার রেকর্ড দেখে আসল অর্ডার আলাদা।</p><span class="pbar"><i></i></span></button><span class="ln"><i></i></span></li>
+        <li><button type="button" class="step" role="tab" id="pt3" aria-controls="pstage" aria-selected="false" data-k="3"><span class="n">৪</span><h3>এক ক্লিকে কুরিয়ার</h3><p>Steadfast, Pathao বা RedX-এ অর্ডার চলে যায়।</p><span class="pbar"><i></i></span></button><span class="ln"><i></i></span></li>
+        <li><button type="button" class="step" role="tab" id="pt4" aria-controls="pstage" aria-selected="false" data-k="4"><span class="n">৫</span><h3>পরের Ad আরও সস্তা</h3><p>Pixel ডেটা শিখে ঠিক ক্রেতার কাছে Ad দেখায়।</p><span class="pbar"><i></i></span></button></li>
       </ol>
+      <div class="stage" id="pstage" role="tabpanel" aria-labelledby="pt0">
+        <div class="st-cap">
+          <span class="st-k" id="pK">ধাপ ১ / ৫</span>
+          <h3 id="pH">Ad দেখে কাস্টমার আসে</h3>
+          <p id="pP"></p>
+          <div class="st-ctl">
+            <button type="button" class="btn btn-ghost btn-sm" id="pPrev" aria-label="আগের ধাপ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+            <button type="button" class="btn btn-primary btn-sm" id="pPlay"><span class="ico-pause"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></span><span class="ico-play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></span><span class="lbl">থামান</span></button>
+            <button type="button" class="btn btn-ghost btn-sm" id="pNext" aria-label="পরের ধাপ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+          </div>
+          <div class="tally" aria-live="polite"><span><b id="tO">০</b>ডেলিভারি হওয়া অর্ডার</span><span><b id="tP">৳০</b>লাভ (৳৩০০/অর্ডার ধরে)</span></div>
+        </div>
+        <div class="scenes" aria-hidden="true">
+          <div class="sc s1">
+            <div class="ph"><div class="ph-top"><i></i><b></b></div>
+              <div class="ad"><div class="ad-h"><span class="av"></span><span><b>আপনার দোকান</b><small>Sponsored</small></span></div>
+                <div class="ad-img"><span class="tee"></span><span class="pprice">৳৮৫০</span></div>
+                <div class="ad-cta">ঈদ কালেকশন ২০২৬<span class="shop">Shop Now</span></div></div></div>
+            <svg class="cur" viewBox="0 0 24 24"><path d="M4 2l15 9-6.5 1.6L9.5 19z" fill="#111" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/></svg>
+            <span class="ripple"></span>
+            <span class="pchip c1">+১ ভিজিটর</span>
+          </div>
+          <div class="sc s2">
+            <div class="ph"><div class="ph-top"><i></i><b></b></div>
+              <div class="form"><span class="fl"><i></i></span><span class="fl"><i></i></span><span class="fl"><i></i></span>
+                <span class="go">অর্ডার কনফার্ম করুন</span><span class="okb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>অর্ডার হয়ে গেছে</span></div></div>
+            <div class="toastx"><span class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span><span><b>নতুন অর্ডার #১০২৫</b><small>৳১,৪৯০ · রাত ২:১৪</small></span></div>
+            <span class="moon"></span>
+          </div>
+          <div class="sc s3">
+            <div class="fr">
+              <div class="fr-h"><span class="av"></span><span><b>রহিম উদ্দিন</b><small>০১৭•• ••• ৪৫২</small></span></div>
+              <div class="fr-r"><span>Steadfast</span><b>১৮/১৯</b></div>
+              <div class="fr-r"><span>Pathao</span><b>৬/৭</b></div>
+              <div class="fr-bar"><i></i></div>
+              <div class="fr-s"><span>সাকসেস রেট</span><b class="num" id="frN">০%</b></div>
+              <span class="safe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>নিরাপদ ক্রেতা, পাঠিয়ে দিন</span>
+            </div>
+            <span class="scan"></span>
+          </div>
+          <div class="sc s4">
+            <div class="road"><span class="shop-ic"></span><span class="home-ic"></span><span class="track"></span>
+              <span class="truck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7h11v9H2zM13 10h4l3 3v3h-7z"/><circle cx="6" cy="17.5" r="1.6"/><circle cx="17" cy="17.5" r="1.6"/></svg></span></div>
+            <div class="stat"><span class="p1">পিকআপ</span><span class="p2">ট্রানজিটে</span><span class="p3">ডেলিভারড ✓</span></div>
+            <span class="pchip c4">Steadfast · SF-48213</span>
+          </div>
+          <div class="sc s5">
+            <div class="chart"><i style="--h:30%"></i><i style="--h:46%"></i><i style="--h:62%"></i><i style="--h:84%"></i></div>
+            <div class="cpo"><small>প্রতি অর্ডারে Ad খরচ</small><b><s>৳১২০</s> <span id="cpoN">৳১২০</span></b></div>
+            <span class="pchip c5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.5-6.2M21 4v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.2M3 20v-5h5"/></svg>আবার ধাপ ১, এবার কম খরচে</span>
+          </div>
+        </div>
+      </div>
+      </div>
       <div class="calc">
         <div>
           <span class="lbl">একটা সহজ হিসাব (উদাহরণ)</span>
@@ -1452,6 +1646,74 @@ $("i-email").addEventListener("input", () => { if (otpSkip || otpFor){ otpSkip =
   document.documentElement.classList.add("rv-on");
   const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("seen"); io.unobserve(e.target); } }), {threshold: .2});
   cards.forEach(c => io.observe(c));
+})();
+</script>
+
+<script>
+/* Income process player: steps auto-advance while the section is on screen. Clicking a step,
+   arrow keys or the controls take over; the tally counts each delivered order of the demo loop. */
+(() => {
+  const proc = document.getElementById("proc"); if (!proc) return;
+  const STEP = 4600, still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const bn = n => String(n).replace(/\d/g, d => "০১২৩৪৫৬৭৮৯"[d]);
+  const money = n => "৳" + bn(n.toLocaleString("en-IN"));
+  const CAP = [
+    "আপনার ফেসবুক Ad-এ ট্যাপ করেই ক্রেতা সরাসরি পণ্যের পেজে চলে আসে। মেসেজ দিয়ে দাম জিজ্ঞেস করার ঝামেলা নেই।",
+    "রাত ২টাতেও ক্রেতা নিজেই নাম-ঠিকানা দিয়ে অর্ডার কনফার্ম করে। সাথে সাথে আপনার ফোনে নোটিফিকেশন যায়।",
+    "পাঠানোর আগেই দেখে নিন ক্রেতা আগে কতগুলো পার্সেল নিয়েছে আর কতগুলো ফেরত দিয়েছে। ফেক অর্ডার আটকে যায়।",
+    "এক ক্লিকে অর্ডার কুরিয়ারে চলে যায়, ট্র্যাকিং কোড তৈরি হয়। আপনাকে আলাদা করে কিছু লিখতে হয় না।",
+    "Pixel আর Conversion API ফেসবুককে জানায় আসলে কে কিনছে। ফেসবুক তখন সেরকম মানুষকেই Ad দেখায়, তাই প্রতি অর্ডারে খরচ কমে।"];
+  const steps = [...proc.querySelectorAll(".step")], lis = steps.map(b => b.parentElement), scenes = [...proc.querySelectorAll(".sc")];
+  const $ = id => document.getElementById(id);
+  let cur = 0, timer = 0, playing = !still, visible = false, orders = 0, nums = [];
+  proc.style.setProperty("--step", STEP + "ms");
+
+  // Small count-ups inside the scenes (fraud success rate, Ad cost per order).
+  function count(el, from, to, ms, fmt) {
+    const t0 = performance.now();
+    const tick = t => { const k = Math.min(1, (t - t0) / ms); el.textContent = fmt(Math.round(from + (to - from) * (1 - Math.pow(1 - k, 3)))); if (k < 1 && el.isConnected) nums.push(requestAnimationFrame(tick)); };
+    if (still) el.textContent = fmt(to); else nums.push(requestAnimationFrame(tick));
+  }
+  function show(k) {
+    cur = (k + 5) % 5; nums.forEach(cancelAnimationFrame); nums = [];
+    steps.forEach((b, i) => { b.setAttribute("aria-selected", i === cur); b.tabIndex = i === cur ? 0 : -1; lis[i].classList.toggle("done", i < cur); });
+    $("pstage").setAttribute("aria-labelledby", "pt" + cur);
+    $("pK").textContent = `ধাপ ${bn(cur + 1)} / ৫`; $("pH").textContent = steps[cur].querySelector("h3").textContent; $("pP").textContent = CAP[cur];
+    // Restart the scene's CSS animations by re-adding its class after a reflow.
+    scenes.forEach(sc => sc.classList.remove("on")); void proc.offsetWidth; scenes[cur].classList.add("on");
+    const bar = steps[cur].querySelector(".pbar i"); bar.style.animation = "none"; void bar.offsetWidth; bar.style.animation = "";
+    if (cur === 2) setTimeout(() => count($("frN"), 0, 94, 1400, v => bn(v) + "%"), still ? 0 : 500);
+    if (cur === 4) setTimeout(() => count($("cpoN"), 120, 85, 1500, v => "৳" + bn(v)), still ? 0 : 900);
+    if (cur === 3) setTimeout(() => { orders++; $("tO").textContent = bn(orders); $("tP").textContent = money(orders * 300);
+      ["tO", "tP"].forEach(id => { const b = $(id); b.classList.remove("bump"); void b.offsetWidth; b.classList.add("bump"); }); }, still ? 0 : 2800);
+    schedule();
+  }
+  function schedule() { clearTimeout(timer); if (playing && visible) timer = setTimeout(() => show(cur + 1), STEP); }
+  function setPlay(on) {
+    playing = on; proc.classList.toggle("playing", on && visible); proc.classList.toggle("paused", !on);
+    $("pPlay").querySelector(".lbl").textContent = on ? "থামান" : "চালু করুন"; $("pPlay").setAttribute("aria-pressed", !on);
+    if (on) show(cur); else clearTimeout(timer);
+  }
+  steps.forEach((b, i) => {
+    b.addEventListener("click", () => { setPlay(false); show(i); });
+    b.addEventListener("keydown", e => {
+      const d = {ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1}[e.key]; if (!d) return;
+      e.preventDefault(); setPlay(false); show(cur + d); steps[cur].focus();
+    });
+  });
+  $("pPrev").addEventListener("click", () => { setPlay(false); show(cur - 1); });
+  $("pNext").addEventListener("click", () => { setPlay(false); show(cur + 1); });
+  $("pPlay").addEventListener("click", () => setPlay(!playing));
+  // Hovering the scene holds the current step so it can be read.
+  $("pstage").addEventListener("mouseenter", () => { if (playing) { clearTimeout(timer); proc.classList.remove("playing"); } });
+  $("pstage").addEventListener("mouseleave", () => { if (playing && visible) { proc.classList.add("playing"); show(cur); } });
+  if ("IntersectionObserver" in window) new IntersectionObserver(([e]) => {
+    const was = visible; visible = e.isIntersecting; proc.classList.toggle("playing", playing && visible);
+    if (visible && !was) show(cur); else if (!visible) clearTimeout(timer);
+  }, {threshold: .35}).observe(proc);
+  else { visible = true; }
+  proc.classList.toggle("paused", !playing);
+  show(0);
 })();
 </script>
 </body>
