@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="bn">
+<html lang="bn" data-mode="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -18,7 +18,7 @@
   --font:"Tiro Bangla","Noto Serif Bengali",Georgia,serif;
   --r:18px;
 }
-:root[data-theme="dark"]{
+:root[data-mode="dark"]{
   --bg:#0b1018;--surface:#111925;--sunk:#0e1520;--ink:#e9eef5;--muted:#98a4b7;--line:#1f2b3b;
   --blue:#3aa0ff;--blue-ink:#7cc0ff;--blue-soft:#10223a;--on-blue:#04121f;
   --ok:#3ccf7f;--ok-soft:#0f2a1c;--warn:#ffb454;--warn-soft:#2c1f0c;--danger:#ff6b60;--danger-soft:#2d1311;
@@ -38,8 +38,8 @@ button,input,textarea,select{font:inherit;color:inherit}
 
 .logo{display:block;height:36px;width:auto}
 .logo-d{display:none}
-:root[data-theme="dark"] .logo-l{display:none}
-:root[data-theme="dark"] .logo-d{display:block}
+:root[data-mode="dark"] .logo-l{display:none}
+:root[data-mode="dark"] .logo-d{display:block}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:10px 20px;font-weight:600;text-decoration:none;cursor:pointer;border:1.5px solid transparent;transition:transform .15s,border-color .15s;white-space:nowrap}
 .btn:hover{transform:translateY(-1px)}
@@ -67,8 +67,8 @@ button,input,textarea,select{font:inherit;color:inherit}
 .who b{font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .who small{color:var(--muted);font-size:.8rem}
 .theme-btn .moon{display:none}
-:root[data-theme="dark"] .theme-btn .sun{display:none}
-:root[data-theme="dark"] .theme-btn .moon{display:block}
+:root[data-mode="dark"] .theme-btn .sun{display:none}
+:root[data-mode="dark"] .theme-btn .moon{display:block}
 
 /* auth */
 .auth{display:grid;place-items:center;padding:64px 16px}
@@ -532,13 +532,15 @@ const isAdmin = () => me && me.role === "admin";
 const isStaff = () => me && (me.role === "admin" || me.role === "developer");
 const ROLE = {admin: "অ্যাডমিন", developer: "ডেভেলপার"};
 
-/* ---------- theme ---------- */
+/* ---------- theme ----------
+   Light unless the visitor picks dark with the button. Uses its own data-mode attribute (not
+   data-theme, which some hosting previews set from their own theme) and ignores the OS setting. */
 (function(){
-  try { const s = JSON.parse(localStorage.getItem("techill_theme")); if (s === "light" || s === "dark") document.documentElement.dataset.theme = s; } catch(e){}
+  try { const s = JSON.parse(localStorage.getItem("techill_mode")); if (s === "light" || s === "dark") document.documentElement.dataset.mode = s; } catch(e){}
   $("themeBtn").addEventListener("click", () => {
-    const c = document.documentElement.dataset.theme || "light";
-    const n = c === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = n;
-    try { localStorage.setItem("techill_theme", JSON.stringify(n)); } catch(e){}
+    const c = document.documentElement.dataset.mode || "light";
+    const n = c === "dark" ? "light" : "dark"; document.documentElement.dataset.mode = n;
+    try { localStorage.setItem("techill_mode", JSON.stringify(n)); } catch(e){}
   });
 })();
 

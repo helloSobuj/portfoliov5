@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="bn">
+<html lang="bn" data-mode="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -20,7 +20,7 @@
   --font:"Tiro Bangla","Noto Serif Bengali",Georgia,serif;
   --r:18px;
 }
-:root[data-theme="dark"]{
+:root[data-mode="dark"]{
   --bg:#0b1018;--surface:#111925;--sunk:#0e1520;--ink:#e9eef5;--muted:#98a4b7;--line:#1f2b3b;--grid:#18222f;
   --blue:#3aa0ff;--blue-ink:#7cc0ff;--blue-soft:#10223a;--on-blue:#04121f;
   --ok:#3ccf7f;--ok-soft:#0f2a1c;--warn:#ffb454;--warn-soft:#2c1f0c;--danger:#ff6b60;--danger-soft:#2d1311;
@@ -39,8 +39,8 @@ button,input,textarea,select{font:inherit;color:inherit}
 
 .logo{display:block;height:34px;width:auto}
 .logo-d{display:none}
-:root[data-theme="dark"] .logo-l{display:none}
-:root[data-theme="dark"] .logo-d{display:block}
+:root[data-mode="dark"] .logo-l{display:none}
+:root[data-mode="dark"] .logo-d{display:block}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:10px 18px;font-weight:600;text-decoration:none;cursor:pointer;border:1.5px solid transparent;transition:transform .15s,border-color .15s;white-space:nowrap;background:transparent}
 .btn:hover{transform:translateY(-1px)}
 .btn-primary{background:var(--blue);color:var(--on-blue)}
@@ -53,8 +53,8 @@ button,input,textarea,select{font:inherit;color:inherit}
 .icon-btn{width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer;flex:none}
 .icon-btn svg{width:19px;height:19px}
 .theme-btn .moon{display:none}
-:root[data-theme="dark"] .theme-btn .sun{display:none}
-:root[data-theme="dark"] .theme-btn .moon{display:block}
+:root[data-mode="dark"] .theme-btn .sun{display:none}
+:root[data-mode="dark"] .theme-btn .moon{display:block}
 .badge{display:inline-flex;align-items:center;gap:4px;font-size:.78rem;font-weight:600;border-radius:999px;padding:2px 10px;white-space:nowrap}
 .b-unread{background:var(--danger);color:#fff;min-width:22px;justify-content:center;padding:1px 7px}
 .b-pending{background:var(--warn-soft);color:var(--warn)}
@@ -426,13 +426,15 @@ function delta(cur, prev){
 
 function toast(m){ const t = $("toast"); t.textContent = m; t.hidden = false; clearTimeout(t._t); t._t = setTimeout(() => t.hidden = true, 3200); }
 
-/* ---------- theme ---------- */
+/* ---------- theme ----------
+   Light unless the visitor picks dark with the button. Uses its own data-mode attribute (not
+   data-theme, which some hosting previews set from their own theme) and ignores the OS setting. */
 (function(){
-  try { const s = JSON.parse(localStorage.getItem("techill_theme")); if (s === "light" || s === "dark") document.documentElement.dataset.theme = s; } catch(e){}
+  try { const s = JSON.parse(localStorage.getItem("techill_mode")); if (s === "light" || s === "dark") document.documentElement.dataset.mode = s; } catch(e){}
   $("themeBtn").addEventListener("click", () => {
-    const c = document.documentElement.dataset.theme || "light";
-    const n = c === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = n;
-    try { localStorage.setItem("techill_theme", JSON.stringify(n)); } catch(e){}
+    const c = document.documentElement.dataset.mode || "light";
+    const n = c === "dark" ? "light" : "dark"; document.documentElement.dataset.mode = n;
+    try { localStorage.setItem("techill_mode", JSON.stringify(n)); } catch(e){}
   });
 })();
 

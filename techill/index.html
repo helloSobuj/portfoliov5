@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="bn">
+<html lang="bn" data-mode="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -32,7 +32,7 @@
   --body:"Tiro Bangla","Noto Serif Bengali",Georgia,serif;
   --r:18px;
 }
-:root[data-theme="dark"]{
+:root[data-mode="dark"]{
   --bg:#0b1018;--surface:#111925;--sunk:#0e1520;--ink:#e9eef5;--muted:#98a4b7;--line:#1f2b3b;
   --blue:#3aa0ff;--blue-ink:#7cc0ff;--blue-soft:#10223a;--on-blue:#04121f;
   --ok:#3ccf7f;--ok-soft:#0f2a1c;--warn:#ffb454;--warn-soft:#2c1f0c;--danger:#ff6b60;
@@ -54,8 +54,8 @@ button,input,textarea,select{font:inherit;color:inherit}
 /* logo per theme */
 .logo{display:block;height:40px;width:auto}
 .logo-d{display:none}
-:root[data-theme="dark"] .logo-l{display:none}
-:root[data-theme="dark"] .logo-d{display:block}
+:root[data-mode="dark"] .logo-l{display:none}
+:root[data-mode="dark"] .logo-d{display:block}
 
 /* buttons */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:12px 22px;font-weight:600;text-decoration:none;cursor:pointer;border:1.5px solid transparent;transition:transform .15s,background .15s,border-color .15s;white-space:nowrap}
@@ -77,8 +77,8 @@ button,input,textarea,select{font:inherit;color:inherit}
 .theme-btn{width:42px;height:42px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer}
 .theme-btn svg{width:20px;height:20px}
 .theme-btn .moon{display:none}
-:root[data-theme="dark"] .theme-btn .sun{display:none}
-:root[data-theme="dark"] .theme-btn .moon{display:block}
+:root[data-mode="dark"] .theme-btn .sun{display:none}
+:root[data-mode="dark"] .theme-btn .moon{display:block}
 
 /* sections */
 section{padding-block:104px}
@@ -1331,14 +1331,16 @@ const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
 const PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
 const CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
 
-/* ---------- theme ---------- */
+/* ---------- theme ----------
+   Light unless the visitor picks dark with the button. Uses its own data-mode attribute (not
+   data-theme, which some hosting previews set from their own theme) and ignores the OS setting. */
 (function(){
-  const saved = store.get("techill_theme");
-  if (saved === "light" || saved === "dark") document.documentElement.dataset.theme = saved;
+  const saved = store.get("techill_mode");
+  if (saved === "light" || saved === "dark") document.documentElement.dataset.mode = saved;
   $("themeBtn").addEventListener("click", () => {
-    const cur = document.documentElement.dataset.theme || "light";
+    const cur = document.documentElement.dataset.mode || "light";
     const next = cur === "dark" ? "light" : "dark";
-    document.documentElement.dataset.theme = next; store.set("techill_theme", next);
+    document.documentElement.dataset.mode = next; store.set("techill_mode", next);
   });
 })();
 addEventListener("scroll", () => $("hdr").classList.toggle("scrolled", scrollY > 8), {passive:true});
